@@ -5,26 +5,26 @@
 
 @layer base {
   :root {
-    --background: 15 11% 10%;
+    --background: 0 0% 7%;
     --foreground: 0 0% 98%;
-    --card: 15 11% 12%;
+    --card: 0 0% 10%;
     --card-foreground: 0 0% 98%;
-    --popover: 15 11% 10%;
+    --popover: 0 0% 7%;
     --popover-foreground: 0 0% 98%;
-    --primary: 16 60% 50%;
+    --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 15 11% 18%;
+    --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 15 11% 20%;
-    --muted-foreground: 15 10% 65%;
-    --accent: 346 41% 70%;
-    --accent-foreground: 15 11% 10%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 72% 51%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 15 11% 20%;
-    --input: 15 11% 20%;
-    --ring: 16 60% 50%;
-    --radius: 0.25rem;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 72% 51%;
+    --radius: 0.1rem;
   }
 }
 
@@ -41,24 +41,10 @@
   }
 }
 
-.masonry-grid {
-  columns: 1;
-  column-gap: 1rem;
+.red-glow {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
 }
 
-@media (min-width: 640px) {
-  .masonry-grid {
-    columns: 2;
-  }
-}
-
-@media (min-width: 1024px) {
-  .masonry-grid {
-    columns: 3;
-  }
-}
-
-.masonry-item {
-  break-inside: avoid;
-  margin-bottom: 1rem;
+.grey-gradient {
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0) 0%, rgba(26, 26, 26, 1) 100%);
 }

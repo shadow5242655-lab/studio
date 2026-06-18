@@ -3,9 +3,7 @@ import React from 'react';
 import { Phone, MapPin, Star, ShoppingBag, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
-import { CategoryExplorer } from '@/components/category-explorer';
 import { TextileGallery } from '@/components/textile-gallery';
-import { CurationConsultant } from '@/components/curation-consultant';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Home() {
@@ -86,22 +84,12 @@ export default function Home() {
 
       {/* Collection Gallery */}
       <section id="collection" className="py-16 max-w-7xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="space-y-4">
-            <h3 className="text-2xl md:text-4xl font-headline font-bold italic border-l-4 border-primary pl-4">Our Professional Gallery</h3>
-            <p className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">Browse through our curated selection of high-end textiles and masterfully tailored garments worn by our patrons.</p>
-          </div>
-          <CategoryExplorer />
+        <div className="mb-12">
+          <h3 className="text-2xl md:text-4xl font-headline font-bold italic border-l-4 border-primary pl-4">Our Professional Gallery</h3>
+          <p className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed mt-4">Browse through our curated selection of high-end textiles and masterfully tailored garments.</p>
         </div>
         <TextileGallery />
       </section>
-
-      {/* AI Curation Consultant */}
-      <div className="bg-secondary/10">
-        <div className="max-w-7xl mx-auto px-6">
-          <CurationConsultant />
-        </div>
-      </div>
 
       {/* About Section */}
       <section id="about" className="py-16 max-w-7xl mx-auto px-6">

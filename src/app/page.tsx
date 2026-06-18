@@ -31,7 +31,7 @@ export default function Home() {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl md:text-2xl font-headline font-bold text-primary tracking-tight">
-            SHIV CLOTHES HOUSE
+            SHIV CLOTHES HOUSE AND GARMENTS
           </h1>
           <div className="hidden md:flex gap-6 text-sm font-medium uppercase tracking-wider">
             <a href="#about" className="hover:text-primary transition-colors">About</a>

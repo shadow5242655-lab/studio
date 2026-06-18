@@ -1,0 +1,53 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "silk-texture",
+      "description": "Premium mulberry silk texture with subtle sheen",
+      "imageUrl": "https://picsum.photos/seed/silk1/800/1000",
+      "imageHint": "silk textile"
+    },
+    {
+      "id": "cotton-weave",
+      "description": "Hand-loomed organic cotton weave pattern",
+      "imageUrl": "https://picsum.photos/seed/cotton1/800/1200",
+      "imageHint": "cotton weave"
+    },
+    {
+      "id": "festive-kurta",
+      "description": "Hand-embroidered festive kurta in deep terracotta",
+      "imageUrl": "https://picsum.photos/seed/kurta1/800/1100",
+      "imageHint": "festive garment"
+    },
+    {
+      "id": "linen-shirt",
+      "description": "Breathable linen shirt for casual elegance",
+      "imageUrl": "https://picsum.photos/seed/linen1/800/900",
+      "imageHint": "linen shirt"
+    },
+    {
+      "id": "artisanal-embroidery",
+      "description": "Close-up of traditional zardosi embroidery work",
+      "imageUrl": "https://picsum.photos/seed/embroidery1/800/1000",
+      "imageHint": "embroidery detail"
+    },
+    {
+      "id": "wool-shawl",
+      "description": "Soft pashmina wool shawl with floral motifs",
+      "imageUrl": "https://picsum.photos/seed/wool1/800/1150",
+      "imageHint": "wool shawl"
+    },
+    {
+      "id": "block-print",
+      "description": "Traditional indigo block print on fine muslin",
+      "imageUrl": "https://picsum.photos/seed/print1/800/1050",
+      "imageHint": "block print"
+    },
+    {
+      "id": "tussar-silk",
+      "description": "Wild Tussar silk fabric with natural golden hue",
+      "imageUrl": "https://picsum.photos/seed/silk2/800/1200",
+      "imageHint": "tussar silk"
+    }
+  ]
+}

@@ -125,16 +125,23 @@ export default function Home() {
                 <p className="text-[10px] md:text-xs font-medium text-primary mt-1">+91 88403 66167</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 md:gap-6 group">
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+            
+            <a 
+              href="https://maps.app.goo.gl/3xAZF3X8wyqGK6pc6?g_st=ac" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-start gap-4 md:gap-6 group hover:opacity-80 transition-opacity"
+            >
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary/20 transition-colors">
                 <MapPin className="h-4 w-4 md:h-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Our Location</p>
+                <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Our Location (Click to Open Map)</p>
                 <p className="text-base md:text-xl font-bold leading-tight">Dakghar road, Mahewa Ganj, Choraha</p>
                 <p className="text-[10px] md:text-xs font-medium text-muted-foreground">Lakhimpur, Uttar Pradesh 261506</p>
               </div>
-            </div>
+            </a>
+
             <div className="flex items-center gap-4 md:gap-6 group">
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
                 <Clock className="h-4 w-4 md:h-5 md:h-5 text-primary" />

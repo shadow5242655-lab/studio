@@ -55,10 +55,10 @@ export default function Home() {
       <section className="bg-primary py-3 md:py-4 text-white overflow-hidden relative border-y border-white/10">
         <div className="flex whitespace-nowrap animate-marquee">
           <p className="text-xs md:text-xl font-headline font-bold uppercase tracking-[0.2em] px-4">
-            * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP *
+            * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE *
           </p>
           <p className="text-xs md:text-xl font-headline font-bold uppercase tracking-[0.2em] px-4">
-            * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP * ALL THINGS ARE AVAILABLE IN MY SHOP *
+            * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE * ALL TYPES OF CLOTHES ARE AVAILABLE *
           </p>
         </div>
       </section>
@@ -72,7 +72,7 @@ export default function Home() {
               Located at Dakghar road, Mahewa Ganj, Choraha, Lakhimpur, <strong>SHIV CLOTHES HOUSE AND GARMENTS</strong> has established itself as a premier destination for those seeking quality and variety.
             </p>
             <p>
-              Our shop is a testament to quality, where <strong>all things are available</strong> for Men, Women, and Kids. We pride ourselves on offering professional service and a selection that meets the highest standards of comfort and style.
+              Our shop is a testament to quality, where <strong>ALL TYPES OF CLOTHES ARE AVAILABLE</strong> for Men, Women, and Kids. We pride ourselves on offering professional service and a selection that meets the highest standards of comfort and style.
             </p>
           </div>
         </div>

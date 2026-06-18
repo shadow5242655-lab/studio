@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -31,7 +30,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Scissors className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-headline font-bold tracking-tight text-primary sm:text-2xl">
-            SHIV GARMENTS
+            SHIV CLOTHES HOUSE
           </h1>
         </div>
 

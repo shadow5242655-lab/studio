@@ -1,10 +1,9 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Shiv Garment House | Premium Artisanal Textiles',
-  description: 'Exquisite traditional wear and premium fabric collections at Shiv Clothes House and Garments.',
+  title: 'SHIV CLOTHES HOUSE AND GARMENTS | Premium Artisanal Textiles',
+  description: 'Exquisite traditional wear and premium fabric collections at SHIV CLOTHES HOUSE AND GARMENTS, Lakhimpur, UP.',
 };
 
 export default function RootLayout({

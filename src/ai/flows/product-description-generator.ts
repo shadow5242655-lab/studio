@@ -32,7 +32,7 @@ const productDescriptionPrompt = ai.definePrompt({
   name: 'productDescriptionPrompt',
   input: {schema: ProductDescriptionGeneratorInputSchema},
   output: {schema: ProductDescriptionGeneratorOutputSchema},
-  prompt: `As an expert copywriter for a high-end textile brand named Shiv Clothes House and Garments, your task is to craft an engaging and informative product description.
+  prompt: `As an expert copywriter for a high-end textile brand named SHIV CLOTHES HOUSE AND GARMENTS, your task is to craft an engaging and informative product description.
 
 The description should highlight the unique craftsmanship and material origin, weaving a storytelling narrative around the garment.
 

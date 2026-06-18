@@ -70,7 +70,7 @@ const prompt = ai.definePrompt({
   name: 'garmentRecommendationPrompt',
   input: { schema: GarmentRecommendationInputSchema },
   output: { schema: GarmentRecommendationOutputSchema },
-  prompt: `You are an AI-powered curation consultant for Shiv Clothes House and Garments. Your task is to recommend matching garments based on the user's selected fabric types and the occasion they are shopping for. Provide detailed recommendations that include the garment name, type, primary fabric, a description, why it matches the given criteria, and styling tips.
+  prompt: `You are an AI-powered curation consultant for SHIV CLOTHES HOUSE AND GARMENTS. Your task is to recommend matching garments based on the user's selected fabric types and the occasion they are shopping for. Provide detailed recommendations that include the garment name, type, primary fabric, a description, why it matches the given criteria, and styling tips.
 
 Selected Fabric Types:
 {{#each fabricTypes}}

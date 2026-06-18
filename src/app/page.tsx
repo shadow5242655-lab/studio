@@ -7,19 +7,19 @@ export default function Home() {
   const reviews = [
     {
       name: "Rajesh Kumar",
-      location: "Varanasi",
+      location: "Lakhimpur",
       text: "Excellent quality fabrics. I bought a wedding suit from here and the material is top-notch. Highly recommended for traditional wear.",
       rating: 5
     },
     {
       name: "Priya Sharma",
-      location: "Lucknow",
-      text: "Shiv Garments has a huge collection. I found exactly what I was looking for. The best part is that everything is available under one roof.",
+      location: "Mahewa Ganj",
+      text: "Shiv Clothes House has a huge collection. I found exactly what I was looking for. The best part is that everything is available under one roof.",
       rating: 5
     },
     {
       name: "Amit Patel",
-      location: "Prayagraj",
+      location: "Kheri",
       text: "Very reasonable prices and very friendly staff. They have a great variety of daily wear and festive clothes. Truly a one-stop shop.",
       rating: 4
     }
@@ -30,8 +30,8 @@ export default function Home() {
       {/* Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">
-            SHIV GARMENT HOUSE
+          <h1 className="text-xl md:text-2xl font-headline font-bold text-primary tracking-tight">
+            SHIV CLOTHES HOUSE
           </h1>
           <div className="hidden md:flex gap-6 text-sm font-medium uppercase tracking-wider">
             <a href="#about" className="hover:text-primary transition-colors">About</a>
@@ -55,7 +55,7 @@ export default function Home() {
               <span className="text-primary italic">Clothing Destination</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
-              Welcome to Shiv Garment House. We pride ourselves on providing the highest quality textiles and ready-made garments. Whether it's festive, formal, or casual—we have it all.
+              Welcome to SHIV CLOTHES HOUSE AND GARMENTS. We pride ourselves on providing the highest quality textiles and ready-made garments. Whether it's festive, formal, or casual—we have it all.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="flex items-center gap-2 bg-background px-4 py-2 border rounded-full">
@@ -86,7 +86,7 @@ export default function Home() {
           <div className="md:col-span-2 space-y-6">
             <h3 className="text-3xl font-headline font-bold">About Our Shop</h3>
             <p className="text-muted-foreground leading-relaxed text-lg">
-              Located in the heart of the community, Shiv Garment House has been a trusted name in fashion for years. We understand the rich heritage of Indian textiles and bring you a curated selection of sarees, lehengas, suits, shirts, and much more.
+              Located in the heart of Mahewa Ganj, SHIV CLOTHES HOUSE AND GARMENTS has been a trusted name in fashion for years. We understand the rich heritage of Indian textiles and bring you a curated selection of sarees, lehengas, suits, shirts, and much more.
             </p>
             <p className="text-muted-foreground leading-relaxed text-lg">
               Our philosophy is simple: provide every customer with the perfect outfit. <strong>All things are available in my shop</strong>, from the finest silk fabrics for special occasions to comfortable cotton wear for everyday life. We don't just sell clothes; we provide a tradition of excellence.
@@ -161,7 +161,7 @@ export default function Home() {
                   <Phone className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Phone</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Main Hotline</p>
                   <p className="text-xl font-bold">+91 94529 21477</p>
                 </div>
               </div>
@@ -170,17 +170,18 @@ export default function Home() {
                   <Phone className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Secondary Phone</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Secondary Line</p>
                   <p className="text-xl font-bold">+91 88403 66167</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <MapPin className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Location</p>
-                  <p className="text-sm">Shiv Garment House, Main Bazar, India</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Our Location</p>
+                  <p className="text-sm font-bold">Dakghar road, Mahewa Ganj, Choraha</p>
+                  <p className="text-sm">Lakhimpur, Uttar Pradesh 261506</p>
                 </div>
               </div>
             </div>
@@ -200,12 +201,12 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-12 border-t bg-secondary/30">
         <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
-          <p className="text-2xl font-headline font-bold text-primary">SHIV GARMENT HOUSE</p>
+          <p className="text-2xl font-headline font-bold text-primary uppercase">SHIV CLOTHES HOUSE AND GARMENTS</p>
           <p className="text-xs text-muted-foreground uppercase tracking-[0.4em]">
             Quality • Trust • Tradition
           </p>
           <div className="pt-8 text-[10px] text-muted-foreground uppercase tracking-widest">
-            © {new Date().getFullYear()} Shiv Garment House. All Rights Reserved.
+            © {new Date().getFullYear()} SHIV CLOTHES HOUSE AND GARMENTS. All Rights Reserved.
           </div>
         </div>
       </footer>

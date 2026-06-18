@@ -1,52 +1,52 @@
 {
   "placeholderImages": [
     {
-      "id": "silk-texture",
-      "description": "Premium mulberry silk texture with subtle sheen",
-      "imageUrl": "https://picsum.photos/seed/silk1/800/1000",
-      "imageHint": "silk textile"
+      "id": "premium-sherwani",
+      "description": "Indian groom in an exquisite hand-embroidered wedding Sherwani",
+      "imageUrl": "https://picsum.photos/seed/sherwani-model/800/1200",
+      "imageHint": "sherwani man"
     },
     {
-      "id": "cotton-weave",
-      "description": "Hand-loomed organic cotton weave pattern",
-      "imageUrl": "https://picsum.photos/seed/cotton1/800/1200",
-      "imageHint": "cotton weave"
+      "id": "designer-saree",
+      "description": "Indian woman wearing an elegant Banarasi silk saree with gold zari",
+      "imageUrl": "https://picsum.photos/seed/saree-model/800/1200",
+      "imageHint": "saree woman"
     },
     {
-      "id": "festive-kurta",
-      "description": "Hand-embroidered festive kurta in deep terracotta",
-      "imageUrl": "https://picsum.photos/seed/kurta1/800/1100",
-      "imageHint": "festive garment"
+      "id": "festive-kurta-men",
+      "description": "Man in a traditional cotton silk kurta for festive occasions",
+      "imageUrl": "https://picsum.photos/seed/kurta-model/800/1200",
+      "imageHint": "kurta man"
     },
     {
-      "id": "linen-shirt",
-      "description": "Breathable linen shirt for casual elegance",
-      "imageUrl": "https://picsum.photos/seed/linen1/800/900",
+      "id": "bridal-lehenga",
+      "description": "Indian bride in a heavy bridal lehenga with intricate zardosi work",
+      "imageUrl": "https://picsum.photos/seed/lehenga-model/800/1200",
+      "imageHint": "bridal lehenga"
+    },
+    {
+      "id": "casual-linen-shirt",
+      "description": "Model in a premium breathable linen shirt for daily wear",
+      "imageUrl": "https://picsum.photos/seed/shirt-model/800/1200",
       "imageHint": "linen shirt"
     },
     {
-      "id": "artisanal-embroidery",
-      "description": "Close-up of traditional zardosi embroidery work",
-      "imageUrl": "https://picsum.photos/seed/embroidery1/800/1000",
-      "imageHint": "embroidery detail"
+      "id": "kids-ethnic-wear",
+      "description": "Indian kids in comfortable and stylish ethnic festive wear",
+      "imageUrl": "https://picsum.photos/seed/kids-model/800/1200",
+      "imageHint": "indian kids"
     },
     {
-      "id": "wool-shawl",
-      "description": "Soft pashmina wool shawl with floral motifs",
-      "imageUrl": "https://picsum.photos/seed/wool1/800/1150",
-      "imageHint": "wool shawl"
+      "id": "designer-suit-piece",
+      "description": "Woman in a premium designer salwar suit with dupatta",
+      "imageUrl": "https://picsum.photos/seed/suit-model/800/1200",
+      "imageHint": "salwar suit"
     },
     {
-      "id": "block-print",
-      "description": "Traditional indigo block print on fine muslin",
-      "imageUrl": "https://picsum.photos/seed/print1/800/1050",
-      "imageHint": "block print"
-    },
-    {
-      "id": "tussar-silk",
-      "description": "Wild Tussar silk fabric with natural golden hue",
-      "imageUrl": "https://picsum.photos/seed/silk2/800/1200",
-      "imageHint": "tussar silk"
+      "id": "tussar-silk-fabric",
+      "description": "Model gracefully draped in authentic Tussar silk fabric",
+      "imageUrl": "https://picsum.photos/seed/silk-model/800/1200",
+      "imageHint": "silk woman"
     }
   ]
 }

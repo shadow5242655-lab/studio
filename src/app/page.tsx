@@ -1,6 +1,5 @@
 import React from 'react';
 import { Phone, MapPin, Star, CheckCircle2, Clock, Sparkles } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
 
 export default function Home() {
   const reviews = [
@@ -26,7 +25,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 md:py-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-sm md:text-2xl font-headline font-bold tracking-tight text-primary uppercase">
+            SHIV CLOTHES HOUSE AND GARMENTS
+          </h1>
+          <div className="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <a href="#about" className="hover:text-primary transition-colors">About</a>
+            <a href="#reviews" className="hover:text-primary transition-colors">Testimonials</a>
+            <a href="#contact" className="hover:text-primary transition-colors">Location</a>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
       <section className="relative py-16 md:py-32 grey-gradient">

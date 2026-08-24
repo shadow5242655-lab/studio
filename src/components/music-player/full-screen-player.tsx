@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -39,150 +38,159 @@ export function FullScreenPlayer() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-neutral-950 flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-black to-black pointer-events-none" />
+    <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom duration-700 overflow-hidden">
+      {/* Immersive Background Layer */}
+      <div className="absolute inset-0 z-0">
+        {imageSrc ? (
+          <Image 
+            src={imageSrc} 
+            alt="background" 
+            fill 
+            className="object-cover opacity-20 blur-[100px] scale-150"
+          />
+        ) : (
+          <div className="h-full w-full bg-neutral-900" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black" />
+      </div>
       
       {/* Header */}
-      <header className="relative flex items-center justify-between p-4 md:p-8 z-10">
+      <header className="relative flex items-center justify-between p-6 md:p-8 z-20 shrink-0">
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-white hover:bg-white/10 rounded-full h-10 w-10 md:h-12 md:w-12"
+          className="text-white hover:bg-white/10 rounded-full h-12 w-12"
           onClick={() => setIsPlayerOpen(false)}
         >
-          <ChevronDown className="h-8 w-8 md:h-10 md:w-10" />
+          <ChevronDown className="h-8 w-8" />
         </Button>
         <div className="flex flex-col items-center">
-          <span className="text-[8px] md:text-[10px] uppercase font-black tracking-[0.3em] text-white/60">Currently Architecting</span>
-          <span className="text-xs md:text-sm font-black text-white italic tracking-tighter">AYUMUSIC</span>
+          <span className="text-[10px] uppercase font-black tracking-[0.4em] text-white/40 mb-1">Architecture</span>
+          <span className="text-sm font-black text-white italic tracking-tighter uppercase">AYUMUSIC</span>
         </div>
-        <div className="flex gap-2">
-           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10 md:h-12 md:w-12">
-                <MoreHorizontal className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-64 backdrop-blur-xl">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-3 py-3">
-                  <PlusCircle className="h-4 w-4" />
-                  Add to Playlist
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
-                  {playlists.map(p => (
-                    <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>
-                      {p.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuItem onClick={handleDownload} className="gap-3 py-3">
-                <Download className="h-4 w-4" />
-                Download Track
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-12 w-12">
+              <MoreHorizontal className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-64 backdrop-blur-xl">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-3 py-3">
+                <PlusCircle className="h-4 w-4" />
+                Add to Playlist
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
+                {playlists.map(p => (
+                  <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>
+                    {p.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuItem onClick={handleDownload} className="gap-3 py-3">
+              <Download className="h-4 w-4" />
+              Download Track
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       {/* Main Tabbed Container */}
-      <Tabs defaultValue="details" className="flex-1 flex flex-col relative z-10 overflow-hidden">
-        <div className="flex justify-center mb-2 md:mb-4">
-          <TabsList className="bg-white/5 border border-white/10 rounded-full h-8 md:h-10 p-1">
+      <Tabs defaultValue="details" className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 md:px-12">
+        <div className="flex justify-center mb-6 shrink-0">
+          <TabsList className="bg-white/5 border border-white/10 rounded-full h-11 p-1">
             <TabsTrigger 
               value="details" 
-              className="rounded-full px-4 md:px-8 text-[8px] md:text-[10px] font-black uppercase italic tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full"
+              className="rounded-full px-8 text-[10px] font-black uppercase italic tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full"
             >
-              <Info className="h-3 w-3 mr-1 md:mr-2" />
+              <Info className="h-4 w-4 mr-2" />
               Details
             </TabsTrigger>
             <TabsTrigger 
               value="lyrics" 
-              className="rounded-full px-4 md:px-8 text-[8px] md:text-[10px] font-black uppercase italic tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full"
+              className="rounded-full px-8 text-[10px] font-black uppercase italic tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white h-full"
             >
-              <Mic2 className="h-3 w-3 mr-1 md:mr-2" />
+              <Mic2 className="h-4 w-4 mr-2" />
               Lyrics
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-between px-6 md:px-12 max-w-6xl mx-auto w-full overflow-hidden pb-6 md:pb-12">
-          
-          <TabsContent value="details" className="w-full flex-1 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-16 mt-0 animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col items-center min-h-0">
+          <TabsContent value="details" className="w-full flex-1 flex flex-col items-center justify-center gap-8 md:gap-16 mt-0 animate-in fade-in zoom-in-95 duration-500 overflow-y-auto custom-scrollbar pb-8">
             {/* Image Area */}
-            <div className="w-full md:w-1/2 flex items-center justify-center max-h-[35vh] md:max-h-none">
-               <div className="relative aspect-square w-full max-w-[280px] md:max-w-[500px] shadow-2xl rounded-2xl overflow-hidden border border-white/10 group">
-                  {imageSrc ? (
-                    <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority />
-                  ) : (
-                    <div className="h-full w-full bg-neutral-900 flex items-center justify-center">
-                      <Music2 className="h-16 md:h-24 w-16 md:w-24 text-neutral-800" />
-                    </div>
-                  )}
-               </div>
+            <div className="w-full max-w-[320px] md:max-w-[480px] aspect-square relative shadow-[0_40px_80px_-15px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-white/10 group shrink-0">
+              {imageSrc ? (
+                <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority />
+              ) : (
+                <div className="h-full w-full bg-neutral-900 flex items-center justify-center">
+                  <Music2 className="h-24 w-24 text-neutral-800" />
+                </div>
+              )}
             </div>
 
-            {/* Info Area */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center gap-2 md:gap-8 min-h-0">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-3xl md:text-7xl font-black text-white tracking-tighter mb-1 truncate italic uppercase leading-tight">
-                    {currentTrack.name}
-                  </h2>
-                  <p className="text-lg md:text-3xl text-primary font-bold uppercase tracking-widest truncate">
-                    {getArtistNames(currentTrack)}
-                  </p>
-                </div>
+            {/* Info Area - "Author Name Song Name etc" */}
+            <div className="w-full text-center space-y-2 shrink-0">
+              <h2 className="text-4xl md:text-7xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2">
+                {currentTrack.name}
+              </h2>
+              <p className="text-xl md:text-3xl text-primary font-bold uppercase tracking-[0.2em] truncate opacity-80 italic">
+                {getArtistNames(currentTrack)}
+              </p>
+              
+              <div className="pt-4 flex justify-center">
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className={cn(
-                    "h-12 w-12 md:h-16 md:w-16 rounded-full transition-all border border-white/5 shrink-0 bg-black/20",
+                    "h-14 w-14 rounded-full transition-all border border-white/10 bg-white/5",
                     liked ? "text-primary border-primary/20" : "text-white/20 hover:text-white"
                   )}
                   onClick={() => toggleLike(currentTrack)}
                 >
-                  <Heart className={cn("h-6 w-6 md:h-8 md:w-8", liked && "fill-current")} />
+                  <Heart className={cn("h-6 w-6", liked && "fill-current")} />
                 </Button>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="lyrics" className="w-full flex-1 flex flex-col items-center justify-center mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden h-full">
-            <div className="w-full max-w-2xl flex-1 overflow-hidden bg-white/5 border border-white/10 rounded-2xl relative">
-              <ScrollArea className="h-full w-full p-6 md:p-12">
-                <div className="flex flex-col gap-6 md:gap-8 text-center pb-20">
+          <TabsContent value="lyrics" className="w-full flex-1 flex flex-col items-center mt-0 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-hidden h-full">
+            <div className="w-full max-w-2xl flex-1 overflow-hidden bg-white/5 border border-white/10 rounded-3xl relative">
+              <ScrollArea className="h-full w-full p-8 md:p-12">
+                <div className="flex flex-col gap-8 text-center pb-32">
                   {loadingLyrics ? (
-                    <div className="flex flex-col items-center justify-center py-10 md:py-20 gap-4">
-                      <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin text-primary" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Unweaving resonance...</p>
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                      <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Unweaving resonance...</p>
                     </div>
                   ) : lyrics ? (
                     lyrics.split('\n').map((line, i) => (
                       <p 
                         key={i} 
-                        className="text-xl md:text-4xl font-black text-white italic tracking-tighter leading-tight transition-all duration-300 hover:text-primary cursor-default"
+                        className="text-2xl md:text-5xl font-black text-white italic tracking-tighter leading-tight transition-all duration-300 hover:text-primary cursor-default opacity-80 hover:opacity-100"
                       >
                         {line || '...'}
                       </p>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-30">
-                      <Music2 className="h-12 w-12 md:h-16 md:w-16" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest">No spectral markers found for this track</p>
+                    <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-20">
+                      <Music2 className="h-16 w-16" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em]">No spectral markers detected</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
-              <div className="absolute bottom-0 left-0 right-0 h-20 md:h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
             </div>
           </TabsContent>
         </div>
 
-        {/* Global Controls (Always visible at bottom) */}
-        <div className="w-full px-6 md:px-12 pb-6 md:pb-12 max-w-4xl mx-auto space-y-4 md:space-y-8 z-20 shrink-0">
-          <div className="space-y-2 md:space-y-4">
+        {/* Global Controls */}
+        <div className="w-full max-w-4xl mx-auto py-8 space-y-6 z-20 shrink-0">
+          <div className="space-y-3">
             <Slider
               value={[progress]}
               max={duration || 100}
@@ -190,47 +198,51 @@ export function FullScreenPlayer() {
               onValueChange={(vals) => seek(vals[0])}
               className="cursor-pointer"
             />
-            <div className="flex items-center justify-between text-[8px] md:text-[10px] font-bold tracking-widest text-neutral-500 font-mono">
+            <div className="flex items-center justify-between text-[10px] font-black tracking-[0.3em] text-neutral-500 font-mono italic">
               <span>{formatDuration(progress)}</span>
               <span>{formatDuration(duration)}</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-2">
-            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-8 w-8 md:h-10 md:w-10">
-              <Shuffle className="h-4 w-4 md:h-5 md:w-5" />
+          <div className="flex items-center justify-between px-4">
+            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
+              <Shuffle className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-4 md:gap-10">
+            
+            <div className="flex items-center gap-6 md:gap-12">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white h-10 w-10 md:h-14 md:w-14 hover:scale-110 transition-transform"
+                className="text-white h-14 w-14 hover:scale-110 transition-transform"
                 onClick={prevTrack}
               >
-                <SkipBack className="h-7 w-7 md:h-10 md:w-10 fill-white" />
+                <SkipBack className="h-10 w-10 fill-white" />
               </Button>
+              
               <Button 
-                className="bg-primary text-white rounded-full h-16 w-16 md:h-24 md:w-24 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.3)] md:shadow-[0_0_30px_rgba(255,0,0,0.3)] active:scale-95"
+                className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,0,0,0.4)] active:scale-95 border-4 border-white/10"
                 onClick={togglePlay}
               >
-                {isPlaying ? <Pause className="h-7 w-7 md:h-10 md:w-10 fill-white" /> : <Play className="h-7 w-7 md:h-10 md:w-10 fill-white ml-1" />}
+                {isPlaying ? <Pause className="h-8 w-8 md:h-10 md:w-10 fill-white" /> : <Play className="h-8 w-8 md:h-10 md:w-10 fill-white ml-1" />}
               </Button>
+              
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white h-10 w-10 md:h-14 md:w-14 hover:scale-110 transition-transform"
+                className="text-white h-14 w-14 hover:scale-110 transition-transform"
                 onClick={nextTrack}
               >
-                <SkipForward className="h-7 w-7 md:h-10 md:w-10 fill-white" />
+                <SkipForward className="h-10 w-10 fill-white" />
               </Button>
             </div>
-            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-8 w-8 md:h-10 md:w-10">
-              <Repeat className="h-4 w-4 md:h-5 md:w-5" />
+            
+            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
+              <Repeat className="h-5 w-5" />
             </Button>
           </div>
 
-          <div className="flex items-center justify-center">
-             <Button variant="ghost" className="text-neutral-500 hover:text-primary text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] gap-2 h-8" onClick={stopTrack}>
+          <div className="flex items-center justify-center pt-2">
+             <Button variant="ghost" className="text-neutral-500 hover:text-primary text-[10px] font-black uppercase tracking-[0.4em] italic gap-2 h-10" onClick={stopTrack}>
               Exit Architecture
             </Button>
           </div>

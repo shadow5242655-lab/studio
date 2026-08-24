@@ -109,12 +109,22 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
 
 export async function getLyrics(songId: string): Promise<string | null> {
   try {
+    // Try both standard and specific lyrics endpoints to be robust
     const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
     const data = await res.json();
-    // Handle Saavn API proxy variations
-    const lyricsData = data.data?.lyrics || data.data || null;
-    if (typeof lyricsData === 'string') return lyricsData;
-    if (lyricsData?.lyrics) return lyricsData.lyrics;
+    
+    // The API might return { data: { lyrics: "..." } } or just { data: "..." }
+    const lyricsObj = data.data || data;
+    if (typeof lyricsObj === 'string') return lyricsObj;
+    if (lyricsObj && typeof lyricsObj.lyrics === 'string') return lyricsObj.lyrics;
+    
+    // Second attempt with query param if first fails
+    const res2 = await fetch(`${API_BASE}/lyrics?id=${songId}`);
+    const data2 = await res2.json();
+    const lyricsObj2 = data2.data || data2;
+    if (typeof lyricsObj2 === 'string') return lyricsObj2;
+    if (lyricsObj2 && typeof lyricsObj2.lyrics === 'string') return lyricsObj2.lyrics;
+
     return null;
   } catch (error) {
     console.error('Lyrics fetch failed:', error);
@@ -131,6 +141,7 @@ export function formatDuration(seconds: number) {
 
 export function getBestImage(item: any): string | null {
   if (!item || !item.image || !Array.isArray(item.image) || item.image.length === 0) return null;
+  // Item image array usually has low, medium, high. Use index 2 or last.
   const best = item.image[item.image.length - 1];
   return best?.link || best?.url || null;
 }

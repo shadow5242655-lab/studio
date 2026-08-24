@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, X, Mic2, Loader2 } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -9,13 +9,17 @@ import { getBestImage, getArtistNames, formatDuration, getBestDownload } from '@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, progress, duration, 
-    seek, toggleLike, isLiked, playlists, addToPlaylist, stopTrack 
+    seek, toggleLike, isLiked, playlists, addToPlaylist, stopTrack,
+    lyrics, loadingLyrics
   } = useMusic();
+
+  const [showLyrics, setShowLyrics] = useState(false);
 
   if (!isPlayerOpen || !currentTrack) return null;
 
@@ -83,19 +87,68 @@ export function FullScreenPlayer() {
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 px-8 md:px-12 max-w-6xl mx-auto w-full relative z-10">
+      <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 px-8 md:px-12 max-w-6xl mx-auto w-full relative z-10 overflow-hidden">
         
-        {/* Visuals */}
+        {/* Visuals / Lyrics Toggle Area */}
         <div className="w-full md:w-1/2 flex items-center justify-center max-w-[400px] md:max-w-[500px]">
-           <div className="relative aspect-square w-full shadow-2xl rounded-2xl overflow-hidden border border-white/10">
-              {imageSrc ? (
-                <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority />
-              ) : (
-                <div className="h-full w-full bg-neutral-900 flex items-center justify-center">
-                  <Music2 className="h-24 w-24 text-neutral-800" />
+           {showLyrics ? (
+             <Card className="w-full aspect-square bg-white/5 border-white/10 overflow-hidden relative group">
+                <div className="absolute top-4 right-4 z-20">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowLyrics(false)}
+                    className="bg-black/40 hover:bg-black/60 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
-           </div>
+                <ScrollArea className="h-full w-full p-8 md:p-12">
+                  <div className="flex flex-col gap-6 text-center">
+                    {loadingLyrics ? (
+                      <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Fetching resonance...</p>
+                      </div>
+                    ) : lyrics ? (
+                      lyrics.split('\n').map((line, i) => (
+                        <p 
+                          key={i} 
+                          className="text-xl md:text-2xl font-black text-white italic tracking-tighter leading-tight transition-all duration-300 hover:text-primary"
+                        >
+                          {line || '...'}
+                        </p>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-30">
+                        <Music2 className="h-12 w-12" />
+                        <p className="text-xs font-bold uppercase tracking-widest">No lyrics found for this lineage</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+             </Card>
+           ) : (
+             <div className="relative aspect-square w-full shadow-2xl rounded-2xl overflow-hidden border border-white/10 group">
+                {imageSrc ? (
+                  <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" priority />
+                ) : (
+                  <div className="h-full w-full bg-neutral-900 flex items-center justify-center">
+                    <Music2 className="h-24 w-24 text-neutral-800" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                   <Button 
+                    variant="secondary" 
+                    className="rounded-full font-black uppercase italic tracking-tighter gap-2 px-6"
+                    onClick={() => setShowLyrics(true)}
+                   >
+                     <Mic2 className="h-4 w-4" />
+                     View Lyrics
+                   </Button>
+                </div>
+             </div>
+           )}
         </div>
 
         {/* Information & Controls */}
@@ -109,17 +162,30 @@ export function FullScreenPlayer() {
                 {getArtistNames(currentTrack)}
               </p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn(
-                "h-14 w-14 rounded-full transition-all border border-white/5 ml-4 shrink-0",
-                liked ? "bg-primary/10 text-primary" : "text-white/20 hover:text-white"
-              )}
-              onClick={() => toggleLike(currentTrack)}
-            >
-              <Heart className={cn("h-8 w-8", liked && "fill-current")} />
-            </Button>
+            <div className="flex flex-col gap-4 ml-4">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-14 w-14 rounded-full transition-all border border-white/5 shrink-0",
+                  liked ? "bg-primary/10 text-primary" : "text-white/20 hover:text-white"
+                )}
+                onClick={() => toggleLike(currentTrack)}
+              >
+                <Heart className={cn("h-8 w-8", liked && "fill-current")} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-14 w-14 rounded-full transition-all border border-white/5 shrink-0",
+                  showLyrics ? "bg-primary text-white" : "text-white/20 hover:text-white"
+                )}
+                onClick={() => setShowLyrics(!showLyrics)}
+              >
+                <Mic2 className="h-8 w-8" />
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-6">

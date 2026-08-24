@@ -102,6 +102,18 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
   }
 }
 
+export async function getLyrics(songId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
+    const data = await res.json();
+    // Some responses wrap lyrics in data.lyrics, others just data.
+    return data.data?.lyrics || (typeof data.data === 'string' ? data.data : null);
+  } catch (error) {
+    console.error('Lyrics fetch failed:', error);
+    return null;
+  }
+}
+
 export function formatDuration(seconds: number) {
   if (!seconds) return '0:00';
   const mins = Math.floor(seconds / 60);

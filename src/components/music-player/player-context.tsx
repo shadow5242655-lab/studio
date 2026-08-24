@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { Song, getBestDownload, searchSongs } from '@/lib/music-api';
+import { Song, getBestDownload, searchSongs, getLyrics } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -32,6 +32,8 @@ interface MusicContextType {
   exclusionRules: ExclusionRule[];
   tasteProfile: any;
   smartMood: boolean;
+  lyrics: string | null;
+  loadingLyrics: boolean;
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   stopTrack: () => void;
@@ -73,6 +75,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
   const [tasteProfile, setTasteProfileState] = useState<any>(null);
   const [smartMood, setSmartMoodState] = useState(false);
+  const [lyrics, setLyrics] = useState<string | null>(null);
+  const [loadingLyrics, setLoadingLyrics] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -160,6 +164,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [isPlaying, currentTrack]);
 
   useEffect(() => {
+    if (currentTrack) {
+      setLoadingLyrics(true);
+      setLyrics(null);
+      getLyrics(currentTrack.id).then(res => {
+        setLyrics(res);
+        setLoadingLyrics(false);
+      }).catch(() => {
+        setLoadingLyrics(false);
+      });
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -179,7 +196,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [queue, currentTrack, smartMood]); // Depend on smartMood to ensure nextTrack has latest state
+  }, [queue, currentTrack, smartMood]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -216,6 +233,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setProgress(0);
     setDuration(0);
     setIsPlayerOpen(false);
+    setLyrics(null);
   };
 
   const togglePlay = () => {
@@ -234,13 +252,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
     
-    // Check if we are at the end of the queue
     if (currentIndex === queue.length - 1 && smartMood) {
-      // Smart Mood: Fetch more songs based on the current track's mood
       try {
         const seedQuery = `${currentTrack.name} ${currentTrack.artists.primary[0].name}`;
         const moodSongs = await searchSongs(seedQuery);
-        // Filter out the current track and already queued tracks
         const existingIds = new Set(queue.map(s => s.id));
         const newMoodSongs = moodSongs.filter(s => !existingIds.has(s.id)).slice(0, 10);
         
@@ -365,7 +380,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
       setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
       createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
     }}>

@@ -1,9 +1,10 @@
+
 'use client';
 
-import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles, Music } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -24,10 +25,10 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
       
-      // Deduplicate
+      // Deduplicate results
       let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
       
-      // If isPopular mode, sort by the user's local popularity map
+      // If isPopular mode, sort by the user's local popularity weights
       if (isPopular) {
         unique = unique.sort((a, b) => {
           const popA = songPopularity[a.id] || 0;
@@ -91,7 +92,7 @@ export default function Home() {
       <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[70vh] flex items-center">
         <div className="absolute inset-0 z-0 opacity-40">
            <img 
-            src="https://picsum.photos/seed/music-resonance/1600/900" 
+            src="https://picsum.photos/seed/music-resonance-pro/1600/900" 
             alt="Hero Background" 
             className="w-full h-full object-cover brightness-[0.3]"
             data-ai-hint="music background"
@@ -135,21 +136,25 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
-        {/* Re-architected Trending Pulse using Popularity weights */}
-        <MusicSection title="Trending Pulse" initialQuery="Most Popular Hits" icon={Star} isPopular={true} />
+        {/* Trending Pulse sorted by local resonance popularity */}
+        <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} isPopular={true} />
         
-        <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi Hits 2024" icon={Zap} />
-        <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Chill" icon={Wind} />
-        <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Superhits" icon={Flame} />
-        <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Hits" icon={Radio} />
-        <MusicSection title="HIP HOP KINGS" initialQuery="Indian Hip Hop" icon={Headphones} />
-        <MusicSection title="Acoustic Resonance" initialQuery="Unplugged" icon={Music2} />
-        <MusicSection title="BOLLYWOOD CLASSICS" initialQuery="90s Bollywood" icon={Disc} />
-        <MusicSection title="DEVOTIONAL SOUNDS" initialQuery="Bhakti Songs" icon={Heart} />
-        <MusicSection title="INDIE VIBRATIONS" initialQuery="Indian Indie" icon={Wind} />
-        <MusicSection title="GAZAL NIGHTS" initialQuery="Pankaj Udhas Jagjit Singh" icon={Coffee} />
-        <MusicSection title="PARTY BANGERS" initialQuery="Party Mix 2024" icon={Flame} />
-        <MusicSection title="CHILL WAVE" initialQuery="Atmospheric Chill" icon={Wind} />
+        <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits" icon={Zap} />
+        <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />
+        <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Super Hits" icon={Flame} />
+        <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Pop" icon={Radio} />
+        <MusicSection title="HIP HOP KINGS" initialQuery="Indian Rap Classics" icon={Headphones} />
+        <MusicSection title="ROMANTIC FREQUENCIES" initialQuery="Bollywood Romantic" icon={Heart} />
+        <MusicSection title="Acoustic Resonance" initialQuery="Best Unplugged Songs" icon={Music2} />
+        <MusicSection title="BOLLYWOOD CLASSICS" initialQuery="90s Evergreen Hits" icon={Disc} />
+        <MusicSection title="DEVOTIONAL SOUNDS" initialQuery="Morning Bhajans" icon={Heart} />
+        <MusicSection title="INDIE VIBRATIONS" initialQuery="New Indian Indie" icon={Wind} />
+        <MusicSection title="GAZAL NIGHTS" initialQuery="Best Gazals" icon={Coffee} />
+        <MusicSection title="PARTY BANGERS" initialQuery="Ultimate Party Mix" icon={Flame} />
+        <MusicSection title="CHILL WAVE" initialQuery="Dreamy Synthpop" icon={Wind} />
+        <MusicSection title="WORKOUT RESONANCE" initialQuery="Gym Motivation Hits" icon={Zap} />
+        <MusicSection title="DISCO VIBES" initialQuery="Retro Indian Disco" icon={Disc} />
+        <MusicSection title="SUFI SOUL" initialQuery="Sufi Masterpieces" icon={Sparkles} />
       </div>
     </div>
   );

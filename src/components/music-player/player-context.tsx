@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -127,7 +128,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioRef.current.currentTime;
       const now = performance.now();
 
-      // Throttled UI update (every 100ms) to prevent global re-render lag
+      // Throttled UI update to prevent lag during high-frequency renders
       if (now - lastProgressUpdateRef.current > 100) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
@@ -214,6 +215,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
       const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
       localStorage.setItem('ayumusics_history', JSON.stringify(next));
+      return next;
+    });
+
+    // Record popularity weight for Trending Pulse
+    setSongPopularity(prev => {
+      const next = { ...prev, [track.id]: (prev[track.id] || 0) + 1 };
+      localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
       return next;
     });
 

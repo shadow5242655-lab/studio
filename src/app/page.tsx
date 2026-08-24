@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles, Music } from 'lucide-react';
@@ -15,6 +15,7 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
   const [loading, setLoading] = useState(true);
   const { songPopularity } = useMusic();
 
+  // Fetch data only when query or external songs change
   useEffect(() => {
     if (externalSongs) {
       setSongs(externalSongs);
@@ -24,24 +25,23 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      
       // Deduplicate results
       let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
-      
-      // If isPopular mode, sort by the user's local popularity weights
-      if (isPopular) {
-        unique = unique.sort((a, b) => {
-          const popA = songPopularity[a.id] || 0;
-          const popB = songPopularity[b.id] || 0;
-          return popB - popA;
-        });
-      }
-
       setSongs(unique);
       setLoading(false);
     };
     fetch();
-  }, [initialQuery, externalSongs, isPopular, songPopularity]);
+  }, [initialQuery, externalSongs]);
+
+  // Local sorting based on popularity to avoid re-fetching
+  const displayedSongs = useMemo(() => {
+    if (!isPopular) return songs;
+    return [...songs].sort((a, b) => {
+      const popA = songPopularity[a.id] || 0;
+      const popB = songPopularity[b.id] || 0;
+      return popB - popA;
+    });
+  }, [songs, isPopular, songPopularity]);
 
   if (!loading && songs.length === 0) return null;
 
@@ -60,7 +60,7 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
           {loading ? (
             Array(8).fill(0).map((_, i) => <div key={i} className="w-[180px] h-[260px] bg-neutral-900 animate-pulse rounded-2xl" />)
           ) : (
-            songs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={songs} /></div>)
+            displayedSongs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={displayedSongs} /></div>)
           )}
         </div>
         <ScrollBar orientation="horizontal" />

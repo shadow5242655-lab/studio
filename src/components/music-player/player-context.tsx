@@ -128,21 +128,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioRef.current.currentTime;
       const now = performance.now();
 
-      // Throttled UI update to prevent lag during high-frequency renders
+      // Isolated UI update for progress context
       if (now - lastProgressUpdateRef.current > 100) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
       }
       
-      // Update resonance time in background
+      // Update resonance time silently
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           
-          // Sync to state every 5 seconds to reduce render overhead
+          // Sync to main state lazily (every 10 seconds) to prevent main UI lag
           if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
-              Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
+              Math.floor(totalSecondsAccumulatorRef.current) % 10 === 0) {
             const rounded = Math.floor(totalSecondsAccumulatorRef.current);
             setTotalSeconds(rounded);
             localStorage.setItem('ayumusics_seconds', rounded.toString());
@@ -211,6 +211,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
+    // Update track lineage
     setPlayedHistory(prev => {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
       const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
@@ -218,7 +219,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
 
-    // Record popularity weight for Trending Pulse
+    // Stable popularity update
     setSongPopularity(prev => {
       const next = { ...prev, [track.id]: (prev[track.id] || 0) + 1 };
       localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
@@ -227,6 +228,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const url = getBestDownload(track);
     if (audioRef.current && url) {
+      // ONLY update src if track is actually different to prevent "refresh" lag
       if (currentTrack?.id !== track.id) {
         audioRef.current.src = url;
         setCurrentTrack(track);
@@ -238,32 +240,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const handleSmartMoodSync = useCallback(async () => {
     if (!currentTrack || !smartMood) return;
-    
     const vibe = currentTrack.name.split(' ')[0] || currentTrack.artists.primary[0].name;
     const results = await searchSongs(vibe);
     const filtered = results.filter(s => s.id !== currentTrack.id);
-    
     if (filtered.length > 0) {
-      const next = filtered[Math.floor(Math.random() * filtered.length)];
-      playTrack(next);
-    } else {
-      const trending = await getTrending();
-      playTrack(trending[Math.floor(Math.random() * trending.length)]);
+      playTrack(filtered[Math.floor(Math.random() * filtered.length)]);
     }
   }, [currentTrack, smartMood, playTrack]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const onEnded = () => {
-      if (smartMood) {
-        handleSmartMoodSync();
-      } else {
-        nextTrack();
-      }
-    };
-
+    const onEnded = () => smartMood ? handleSmartMoodSync() : nextTrack();
     audio.addEventListener('ended', onEnded);
     return () => audio.removeEventListener('ended', onEnded);
   }, [smartMood, handleSmartMoodSync]);
@@ -285,16 +273,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
-    lastTimeRef.current = 0;
   }, []);
 
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play().catch(console.error);
-      }
+      if (isPlaying) audioRef.current.pause();
+      else audioRef.current.play().catch(console.error);
     }
   }, [isPlaying]);
 
@@ -313,7 +297,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
-      lastTimeRef.current = time;
     }
     setProgress(time);
   }, []);

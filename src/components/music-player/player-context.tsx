@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -24,6 +23,11 @@ export interface TasteProfile {
   recommendationStyle: string;
 }
 
+export interface HistoryItem {
+  id: string;
+  name: string;
+}
+
 interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
@@ -32,7 +36,7 @@ interface MusicStateContextType {
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
-  playedHistory: string[];
+  playedHistory: HistoryItem[];
   exclusionRules: ExclusionRule[];
   tasteProfile: TasteProfile | null;
   smartMood: boolean;
@@ -81,7 +85,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [playedHistory, setPlayedHistory] = useState<string[]>([]);
+  const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
   const [tasteProfile, setTasteProfileState] = useState<TasteProfile | null>(null);
   const [smartMood, setSmartMoodState] = useState(false);
@@ -107,7 +111,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
 
     const savedHistory = localStorage.getItem('ayumusics_history');
-    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
+    if (savedHistory) {
+      const parsed = JSON.parse(savedHistory);
+      // Migrate strings to objects if necessary
+      const migrated = parsed.map((item: any) => typeof item === 'string' ? { id: item, name: 'Resonance Record' } : item);
+      setPlayedHistory(migrated);
+    }
 
     const savedRules = localStorage.getItem('ayumusics_rules');
     if (savedRules) setExclusionRules(JSON.parse(savedRules));
@@ -127,13 +136,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioRef.current.currentTime;
       setProgress(currentTime);
       
-      // Track seconds for listening time
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
-        if (diff > 0 && diff < 2) { // Guard against seeks
+        if (diff > 0 && diff < 2) {
           setTotalSeconds(prev => {
             const next = prev + diff;
-            if (Math.floor(next) % 30 === 0) { // Persist every 30 seconds
+            if (Math.floor(next) % 30 === 0) {
               localStorage.setItem('ayumusics_seconds', Math.floor(next).toString());
             }
             return next;
@@ -206,7 +214,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (fromQueue) setQueue(fromQueue);
     
     setPlayedHistory(prev => {
-      const next = [track.id, ...prev.filter(id => id !== track.id)].slice(0, 50);
+      const historyItem: HistoryItem = { id: track.id, name: track.name };
+      const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
       localStorage.setItem('ayumusics_history', JSON.stringify(next));
       return next;
     });
@@ -323,7 +332,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const removeFromHistory = useCallback((songId: string) => {
     setPlayedHistory(prev => {
-      const next = prev.filter(id => id !== songId);
+      const next = prev.filter(item => item.id !== songId);
       localStorage.setItem('ayumusics_history', JSON.stringify(next));
       return next;
     });

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -255,17 +254,17 @@ export default function IntelligencePage() {
 
            {playedHistory.length > 0 ? (
              <div className="grid grid-cols-1 gap-2">
-               {playedHistory.map((songId) => (
-                 <div key={`hist-${songId}`} className="group flex items-center justify-between p-4 bg-neutral-900/50 rounded-xl border border-white/5 hover:bg-neutral-800 transition-all">
+               {playedHistory.map((item) => (
+                 <div key={`hist-${item.id}`} className="group flex items-center justify-between p-4 bg-neutral-900/50 rounded-xl border border-white/5 hover:bg-neutral-800 transition-all">
                     <div className="flex items-center gap-4">
                       <Music2 className="h-5 w-5 text-neutral-700" />
-                      <span className="text-sm font-bold text-white truncate max-w-xs">{songId}</span>
+                      <span className="text-sm font-bold text-white truncate max-w-xs">{item.name}</span>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-primary transition-opacity"
-                      onClick={() => removeFromHistory(songId)}
+                      onClick={() => removeFromHistory(item.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

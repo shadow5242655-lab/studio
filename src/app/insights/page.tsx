@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -82,12 +81,12 @@ export default function InsightsPage() {
           <ScrollArea className="h-[500px] rounded-3xl border border-white/5 bg-neutral-900/40 p-6 shadow-inner">
             <div className="space-y-3">
               {playedHistory.length > 0 ? (
-                playedHistory.map((songId, idx) => (
-                  <div key={`${songId}-${idx}`} className="group flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all cursor-default">
+                playedHistory.map((item, idx) => (
+                  <div key={`${item.id}-${idx}`} className="group flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all cursor-default">
                     <div className="flex items-center gap-5">
                       <span className="text-[10px] font-black text-neutral-700 group-hover:text-primary transition-colors">{String(idx + 1).padStart(2, '0')}</span>
                       <div className="flex flex-col">
-                        <span className="font-bold text-white text-base tracking-tight italic uppercase">{songId}</span>
+                        <span className="font-bold text-white text-base tracking-tight italic uppercase">{item.name}</span>
                         <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Resonance Verified</span>
                       </div>
                     </div>

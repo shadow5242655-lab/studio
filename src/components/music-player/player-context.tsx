@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -144,6 +145,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Only save time every 10 seconds to reduce mobile lag
     if (Math.abs(totalListeningTime - lastSavedTotalTimeRef.current) >= 10) {
       localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
       lastSavedTotalTimeRef.current = totalListeningTime;

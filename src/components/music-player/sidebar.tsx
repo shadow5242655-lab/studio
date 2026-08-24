@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Download } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Shirt, ShoppingBag } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -20,6 +21,7 @@ export function Sidebar() {
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
     { name: 'Library', icon: Library, href: '/library' },
+    { name: 'Boutique', icon: Shirt, href: '/boutique' },
   ];
 
   const handleCreatePlaylist = () => {

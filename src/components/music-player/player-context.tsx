@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, searchSongs } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -71,6 +70,7 @@ const MusicStateContext = createContext<MusicStateContextType | undefined>(undef
 const MusicProgressContext = createContext<MusicProgressContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
+  // --- Basic State ---
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
@@ -81,7 +81,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
   const [activeDays, setActiveDays] = useState<string[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
-  const [smartMood, setSmartMoodState] = useState(false);
+  const [smartMood, setSmartMoodState] = useState(true); // Default to true for unlimited resonance
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
   
@@ -92,12 +92,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // --- Refs ---
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const lastProgressUpdateRef = useRef<number>(0);
   const totalSecondsAccumulatorRef = useRef<number>(0);
 
+  // --- Local Persistence Init ---
   useEffect(() => {
     const savedLiked = localStorage.getItem('ayumusics_liked');
     if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
@@ -128,6 +130,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // --- Core Utility Functions ---
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     setActiveDays(prev => {
@@ -136,63 +139,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('ayumusics_activedays', JSON.stringify(next));
       return next;
     });
-  }, []);
-
-  const updateProgress = useCallback(() => {
-    if (audioRef.current && isPlaying) {
-      const currentTime = audioRef.current.currentTime;
-      const now = performance.now();
-
-      if (now - lastProgressUpdateRef.current > 100) {
-        setProgress(currentTime);
-        lastProgressUpdateRef.current = now;
-      }
-      
-      if (lastTimeRef.current > 0) {
-        const diff = currentTime - lastTimeRef.current;
-        if (diff > 0 && diff < 2) {
-          totalSecondsAccumulatorRef.current += diff;
-          
-          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
-              Math.floor(totalSecondsAccumulatorRef.current) % 10 === 0) {
-            const rounded = Math.floor(totalSecondsAccumulatorRef.current);
-            setTotalSeconds(rounded);
-            localStorage.setItem('ayumusics_seconds', rounded.toString());
-            recordActiveDay();
-          }
-        }
-      }
-      lastTimeRef.current = currentTime;
-      
-      frameRef.current = requestAnimationFrame(updateProgress);
-    }
-  }, [isPlaying, totalSeconds, recordActiveDay]);
-
-  useEffect(() => {
-    if (isPlaying) {
-      frameRef.current = requestAnimationFrame(updateProgress);
-    } else {
-      lastTimeRef.current = 0;
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    }
-    return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    };
-  }, [isPlaying, updateProgress]);
-
-  useEffect(() => {
-    if (!audioRef.current) audioRef.current = new Audio();
-    const audio = audioRef.current;
-    
-    const onLoadedMetadata = () => setDuration(audio.duration);
-    
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-    };
   }, []);
 
   const fetchLyrics = async (song: Song) => {
@@ -221,6 +167,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // --- Main Playback Logic ---
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
@@ -241,44 +188,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const url = getBestDownload(track);
     if (audioRef.current && url) {
-      if (currentTrack?.id !== track.id) {
-        audioRef.current.src = url;
-        setCurrentTrack(track);
-        fetchLyrics(track);
+      // Definitive fix for "playing same song again": Force reset if it's the same track ID
+      if (currentTrack?.id === track.id) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(console.error);
+        return;
       }
+      
+      audioRef.current.src = url;
+      setCurrentTrack(track);
+      fetchLyrics(track);
       audioRef.current.play().catch(console.error);
     }
   }, [currentTrack, recordActiveDay]);
-
-  const nextTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const idx = queue.findIndex(s => s.id === currentTrack.id);
-    if (idx !== -1) playTrack(queue[(idx + 1) % queue.length]);
-  }, [currentTrack, queue, playTrack]);
-
-  const prevTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const idx = queue.findIndex(s => s.id === currentTrack.id);
-    if (idx !== -1) playTrack(queue[(idx - 1 + queue.length) % queue.length]);
-  }, [currentTrack, queue, playTrack]);
-
-  const handleSmartMoodSync = useCallback(async () => {
-    if (!currentTrack || !smartMood) return;
-    const vibe = currentTrack.name.split(' ')[0] || currentTrack.artists.primary[0].name;
-    const results = await searchSongs(vibe);
-    const filtered = results.filter(s => s.id !== currentTrack.id);
-    if (filtered.length > 0) {
-      playTrack(filtered[Math.floor(Math.random() * filtered.length)]);
-    }
-  }, [currentTrack, smartMood, playTrack]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onEnded = () => smartMood ? handleSmartMoodSync() : nextTrack();
-    audio.addEventListener('ended', onEnded);
-    return () => audio.removeEventListener('ended', onEnded);
-  }, [smartMood, handleSmartMoodSync, nextTrack]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -288,6 +210,58 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
+  const handleInfiniteDiscovery = useCallback(async (baseTrack: Song) => {
+    // Determine vibe from current track
+    const artistName = baseTrack.artists.primary[0]?.name || "";
+    const trackName = baseTrack.name.split(' ')[0] || "";
+    const query = `${artistName} ${trackName}`.trim() || "Trending Hits";
+    
+    try {
+      const results = await searchSongs(query);
+      // Filter out current and sort by SmartRank3 popularity
+      const filtered = results.filter(s => s.id !== baseTrack.id);
+      const ranked = applySmartRank3(filtered, songPopularity);
+      
+      if (ranked.length > 0) {
+        // Play the most relevant original track discovered
+        playTrack(ranked[0]);
+      } else {
+        await playRandomTrack();
+      }
+    } catch (e) {
+      await playRandomTrack();
+    }
+  }, [songPopularity, playTrack, playRandomTrack]);
+
+  const nextTrack = useCallback(() => {
+    if (!currentTrack) {
+      playRandomTrack();
+      return;
+    }
+    
+    const idx = queue.findIndex(s => s.id === currentTrack.id);
+    
+    if (idx !== -1 && idx < queue.length - 1) {
+      // Play next track in active queue
+      playTrack(queue[idx + 1]);
+    } else {
+      // End of queue or single track - trigger Infinite Resonance
+      handleInfiniteDiscovery(currentTrack);
+    }
+  }, [currentTrack, queue, playTrack, handleInfiniteDiscovery, playRandomTrack]);
+
+  const prevTrack = useCallback(() => {
+    if (!currentTrack || queue.length === 0) return;
+    const idx = queue.findIndex(s => s.id === currentTrack.id);
+    if (idx !== -1 && idx > 0) {
+      playTrack(queue[idx - 1]);
+    } else {
+      // Loop to end or stay at current
+      playTrack(queue[queue.length - 1]);
+    }
+  }, [currentTrack, queue, playTrack]);
+
+  // --- Controls ---
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -318,6 +292,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current) audioRef.current.volume = vol;
   }, []);
 
+  // --- Preferences & Metadata ---
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
       const next = prev.find(s => s.id === track.id) ? prev.filter(s => s.id !== track.id) : [track, ...prev];
@@ -405,6 +380,69 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // --- Hardware Accelerated Effects ---
+  const updateProgress = useCallback(() => {
+    if (audioRef.current && isPlaying) {
+      const currentTime = audioRef.current.currentTime;
+      const now = performance.now();
+
+      // Throttled update to avoid UI thrashing
+      if (now - lastProgressUpdateRef.current > 100) {
+        setProgress(currentTime);
+        lastProgressUpdateRef.current = now;
+      }
+      
+      if (lastTimeRef.current > 0) {
+        const diff = currentTime - lastTimeRef.current;
+        if (diff > 0 && diff < 2) {
+          totalSecondsAccumulatorRef.current += diff;
+          
+          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
+              Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
+            const rounded = Math.floor(totalSecondsAccumulatorRef.current);
+            setTotalSeconds(rounded);
+            localStorage.setItem('ayumusics_seconds', rounded.toString());
+            recordActiveDay();
+          }
+        }
+      }
+      lastTimeRef.current = currentTime;
+      
+      frameRef.current = requestAnimationFrame(updateProgress);
+    }
+  }, [isPlaying, totalSeconds, recordActiveDay]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      frameRef.current = requestAnimationFrame(updateProgress);
+    } else {
+      lastTimeRef.current = 0;
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    }
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [isPlaying, updateProgress]);
+
+  useEffect(() => {
+    if (!audioRef.current) audioRef.current = new Audio();
+    const audio = audioRef.current;
+    
+    const onLoadedMetadata = () => setDuration(audio.duration);
+    const onEnded = () => nextTrack(); // Always attempt next for unlimited resonance
+    
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('play', () => setIsPlaying(true));
+    audio.addEventListener('pause', () => setIsPlaying(false));
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, [nextTrack]);
+
+  // --- Context Values ---
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
     playedHistory, activeDays, exclusionRules, smartMood,

@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Song, getBestDownload, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
+import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
   id: string;
@@ -175,27 +176,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, recordActiveDay, volume]);
 
-  const playNext = useCallback((track: Song) => {
-    setQueue(prev => {
-      const idx = prev.findIndex(s => s.id === (currentTrack?.id || ''));
-      const nextQueue = [...prev];
-      nextQueue.splice(idx + 1, 0, track);
-      return nextQueue;
-    });
-  }, [currentTrack]);
-
-  const addToQueue = useCallback((track: Song) => {
-    setQueue(prev => [...prev, track]);
-  }, []);
-
-  const playRandomTrack = useCallback(async () => {
-    const trending = await getTrending();
-    if (trending.length > 0) {
-      const randomTrack = trending[Math.floor(Math.random() * trending.length)];
-      playTrack(randomTrack, trending);
-    }
-  }, [playTrack]);
-
   const performCrossfade = useCallback((nextSong: Song) => {
     if (!audioRef.current || !secondaryAudioRef.current || isCrossfadingRef.current) return;
     isCrossfadingRef.current = true;
@@ -208,9 +188,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     secondary.volume = 0;
     secondary.play().then(() => {
       let step = 0;
-      const duration = 3000;
+      const fadeDuration = 3000;
       const interval = 50;
-      const steps = duration / interval;
+      const steps = fadeDuration / interval;
 
       const fade = setInterval(() => {
         step++;
@@ -235,6 +215,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       playTrack(nextSong);
     });
   }, [volume, playTrack]);
+
+  const playRandomTrack = useCallback(async () => {
+    const trending = await getTrending();
+    if (trending.length > 0) {
+      const randomTrack = trending[Math.floor(Math.random() * trending.length)];
+      playTrack(randomTrack, trending);
+    }
+  }, [playTrack]);
 
   const handleInfiniteDiscovery = useCallback(async (baseTrack: Song) => {
     const artistName = baseTrack.artists.primary[0]?.name || "";
@@ -284,6 +272,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       playTrack(queue[queue.length - 1]);
     }
   }, [currentTrack, queue, playTrack]);
+
+  const playNext = useCallback((track: Song) => {
+    setQueue(prev => {
+      const idx = prev.findIndex(s => s.id === (currentTrack?.id || ''));
+      const nextQueue = [...prev.filter(s => s.id !== track.id)];
+      if (idx !== -1) {
+        nextQueue.splice(idx + 1, 0, track);
+      } else {
+        nextQueue.unshift(track);
+      }
+      return nextQueue;
+    });
+    toast({ title: 'Resonance Ordered', description: `"${track.name}" will play next.` });
+  }, [currentTrack]);
+
+  const addToQueue = useCallback((track: Song) => {
+    setQueue(prev => prev.find(s => s.id === track.id) ? prev : [...prev, track]);
+    toast({ title: 'Frequency Buffered', description: `"${track.name}" added to the end of the queue.` });
+  }, []);
 
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
@@ -420,7 +427,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         lastProgressUpdateRef.current = now;
       }
 
-      // 3-second Crossfade trigger
       if (timeLeft < 3 && !isCrossfadingRef.current && repeatMode !== 'one') {
          const idx = queue.findIndex(s => s.id === (currentTrack?.id || ''));
          if (idx !== -1 && idx < queue.length - 1) {
@@ -467,7 +473,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener('playing', onPlaying);
     audio.addEventListener('canplay', () => setIsBuffering(false));
 
-    // Restore last track and position
     const savedLiked = localStorage.getItem('ayumusics_liked');
     if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
     const savedPlaylists = localStorage.getItem('ayumusics_playlists');

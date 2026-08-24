@@ -43,7 +43,6 @@ export function FullScreenPlayer() {
   const handleClose = () => {
     setIsPlayerOpen(false);
     router.push('/');
-    // Return to the upper part of the home screen
     setTimeout(() => {
       const scrollContainer = document.querySelector('main');
       if (scrollContainer) {

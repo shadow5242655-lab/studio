@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,12 +31,14 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary selection:text-white;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
+    touch-action: manipulation;
   }
 }
 
@@ -86,5 +89,9 @@
 }
 
 .touch-feedback {
-  @apply active:scale-95 active:opacity-80 transition-all duration-150;
+  @apply active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer;
+}
+
+.btn-hover-effect {
+  @apply hover:scale-105 active:scale-90 transition-transform duration-200;
 }

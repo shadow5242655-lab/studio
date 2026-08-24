@@ -25,6 +25,40 @@ export interface PlaylistResult {
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
 
+/**
+ * SmartRank3 Algorithm
+ * Prioritizes original/popular releases over covers, tributes, and low-fidelity versions.
+ */
+export function applySmartRank3(songs: Song[], localPopularity: Record<string, number> = {}): Song[] {
+  return [...songs].sort((a, b) => {
+    const getScore = (song: Song) => {
+      let score = 0;
+      const name = (song.name || '').toLowerCase();
+      
+      // 1. Penalize obvious covers, tributes, and reprises
+      if (name.includes('cover') || name.includes('tribute') || name.includes('reprise') || name.includes('remake')) {
+        score -= 100;
+      }
+      
+      // 2. Bonus for original/official indicators
+      if (name.includes('original') || name.includes('official') || name.includes('soundtrack') || name.includes('ost')) {
+        score += 30;
+      }
+
+      // 3. Local Resonance Factor (High weight for user-preferred tracks)
+      score += (localPopularity[song.id] || 0) * 15;
+      
+      // 4. Duration Heuristic (Original tracks are typically > 2 mins)
+      if (song.duration > 120) score += 10;
+      if (song.duration < 60) score -= 20; // Penalize snippets
+      
+      return score;
+    };
+
+    return getScore(b) - getScore(a);
+  });
+}
+
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);

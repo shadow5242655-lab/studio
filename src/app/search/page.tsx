@@ -8,7 +8,8 @@ import {
   Album, searchAlbums, 
   PlaylistResult, searchPlaylists,
   getBestImage,
-  getArtistNames
+  getArtistNames,
+  applySmartRank3
 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,7 +54,7 @@ function SearchContent() {
           searchPlaylists(query)
         ]);
         
-        // Deduplicate
+        // Deduplicate results
         const uniqueSongs = Array.from(new Map(songData.map(item => [item.id, item])).values());
         const uniqueAlbums = Array.from(new Map(albumData.map(item => [item.id, item])).values());
         const uniquePlaylists = Array.from(new Map(playlistData.map(item => [item.id, item])).values());
@@ -71,17 +72,14 @@ function SearchContent() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const sortedSongs = useMemo(() => {
-    return [...rawSongs].sort((a, b) => {
-      const countA = songPopularity[a.id] || 0;
-      const countB = songPopularity[b.id] || 0;
-      return countB - countA;
-    });
+  // Apply SmartRank3 to search results to prioritize originals over covers
+  const rankedSongs = useMemo(() => {
+    return applySmartRank3(rawSongs, songPopularity);
   }, [rawSongs, songPopularity]);
 
   const handleSongClick = (song: Song) => {
     recordSearchSelection(song);
-    playTrack(song, sortedSongs);
+    playTrack(song, rankedSongs);
   };
 
   const categories: { label: string; value: SearchCategory; icon: any }[] = [
@@ -129,7 +127,7 @@ function SearchContent() {
 
       {query ? (
         <div className="space-y-16 animate-in fade-in duration-500">
-          {/* Songs Section */}
+          {/* Songs Section - Powered by SmartRank3 */}
           {(category === 'all' || category === 'songs') && (
             <section>
               <div className="flex items-center justify-between mb-8">
@@ -139,9 +137,10 @@ function SearchContent() {
                   </div>
                   <div>
                     <h2 className="text-3xl font-black tracking-tighter uppercase italic">Songs</h2>
+                    <p className="text-[9px] font-bold text-primary italic tracking-widest uppercase">SmartRank3 Prioritized</p>
                   </div>
                 </div>
-                {category === 'all' && sortedSongs.length > 5 && (
+                {category === 'all' && rankedSongs.length > 5 && (
                   <Button variant="ghost" className="text-primary gap-2" onClick={() => setCategory('songs')}>
                     View All <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -155,13 +154,13 @@ function SearchContent() {
                       <Skeleton className="h-4 w-3/4" />
                     </div>
                   ))
-                ) : (category === 'all' ? sortedSongs.slice(0, 5) : sortedSongs).map((song) => (
+                ) : (category === 'all' ? rankedSongs.slice(0, 5) : rankedSongs).map((song) => (
                   <div key={`search-song-${song.id}`} onClick={() => handleSongClick(song)}>
-                    <SongCard song={song} playlist={sortedSongs} />
+                    <SongCard song={song} playlist={rankedSongs} />
                   </div>
                 ))}
               </div>
-              {category === 'all' && sortedSongs.length === 0 && !loading && (
+              {category === 'all' && rankedSongs.length === 0 && !loading && (
                 <p className="text-neutral-500 italic">No songs found.</p>
               )}
             </section>

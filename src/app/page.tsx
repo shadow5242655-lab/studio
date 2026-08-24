@@ -1,21 +1,19 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
-import { Song, getTrending, searchSongs } from '@/lib/music-api';
+import { Song, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles, Music } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMusic } from '@/components/music-player/player-context';
 
-const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs, isPopular = false }: { title: string; initialQuery?: string; icon: any; songs?: Song[]; isPopular?: boolean }) {
+const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const { songPopularity } = useMusic();
 
-  // Fetch data only when query or external songs change
   useEffect(() => {
     if (externalSongs) {
       setSongs(externalSongs);
@@ -25,7 +23,7 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      // Deduplicate results
+      // Initial deduplication
       let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
       setSongs(unique);
       setLoading(false);
@@ -33,15 +31,10 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     fetch();
   }, [initialQuery, externalSongs]);
 
-  // Local sorting based on popularity to avoid re-fetching
-  const displayedSongs = useMemo(() => {
-    if (!isPopular) return songs;
-    return [...songs].sort((a, b) => {
-      const popA = songPopularity[a.id] || 0;
-      const popB = songPopularity[b.id] || 0;
-      return popB - popA;
-    });
-  }, [songs, isPopular, songPopularity]);
+  // Apply SmartRank3 locally to ensure buttery smooth sorting without API thrashing
+  const rankedSongs = useMemo(() => {
+    return applySmartRank3(songs, songPopularity);
+  }, [songs, songPopularity]);
 
   if (!loading && songs.length === 0) return null;
 
@@ -60,7 +53,7 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
           {loading ? (
             Array(8).fill(0).map((_, i) => <div key={i} className="w-[180px] h-[260px] bg-neutral-900 animate-pulse rounded-2xl" />)
           ) : (
-            displayedSongs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={displayedSongs} /></div>)
+            rankedSongs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={rankedSongs} /></div>)
           )}
         </div>
         <ScrollBar orientation="horizontal" />
@@ -81,6 +74,7 @@ export default function Home() {
     if (!startPos.current) return;
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
+    // Threshold to distinguish between tap and scroll
     if (dx < 5 && dy < 5) {
       callback();
     }
@@ -111,7 +105,7 @@ export default function Home() {
           </h1>
           
           <p className="text-xl md:text-2xl text-neutral-300 font-medium tracking-tight max-w-xl">
-            High-fidelity resonance for the modern listener. Experience the definitive soundscape.
+            High-fidelity resonance powered by <span className="text-primary italic">SmartRank3</span>. Experience the definitive soundscape.
           </p>
           
           <div className="flex flex-wrap gap-4 pt-4">
@@ -136,8 +130,8 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
-        {/* Trending Pulse sorted by local resonance popularity */}
-        <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} isPopular={true} />
+        {/* Powered by SmartRank3 popularity sorting */}
+        <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} />
         
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />

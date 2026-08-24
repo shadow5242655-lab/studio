@@ -1,8 +1,8 @@
 'use client';
 
 import React, { memo, useRef } from 'react';
-import { Play, Music2, Pause, Download } from 'lucide-react';
-import { Song, getBestImage, getArtistNames, getBestDownload } from '@/lib/music-api';
+import { Play, Music2, Pause } from 'lucide-react';
+import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -29,16 +29,11 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     
+    // Validate that this was a tap, not a scroll/slide
     if (dx < 5 && dy < 5) {
       playTrack(song, playlist);
     }
     startPos.current = null;
-  };
-
-  const handleDownload = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    const url = getBestDownload(song);
-    if (url) window.open(url, '_blank');
   };
 
   return (
@@ -61,16 +56,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           <Music2 className="h-12 w-12 text-neutral-800" />
         )}
         
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onPointerDown={handleDownload}
-            className="h-10 w-10 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all scale-90 group-hover:scale-100"
-          >
-            <Download className="h-5 w-5" />
-          </Button>
-          
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div 
             onPointerDown={(e) => {
               e.stopPropagation();

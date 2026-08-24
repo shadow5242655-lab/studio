@@ -1,5 +1,1 @@
-
-import { config } from 'dotenv';
-config();
-
-// AI flows for boutique features removed to restore music focus.
+// AI modules removed to focus on music playback performance.

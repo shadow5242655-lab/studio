@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Button } from '@/components/ui/button';
-import { Play, Info, TrendingUp, ChevronRight, Loader2, Music2, Heart, Zap, Disc, Mic2, Flame } from 'lucide-react';
+import { Play, Info, TrendingUp, Music2, Heart, Zap, Disc, Mic2, Flame, Radio, Sparkles, Coffee, Sun, Moon, Cloud, History } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
@@ -23,17 +23,16 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
 
   const fetchSongs = useCallback(async () => {
     try {
-      // Fetch a larger batch (30 songs) to provide a deep scroll experience as requested
-      const data = initialQuery 
+      // Fetch multiple pages to provide a very deep scroll experience
+      const page1 = initialQuery 
         ? await searchSongs(initialQuery, 1)
         : await getTrending(1);
       
-      // Attempt to get a bit more data for better scrolling
-      const data2 = initialQuery 
+      const page2 = initialQuery 
         ? await searchSongs(initialQuery, 2)
         : await getTrending(2);
-      
-      const combined = [...data, ...data2];
+        
+      const combined = [...page1, ...page2];
       const uniqueData = Array.from(new Map(combined.map(item => [item.id, item])).values());
       return uniqueData;
     } catch (error) {
@@ -64,7 +63,7 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex w-max space-x-6 px-6 md:px-12 pb-6">
           {loading ? (
-            Array(8).fill(0).map((_, i) => (
+            Array(10).fill(0).map((_, i) => (
               <div key={`skeleton-${title}-${i}`} className="w-[200px] h-[280px] bg-neutral-900 animate-pulse rounded-2xl" />
             ))
           ) : (
@@ -111,7 +110,7 @@ export default function Home() {
         <div className="relative flex flex-col justify-end p-6 md:p-12 z-20 space-y-4 md:space-y-6 max-w-4xl w-full">
           <div className="flex items-center gap-2 mb-2">
             <div className="h-1 w-12 bg-primary rounded-full" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/70">Verified Experience</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/70">Verified Frequency</span>
           </div>
           
           <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white uppercase italic leading-[0.85]">
@@ -119,7 +118,7 @@ export default function Home() {
           </h1>
           
           <p className="text-neutral-300 text-base md:text-2xl max-w-xl font-medium leading-tight">
-            Dive into high-fidelity sound. Your sanctuary for pure acoustic resonance.
+            High-fidelity resonance for the modern listener. All genres, infinite discovery.
           </p>
           
           <div className="flex flex-wrap gap-4 pt-4 pb-4">
@@ -140,13 +139,13 @@ export default function Home() {
               </DialogTrigger>
               <DialogContent className="bg-neutral-950 border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Listening Architecture</DialogTitle>
+                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Sound Intelligence</DialogTitle>
                 </DialogHeader>
                 <div className="py-8 space-y-6">
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center gap-4">
                     <Music2 className="h-8 w-8 text-primary" />
                     <div>
-                      <p className="text-xs font-bold uppercase text-neutral-500">Total Playtime</p>
+                      <p className="text-xs font-bold uppercase text-neutral-500">Total Resonance Time</p>
                       <p className="text-2xl font-black text-white italic">{formatTotalTime(totalListeningTime)}</p>
                     </div>
                   </div>
@@ -158,15 +157,22 @@ export default function Home() {
       </div>
 
       <div className="py-16 md:py-24 space-y-16 md:space-y-24">
-        {/* All Major Sections */}
-        <MusicSection title="Trending Hits" icon={TrendingUp} />
+        {/* All Major Sections with Expanded Genre List */}
+        <MusicSection title="Trending Now" icon={TrendingUp} />
         <MusicSection title="Punjabi Beats" initialQuery="Punjabi" icon={Zap} />
         <MusicSection title="Bhojpuri Soul" initialQuery="Bhojpuri" icon={Flame} />
-        <MusicSection title="Romantic Frequencies" initialQuery="Romantic" icon={Heart} />
+        <MusicSection title="Romantic Hits" initialQuery="Romantic" icon={Heart} />
         <MusicSection title="Hip Hop Voltage" initialQuery="Hip Hop" icon={Mic2} />
         <MusicSection title="EDM Spectrum" initialQuery="EDM" icon={Disc} />
-        <MusicSection title="Sad Melodies" initialQuery="Sad" icon={Zap} />
-        <MusicSection title="Lofi Sanctuary" initialQuery="Lofi" icon={Music2} />
+        <MusicSection title="Devotional Echoes" initialQuery="Devotional" icon={Sun} />
+        <MusicSection title="90s Nostalgia" initialQuery="90s Bollywood" icon={History} />
+        <MusicSection title="Lofi Sanctuary" initialQuery="Lofi" icon={Moon} />
+        <MusicSection title="Rock Lineage" initialQuery="Rock" icon={Zap} />
+        <MusicSection title="Gazal Melodies" initialQuery="Gazal" icon={Cloud} />
+        <MusicSection title="Acoustic Coffee" initialQuery="Acoustic" icon={Coffee} />
+        <MusicSection title="Indie Frequencies" initialQuery="Indie Hindi" icon={Radio} />
+        <MusicSection title="Dance Floor" initialQuery="Dance" icon={Sparkles} />
+        <MusicSection title="Sad Resonance" initialQuery="Sad" icon={Zap} />
       </div>
     </div>
   );

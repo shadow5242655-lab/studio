@@ -1,5 +1,5 @@
+
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/product-description-generator.ts';
-import '@/ai/flows/garment-recommendation.ts';
+// AI flows for boutique features removed to restore music focus.

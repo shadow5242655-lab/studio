@@ -4,84 +4,53 @@
 
 @layer base {
   :root {
-    --background: 240 45% 4%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-    --card: 240 45% 6%;
+    --card: 0 0% 3%;
     --card-foreground: 0 0% 100%;
-    --popover: 240 45% 5%;
+    --popover: 0 0% 3%;
     --popover-foreground: 0 0% 100%;
-    --primary: 180 100% 50%; /* Cyan Neon */
+    --primary: 0 0% 100%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 240 45% 10%;
+    --secondary: 0 0% 9%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 45% 12%;
-    --muted-foreground: 240 10% 60%;
-    --accent: 140 100% 50%; /* Green Neon */
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 45% 12%;
-    --input: 240 45% 12%;
-    --ring: 180 100% 50%;
-    --radius: 1.25rem;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 9%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 9%;
+    --input: 0 0% 9%;
+    --ring: 0 0% 63.9%;
+    --radius: 0.5rem;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary selection:text-black;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
-    scroll-behavior: smooth;
-    overflow-x: hidden;
-    background: radial-gradient(circle at top left, #1a1a3e 0%, #0a0a1a 100%);
   }
 }
 
-.sterniters-glass {
-  background: rgba(10, 10, 26, 0.7);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.spotify-gradient {
+  background: linear-gradient(to bottom, #121212 0%, #000000 100%);
 }
 
-.neon-glow-primary {
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
 }
-
-.neon-glow-accent {
-  box-shadow: 0 0 20px rgba(0, 255, 127, 0.2);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.touch-btn {
-  touch-action: manipulation;
-  will-change: transform;
-  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
 }
-
-.touch-btn:active {
-  transform: scale(0.92) !important;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-}
-
-.pulse-card {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 255, 127, 0.05) 100%);
-  border: 1px solid rgba(0, 255, 255, 0.1);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }

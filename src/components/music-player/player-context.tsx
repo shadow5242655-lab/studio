@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getLyrics, LyricsData } from '@/lib/music-api';
+import { Song, getBestDownload } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -10,32 +10,14 @@ export interface Playlist {
   createdAt: number;
 }
 
-export interface UserStats {
-  totalMinutes: number;
-  totalTracks: number;
-  activeDays: string[];
-}
-
-export interface TasteProfile {
-  topArtists: string[];
-  topGenres: string[];
-}
-
 interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
   isPlayerOpen: boolean;
-  isLyricsOpen: boolean;
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
-  playedHistory: string[];
-  lyrics: LyricsData | null;
-  loadingLyrics: boolean;
-  userStats: UserStats;
-  artistFilter: string | null;
   setIsPlayerOpen: (open: boolean) => void;
-  setIsLyricsOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   stopTrack: () => void;
   togglePlay: () => void;
@@ -43,18 +25,17 @@ interface MusicStateContextType {
   prevTrack: () => void;
   toggleLike: (track: Song) => void;
   isLiked: (trackId: string) => boolean;
-  setArtistFilter: (artist: string | null) => void;
+  createPlaylist: (name: string, songs?: Song[]) => void;
+  addToPlaylist: (playlistId: string, track: Song) => void;
+  deletePlaylist: (playlistId: string) => void;
 }
 
 interface MusicProgressContextType {
   progress: number;
   duration: number;
   volume: number;
-  isSeeking: boolean;
   seek: (time: number) => void;
-  commitSeek: (time: number) => void;
   setVolume: (vol: number) => void;
-  setIsSeeking: (seeking: boolean) => void;
 }
 
 const MusicStateContext = createContext<MusicStateContextType | undefined>(undefined);
@@ -64,42 +45,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-  const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [playedHistory, setPlayedHistory] = useState<string[]>([]);
-  const [lyrics, setLyrics] = useState<LyricsData | null>(null);
-  const [loadingLyrics, setLoadingLyrics] = useState(false);
-  const [artistFilter, setArtistFilter] = useState<string | null>(null);
   
-  // User Stats State
-  const [userStats, setUserStats] = useState<UserStats>({ totalMinutes: 0, totalTracks: 0, activeDays: [] });
-
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isSeeking, setIsSeeking] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastSecondRef = useRef<number>(0);
-
-  // Persistence: User Stats & History
-  useEffect(() => {
-    const savedStats = localStorage.getItem('ayumusics_stats');
-    if (savedStats) setUserStats(JSON.parse(savedStats));
-
-    const today = new Date().toDateString();
-    setUserStats(prev => {
-      const days = prev.activeDays.includes(today) ? prev.activeDays : [...prev.activeDays, today];
-      return { ...prev, activeDays: days };
-    });
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('ayumusics_stats', JSON.stringify(userStats));
-  }, [userStats]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -109,58 +63,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onEnded = () => {
-      setUserStats(prev => ({ ...prev, totalTracks: prev.totalTracks + 1 }));
-      nextTrack();
-    };
+    const onEnded = () => nextTrack();
+    const onTimeUpdate = () => setProgress(audio.currentTime);
+    const onLoadedMetadata = () => setDuration(audio.duration);
 
-    audio.addEventListener('loadedmetadata', () => setDuration(audio.duration));
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnded);
 
     return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnded);
     };
   }, [queue]);
-
-  useEffect(() => {
-    const updateProgress = () => {
-      if (audioRef.current && isPlaying && !isSeeking) {
-        const cur = audioRef.current.currentTime;
-        setProgress(cur);
-        
-        // Update listening minutes every 60 seconds of playback
-        if (Math.floor(cur) !== lastSecondRef.current) {
-          lastSecondRef.current = Math.floor(cur);
-          if (lastSecondRef.current % 60 === 0 && lastSecondRef.current > 0) {
-            setUserStats(prev => ({ ...prev, totalMinutes: prev.totalMinutes + 1 }));
-          }
-        }
-        rafRef.current = requestAnimationFrame(updateProgress);
-      }
-    };
-
-    if (isPlaying && !isSeeking) {
-      rafRef.current = requestAnimationFrame(updateProgress);
-    }
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isPlaying, isSeeking]);
-
-  useEffect(() => {
-    if (currentTrack) {
-      setLyrics(null);
-      setLoadingLyrics(true);
-      const artist = currentTrack.artists.primary[0]?.name || 'Unknown';
-      getLyrics(artist, currentTrack.name)
-        .then(setLyrics)
-        .finally(() => setLoadingLyrics(false));
-    }
-  }, [currentTrack]);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
@@ -169,7 +89,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       if (currentTrack?.id !== track.id) {
         audioRef.current.src = url;
         setCurrentTrack(track);
-        lastSecondRef.current = 0;
       }
       audioRef.current.play().catch(console.error);
     }
@@ -204,14 +123,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (idx !== -1) playTrack(queue[(idx - 1 + queue.length) % queue.length]);
   }, [currentTrack, queue, playTrack]);
 
-  const seek = useCallback((time: number) => setProgress(time), []);
-
-  const commitSeek = useCallback((time: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-      setProgress(time);
-      setIsSeeking(false);
-    }
+  const seek = useCallback((time: number) => {
+    if (audioRef.current) audioRef.current.currentTime = time;
   }, []);
 
   const setVolume = useCallback((vol: number) => {
@@ -225,14 +138,36 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const isLiked = useCallback((tid: string) => !!likedSongs.find(s => s.id === tid), [likedSongs]);
 
+  const createPlaylist = useCallback((name: string, songs: Song[] = []) => {
+    const newPlaylist: Playlist = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      songs,
+      createdAt: Date.now()
+    };
+    setPlaylists(prev => [...prev, newPlaylist]);
+  }, []);
+
+  const addToPlaylist = useCallback((playlistId: string, track: Song) => {
+    setPlaylists(prev => prev.map(p => 
+      p.id === playlistId 
+        ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] }
+        : p
+    ));
+  }, []);
+
+  const deletePlaylist = useCallback((playlistId: string) => {
+    setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+  }, []);
+
   const stateValue = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, userStats, artistFilter,
-    setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, setArtistFilter
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, userStats, artistFilter, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked]);
+    currentTrack, isPlaying, isPlayerOpen, queue, likedSongs, playlists,
+    setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist
+  }), [currentTrack, isPlaying, isPlayerOpen, queue, likedSongs, playlists, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist]);
 
   const progressValue = useMemo(() => ({
-    progress, duration, volume, isSeeking, seek, commitSeek, setVolume, setIsSeeking
-  }), [progress, duration, volume, isSeeking, seek, commitSeek, setVolume, setIsSeeking]);
+    progress, duration, volume, seek, setVolume
+  }), [progress, duration, volume, seek, setVolume]);
 
   return (
     <MusicStateContext.Provider value={stateValue}>

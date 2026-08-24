@@ -20,7 +20,7 @@ export function Sidebar() {
       <div className="p-4 mb-2">
         <Link href="/" className="flex items-center gap-2 text-[#1ed760]">
           <Music2 className="h-8 w-8" />
-          <span className="font-bold text-xl tracking-tight text-white">Spotify</span>
+          <span className="font-bold text-xl tracking-tight text-white uppercase">AYUMUSIC</span>
         </Link>
       </div>
 

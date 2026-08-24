@@ -5,7 +5,7 @@ import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
 import { MusicProvider } from '@/components/music-player/player-context';
 
 export const metadata: Metadata = {
-  title: 'Spotify - Web Player',
+  title: 'AYUMUSIC - Web Player',
   description: 'Music for everyone.',
 };
 

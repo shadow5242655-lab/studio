@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play } from 'lucide-react';
+import { Play, Music2 } from 'lucide-react';
 import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
@@ -15,19 +15,24 @@ interface SongCardProps {
 export function SongCard({ song, playlist }: SongCardProps) {
   const { playTrack, currentTrack, isPlaying } = useMusic();
   const isActive = currentTrack?.id === song.id;
+  const imageSrc = getBestImage(song);
 
   return (
     <div 
       className="group bg-neutral-900/40 p-4 rounded-md transition-all hover:bg-neutral-800 cursor-pointer relative"
       onClick={() => playTrack(song, playlist)}
     >
-      <div className="relative aspect-square mb-4 rounded-md overflow-hidden shadow-2xl">
-        <Image
-          src={getBestImage(song)}
-          alt={song.name}
-          fill
-          className="object-cover transition-transform group-hover:scale-105"
-        />
+      <div className="relative aspect-square mb-4 rounded-md overflow-hidden shadow-2xl bg-neutral-800 flex items-center justify-center">
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={song.name}
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+          />
+        ) : (
+          <Music2 className="h-12 w-12 text-neutral-600" />
+        )}
         <div className={cn(
           "absolute bottom-2 right-2 p-3 bg-[#1ed760] rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0",
           isActive && isPlaying && "opacity-100 translate-y-0"

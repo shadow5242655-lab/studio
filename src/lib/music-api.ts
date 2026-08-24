@@ -37,14 +37,17 @@ export function formatDuration(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function getBestImage(song: Song) {
-  return song.image[song.image.length - 1]?.link || '';
+export function getBestImage(song: Song): string | null {
+  if (!song.image || song.image.length === 0) return null;
+  return song.image[song.image.length - 1]?.link || null;
 }
 
-export function getBestDownload(song: Song) {
+export function getBestDownload(song: Song): string {
+  if (!song.downloadUrl || song.downloadUrl.length === 0) return '';
   return song.downloadUrl[song.downloadUrl.length - 1]?.link || '';
 }
 
 export function getArtistNames(song: Song) {
+  if (!song.artists?.primary) return 'Unknown Artist';
   return song.artists.primary.map(a => a.name).join(', ');
 }

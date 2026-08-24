@@ -3,15 +3,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-export function Sidebar() {
+export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void }) {
   const pathname = usePathname();
   const { likedSongs, playlists, createPlaylist } = useMusic();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,9 +34,9 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-black flex flex-col gap-2 p-2 h-full border-r border-white/5 shrink-0 z-40">
+    <div className="flex flex-col gap-2 h-full">
       <div className="p-5 mb-4">
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group" onClick={onNavItemClick}>
           <div className="bg-primary p-1.5 rounded-lg group-hover:scale-110 transition-transform">
             <Music2 className="h-6 w-6 text-white" />
           </div>
@@ -48,6 +49,7 @@ export function Sidebar() {
           <Link
             key={item.name}
             href={item.href}
+            onClick={onNavItemClick}
             className={cn(
               "flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all group",
               pathname === item.href 
@@ -76,6 +78,7 @@ export function Sidebar() {
         </button>
         <Link 
           href="/liked"
+          onClick={onNavItemClick}
           className={cn(
             "flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all group",
             pathname === '/liked' ? "text-white bg-white/10" : "text-muted-foreground hover:text-white hover:bg-white/5"
@@ -100,6 +103,7 @@ export function Sidebar() {
             <Link 
               key={p.id} 
               href={`/playlists?id=${p.id}`}
+              onClick={onNavItemClick}
               className="block text-sm text-muted-foreground hover:text-white py-2 truncate transition-colors"
             >
               {p.name}
@@ -128,5 +132,39 @@ export function Sidebar() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <div className="hidden md:flex w-64 bg-black flex-col gap-2 p-2 h-full border-r border-white/5 shrink-0 z-40">
+      <SidebarContent />
+    </div>
+  );
+}
+
+export function MobileHeader() {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <header className="md:hidden flex items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
+      <Link href="/" className="flex items-center gap-2 group">
+        <div className="bg-primary p-1 rounded-lg">
+          <Music2 className="h-5 w-5 text-white" />
+        </div>
+        <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+      </Link>
+      
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="text-white">
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[280px] p-0 bg-black border-r border-white/10">
+          <SidebarContent onNavItemClick={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </header>
   );
 }

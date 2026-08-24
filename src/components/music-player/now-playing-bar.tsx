@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -22,13 +23,21 @@ export function NowPlayingBar() {
   const liked = isLiked(currentTrack.id);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 glass-effect border-t border-white/5 px-6 flex items-center justify-between z-50 group">
+    <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-effect border-t border-white/5 px-4 md:px-6 flex items-center justify-between z-50 group">
+      {/* Progress Line for Mobile (Top of bar) */}
+      <div className="absolute top-0 left-0 right-0 md:hidden h-0.5 bg-white/10 overflow-hidden">
+        <div 
+          className="h-full bg-primary transition-all" 
+          style={{ width: `${(progress / (duration || 100)) * 100}%` }}
+        />
+      </div>
+
       {/* Track Info */}
       <div 
-        className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer"
+        className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0 cursor-pointer"
         onClick={() => setIsPlayerOpen(true)}
       >
-        <div className="relative h-14 w-14 rounded-md overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
+        <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-md overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
             <Image 
               src={imageSrc} 
@@ -42,7 +51,7 @@ export function NowPlayingBar() {
             </div>
           )}
         </div>
-        <div className="flex flex-col min-w-0 pr-4">
+        <div className="flex flex-col min-w-0 pr-2">
           <span className="text-sm font-bold text-white group-hover:text-primary transition-colors truncate">
             {currentTrack.name}
           </span>
@@ -54,7 +63,7 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className={cn(
-            "shrink-0 transition-colors",
+            "shrink-0 transition-colors hidden sm:flex",
             liked ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-white"
           )}
           onClick={(e) => {
@@ -67,16 +76,16 @@ export function NowPlayingBar() {
       </div>
 
       {/* Main Controls */}
-      <div className="flex flex-col items-center gap-2 max-w-[40%] w-full px-4">
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
+      <div className="flex flex-col items-center gap-2 max-w-[40%] md:w-full md:px-4 shrink-0">
+        <div className="flex items-center gap-4 md:gap-6">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex">
             <Shuffle className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110 transition-transform" onClick={prevTrack}>
+          <Button variant="ghost" size="icon" className="text-white hover:scale-110 transition-transform hidden sm:flex" onClick={prevTrack}>
             <SkipBack className="h-5 w-5 fill-white" />
           </Button>
           <Button 
-            className="bg-white text-black rounded-full h-10 w-10 hover:scale-110 p-0 shadow-lg transition-transform"
+            className="bg-white text-black rounded-full h-10 w-10 md:h-12 md:w-12 hover:scale-110 p-0 shadow-lg transition-transform"
             onClick={togglePlay}
           >
             {isPlaying ? <Pause className="h-6 w-6 fill-black" /> : <Play className="h-6 w-6 fill-black ml-1" />}
@@ -84,11 +93,12 @@ export function NowPlayingBar() {
           <Button variant="ghost" size="icon" className="text-white hover:scale-110 transition-transform" onClick={nextTrack}>
             <SkipForward className="h-5 w-5 fill-white" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex">
             <Repeat className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex items-center gap-3 w-full max-w-lg">
+        {/* Desktop Progress Bar */}
+        <div className="hidden md:flex items-center gap-3 w-full max-w-lg">
           <span className="text-[10px] text-muted-foreground w-10 text-right font-mono">
             {formatDuration(progress)}
           </span>
@@ -105,8 +115,8 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Extra Controls */}
-      <div className="flex items-center justify-end gap-3 w-[30%]">
+      {/* Extra Controls (Desktop only) */}
+      <div className="hidden md:flex items-center justify-end gap-3 w-[30%]">
         <Button 
           variant="ghost" 
           size="icon" 

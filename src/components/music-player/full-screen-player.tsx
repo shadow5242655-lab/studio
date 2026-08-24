@@ -63,7 +63,20 @@ export function FullScreenPlayer() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Like Button in Top Right */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-12 w-12 rounded-full transition-all touch-feedback",
+              liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white hover:bg-white/5"
+            )}
+            onClick={() => toggleLike(currentTrack)}
+          >
+            <Heart className={cn("h-6 w-6", liked && "fill-current")} />
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/10 rounded-full h-12 w-12 touch-feedback">
@@ -104,10 +117,10 @@ export function FullScreenPlayer() {
 
       {/* Main Content Container */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 relative z-10 min-h-0 overflow-y-auto no-scrollbar pb-8">
-        {/* Image Area */}
-        <div className="w-full max-w-[320px] md:max-w-[440px] aspect-square relative shadow-[0_40px_80px_-15px_rgba(0,0,0,0.8)] rounded-3xl overflow-hidden border border-white/10 group mb-8 shrink-0">
+        {/* Image Area - Flexible sizing to fit phone screens */}
+        <div className="w-full max-w-[280px] md:max-w-[400px] aspect-square relative shadow-[0_40px_80px_-15px_rgba(0,0,0,0.8)] rounded-3xl overflow-hidden border border-white/10 group mb-6 md:mb-10 shrink min-h-0">
           {imageSrc ? (
-            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority sizes="(max-width: 768px) 80vw, 440px" />
+            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority sizes="(max-width: 768px) 80vw, 400px" />
           ) : (
             <div className="h-full w-full bg-neutral-900 flex items-center justify-center">
               <Music2 className="h-24 w-24 text-neutral-800" />
@@ -116,32 +129,18 @@ export function FullScreenPlayer() {
         </div>
 
         {/* Info Area */}
-        <div className="w-full text-center space-y-3 mb-8 shrink-0">
-          <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2 px-4">
+        <div className="w-full text-center space-y-2 md:space-y-4 mb-6 md:mb-8 shrink-0">
+          <h2 className="text-2xl md:text-5xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2 px-4">
             {currentTrack.name}
           </h2>
-          <p className="text-lg md:text-2xl text-primary font-bold uppercase tracking-[0.2em] truncate opacity-80 italic px-4">
+          <p className="text-base md:text-2xl text-primary font-bold uppercase tracking-[0.2em] truncate opacity-80 italic px-4">
             {getArtistNames(currentTrack)}
           </p>
-          
-          <div className="pt-4 flex justify-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn(
-                "h-14 w-14 rounded-full transition-all border border-white/10 bg-white/5 touch-feedback",
-                liked ? "text-primary border-primary/20" : "text-white/20 hover:text-white"
-              )}
-              onClick={() => toggleLike(currentTrack)}
-            >
-              <Heart className={cn("h-6 w-6", liked && "fill-current")} />
-            </Button>
-          </div>
         </div>
 
         {/* Controls Section */}
-        <div className="w-full max-w-2xl mx-auto px-4 space-y-8 shrink-0">
-          <div className="space-y-4">
+        <div className="w-full max-w-2xl mx-auto px-4 space-y-6 md:space-y-8 shrink-0 pb-4">
+          <div className="space-y-2 md:space-y-4">
             <Slider
               value={[progress]}
               max={duration || 100}
@@ -149,7 +148,7 @@ export function FullScreenPlayer() {
               onValueChange={(vals) => seek(vals[0])}
               className="cursor-pointer py-4"
             />
-            <div className="flex items-center justify-between text-[11px] font-black tracking-[0.3em] text-neutral-500 font-mono italic">
+            <div className="flex items-center justify-between text-[10px] font-black tracking-[0.3em] text-neutral-500 font-mono italic">
               <span>{formatDuration(progress)}</span>
               <span>{formatDuration(duration)}</span>
             </div>
@@ -157,38 +156,38 @@ export function FullScreenPlayer() {
 
           <div className="flex items-center justify-between px-4">
             <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-12 w-12 touch-feedback">
-              <Shuffle className="h-6 w-6" />
+              <Shuffle className="h-5 w-5" />
             </Button>
             
-            <div className="flex items-center gap-8 md:gap-14">
+            <div className="flex items-center gap-6 md:gap-14">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white h-14 w-14 touch-feedback"
+                className="text-white h-12 w-12 touch-feedback"
                 onClick={prevTrack}
               >
-                <SkipBack className="h-9 w-9 md:h-10 md:w-10 fill-white" />
+                <SkipBack className="h-8 w-8 md:h-10 md:w-10 fill-white" />
               </Button>
               
               <Button 
-                className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 touch-feedback shadow-[0_0_40px_rgba(255,0,0,0.4)] border-4 border-white/10"
+                className="bg-primary text-white rounded-full h-16 w-16 md:h-24 md:w-24 touch-feedback shadow-[0_0_40px_rgba(255,0,0,0.4)] border-4 border-white/10"
                 onClick={togglePlay}
               >
-                {isPlaying ? <Pause className="h-10 w-10 md:h-12 md:w-12 fill-white" /> : <Play className="h-10 w-10 md:h-12 md:w-12 fill-white ml-1.5" />}
+                {isPlaying ? <Pause className="h-8 w-8 md:h-12 md:w-12 fill-white" /> : <Play className="h-8 w-8 md:h-12 md:w-12 fill-white ml-1" />}
               </Button>
               
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white h-14 w-14 touch-feedback"
+                className="text-white h-12 w-12 touch-feedback"
                 onClick={nextTrack}
               >
-                <SkipForward className="h-9 w-9 md:h-10 md:w-10 fill-white" />
+                <SkipForward className="h-8 w-8 md:h-10 md:w-10 fill-white" />
               </Button>
             </div>
             
             <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-12 w-12 touch-feedback">
-              <Repeat className="h-6 w-6" />
+              <Repeat className="h-5 w-5" />
             </Button>
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -81,16 +80,45 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
   );
 }
 
-export default function Home() {
+// Separate component for Listening Insights to prevent global re-renders
+function ListeningInsights() {
   const { totalListeningTime } = useMusic();
-  const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
-
+  
   const formatTotalTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
   };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-3 h-14 md:h-16 backdrop-blur-sm touch-feedback">
+          <Info className="h-5 w-5" />
+          INSIGHTS
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-neutral-950 border-white/10 text-white sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Sound Intelligence</DialogTitle>
+        </DialogHeader>
+        <div className="py-8 space-y-6">
+          <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center gap-4">
+            <Music2 className="h-8 w-8 text-primary" />
+            <div>
+              <p className="text-xs font-bold uppercase text-neutral-500">Total Resonance Time</p>
+              <p className="text-2xl font-black text-white italic">{formatTotalTime(totalListeningTime)}</p>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Home() {
+  const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
 
   return (
     <div className="pb-32">
@@ -123,34 +151,13 @@ export default function Home() {
           <div className="flex flex-wrap gap-4 pt-4 pb-4">
             <Button 
               size="lg" 
-              className="rounded-full px-8 md:px-16 font-black gap-3 h-14 md:h-16 text-lg md:text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
+              className="rounded-full px-8 md:px-16 font-black gap-3 h-14 md:h-16 text-lg md:text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)] touch-feedback" 
             >
               <Play className="h-6 w-6 md:h-7 md:w-7 fill-current" />
               EXPLORE
             </Button>
             
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-3 h-14 md:h-16 backdrop-blur-sm">
-                  <Info className="h-5 w-5" />
-                  INSIGHTS
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-neutral-950 border-white/10 text-white sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Sound Intelligence</DialogTitle>
-                </DialogHeader>
-                <div className="py-8 space-y-6">
-                  <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center gap-4">
-                    <Music2 className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="text-xs font-bold uppercase text-neutral-500">Total Resonance Time</p>
-                      <p className="text-2xl font-black text-white italic">{formatTotalTime(totalListeningTime)}</p>
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <ListeningInsights />
           </div>
         </div>
       </div>

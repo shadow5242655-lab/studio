@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Song, getBestDownload, searchSongs, getLyrics } from '@/lib/music-api';
 
 export interface Playlist {
@@ -79,6 +79,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastSavedTotalTimeRef = useRef(0);
 
   // Initialize audio ref once
   useEffect(() => {
@@ -126,7 +127,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedVol) setVolumeState(parseFloat(savedVol));
 
     const savedTime = localStorage.getItem('ayumusic_total_time');
-    if (savedTime) setTotalListeningTime(parseInt(savedTime, 10));
+    if (savedTime) {
+      const time = parseInt(savedTime, 10);
+      setTotalListeningTime(time);
+      lastSavedTotalTimeRef.current = time;
+    }
 
     const savedPopularity = localStorage.getItem('ayumusic_popularity');
     if (savedPopularity) {
@@ -152,6 +157,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedSmartMood) setSmartMoodState(savedSmartMood === 'true');
   }, []);
 
+  // Performance Optimization: Save total time to localStorage only every 10 seconds
+  useEffect(() => {
+    if (Math.abs(totalListeningTime - lastSavedTotalTimeRef.current) >= 10) {
+      localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
+      lastSavedTotalTimeRef.current = totalListeningTime;
+    }
+  }, [totalListeningTime]);
+
   useEffect(() => {
     localStorage.setItem('ayumusic_likes', JSON.stringify(likedSongs));
   }, [likedSongs]);
@@ -159,10 +172,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ayumusic_playlists', JSON.stringify(playlists));
   }, [playlists]);
-
-  useEffect(() => {
-    localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
-  }, [totalListeningTime]);
 
   useEffect(() => {
     localStorage.setItem('ayumusic_popularity', JSON.stringify(songPopularity));
@@ -241,7 +250,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, audioRef]);
 
-  const stopTrack = () => {
+  const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -252,9 +261,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setDuration(0);
     setIsPlayerOpen(false);
     setLyrics(null);
-  };
+  }, [audioRef]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -262,7 +271,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         audioRef.current.play().catch(console.error);
       }
     }
-  };
+  }, [isPlaying, audioRef]);
 
   const nextTrack = useCallback(async () => {
     if (!currentTrack) return;
@@ -293,26 +302,26 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, queue, smartMood, playTrack]);
 
-  const prevTrack = () => {
+  const prevTrack = useCallback(() => {
     if (queue.length === 0 || !currentTrack) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
     if (currentIndex === -1) return;
     const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
     playTrack(queue[prevIndex]);
-  };
+  }, [currentTrack, queue, playTrack]);
 
-  const seek = (time: number) => {
+  const seek = useCallback((time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       setProgress(time);
     }
-  };
+  }, [audioRef]);
 
-  const setVolume = (vol: number) => {
+  const setVolume = useCallback((vol: number) => {
     setVolumeState(vol);
-  };
+  }, []);
 
-  const toggleLike = (track: Song) => {
+  const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
       const exists = prev.find(s => s.id === track.id);
       if (exists) {
@@ -320,13 +329,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
       return [track, ...prev];
     });
-  };
+  }, []);
 
-  const isLiked = (trackId: string) => {
+  const isLiked = useCallback((trackId: string) => {
     return !!likedSongs.find(s => s.id === trackId);
-  };
+  }, [likedSongs]);
 
-  const createPlaylist = (name: string, initialSongs: Song[] = []) => {
+  const createPlaylist = useCallback((name: string, initialSongs: Song[] = []) => {
     const newPlaylist: Playlist = {
       id: Math.random().toString(36).substr(2, 9),
       name,
@@ -334,9 +343,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setPlaylists(prev => [newPlaylist, ...prev]);
-  };
+  }, []);
 
-  const addToPlaylist = (playlistId: string, track: Song) => {
+  const addToPlaylist = useCallback((playlistId: string, track: Song) => {
     setPlaylists(prev => prev.map(p => {
       if (p.id === playlistId) {
         if (p.songs.find(s => s.id === track.id)) return p;
@@ -344,63 +353,69 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
       return p;
     }));
-  };
+  }, []);
 
-  const removeFromPlaylist = (playlistId: string, trackId: string) => {
+  const removeFromPlaylist = useCallback((playlistId: string, trackId: string) => {
     setPlaylists(prev => prev.map(p => {
       if (p.id === playlistId) {
         return { ...p, songs: p.songs.filter(s => s.id !== trackId) };
       }
       return p;
     }));
-  };
+  }, []);
 
-  const deletePlaylist = (playlistId: string) => {
+  const deletePlaylist = useCallback((playlistId: string) => {
     setPlaylists(prev => prev.filter(p => p.id !== playlistId));
-  };
+  }, []);
 
-  const recordSearchSelection = (song: Song) => {
+  const recordSearchSelection = useCallback((song: Song) => {
     setSongPopularity(prev => ({
       ...prev,
       [song.id]: (prev[song.id] || 0) + 1
     }));
-  };
+  }, []);
 
-  const removeFromHistory = (songId: string) => {
+  const removeFromHistory = useCallback((songId: string) => {
     setPlayedHistory(prev => prev.filter(id => id !== songId));
-  };
+  }, []);
 
-  const clearHistory = () => {
+  const clearHistory = useCallback(() => {
     setPlayedHistory([]);
-  };
+  }, []);
 
-  const addExclusionRule = (type: 'artist' | 'genre' | 'song', value: string) => {
+  const addExclusionRule = useCallback((type: 'artist' | 'genre' | 'song', value: string) => {
     const newRule: ExclusionRule = {
       id: Math.random().toString(36).substr(2, 9),
       type,
       value
     };
     setExclusionRules(prev => [...prev, newRule]);
-  };
+  }, []);
 
-  const removeExclusionRule = (ruleId: string) => {
+  const removeExclusionRule = useCallback((ruleId: string) => {
     setExclusionRules(prev => prev.filter(r => r.id !== ruleId));
-  };
+  }, []);
 
-  const setTasteProfile = (profile: any) => {
+  const setTasteProfile = useCallback((profile: any) => {
     setTasteProfileState(profile);
-  };
+  }, []);
 
-  const setSmartMood = (enabled: boolean) => {
+  const setSmartMood = useCallback((enabled: boolean) => {
     setSmartMoodState(enabled);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
+    setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+    createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
+  }), [
+    currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
+    setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+    createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
+  ]);
 
   return (
-    <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
-      setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
-      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
-    }}>
+    <MusicContext.Provider value={value}>
       {children}
     </MusicContext.Provider>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Play, Music2, Pause } from 'lucide-react';
 import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
@@ -12,7 +12,8 @@ interface SongCardProps {
   playlist?: Song[];
 }
 
-export function SongCard({ song, playlist }: SongCardProps) {
+// Memoize SongCard to prevent expensive re-renders on context state changes (like progress)
+export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps) {
   const { playTrack, currentTrack, isPlaying, togglePlay } = useMusic();
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
@@ -85,4 +86,4 @@ export function SongCard({ song, playlist }: SongCardProps) {
       </div>
     </div>
   );
-}
+});

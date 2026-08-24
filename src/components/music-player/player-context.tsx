@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
@@ -10,12 +11,15 @@ interface MusicContextType {
   progress: number;
   duration: number;
   queue: Song[];
+  likedSongs: Song[];
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
+  toggleLike: (track: Song) => void;
+  isLiked: (trackId: string) => boolean;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -27,8 +31,35 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [queue, setQueue] = useState<Song[]>([]);
+  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Load persistence
+  useEffect(() => {
+    const savedLikes = localStorage.getItem('ayumusic_likes');
+    if (savedLikes) {
+      try {
+        setLikedSongs(JSON.parse(savedLikes));
+      } catch (e) {
+        console.error("Failed to parse liked songs", e);
+      }
+    }
+
+    const savedVol = localStorage.getItem('ayumusic_volume');
+    if (savedVol) {
+      setVolumeState(parseFloat(savedVol));
+    }
+  }, []);
+
+  // Save persistence
+  useEffect(() => {
+    localStorage.setItem('ayumusic_likes', JSON.stringify(likedSongs));
+  }, [likedSongs]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_volume', volume.toString());
+  }, [volume]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -50,7 +81,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [queue]);
+  }, [queue, currentTrack]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -67,7 +98,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         audioRef.current.src = url;
         setCurrentTrack(track);
       }
-      audioRef.current.play();
+      audioRef.current.play().catch(console.error);
       setIsPlaying(true);
     }
   };
@@ -77,7 +108,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(console.error);
       }
       setIsPlaying(!isPlaying);
     }
@@ -86,6 +117,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const nextTrack = () => {
     if (queue.length === 0 || !currentTrack) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
+    if (currentIndex === -1) return;
     const nextIndex = (currentIndex + 1) % queue.length;
     playTrack(queue[nextIndex]);
   };
@@ -93,6 +125,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const prevTrack = () => {
     if (queue.length === 0 || !currentTrack) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
+    if (currentIndex === -1) return;
     const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
     playTrack(queue[prevIndex]);
   };
@@ -108,10 +141,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setVolumeState(vol);
   };
 
+  const toggleLike = (track: Song) => {
+    setLikedSongs(prev => {
+      const exists = prev.find(s => s.id === track.id);
+      if (exists) {
+        return prev.filter(s => s.id !== track.id);
+      }
+      return [track, ...prev];
+    });
+  };
+
+  const isLiked = (trackId: string) => {
+    return !!likedSongs.find(s => s.id === trackId);
+  };
+
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, volume, progress, duration, queue,
-      playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume
+      currentTrack, isPlaying, volume, progress, duration, queue, likedSongs,
+      playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked
     }}>
       {children}
     </MusicContext.Provider>

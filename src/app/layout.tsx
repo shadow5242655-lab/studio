@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Sidebar } from '@/components/music-player/sidebar';
@@ -5,8 +6,8 @@ import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
 import { MusicProvider } from '@/components/music-player/player-context';
 
 export const metadata: Metadata = {
-  title: 'AYUMUSIC - Web Player',
-  description: 'Music for everyone.',
+  title: 'AYUMUSIC - Premium Sound',
+  description: 'The definitive Red and Grey music experience.',
 };
 
 export default function RootLayout({
@@ -15,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased bg-black text-white h-screen overflow-hidden flex flex-col">
+    <html lang="en" className="dark">
+      <body className="antialiased bg-black text-white h-screen overflow-hidden flex flex-col selection:bg-primary selection:text-white">
         <MusicProvider>
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />

@@ -151,17 +151,6 @@ export default function Home() {
             )}
           </div>
         </section>
-
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">Recommended For You</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {!loading && trending.slice(0, 5).reverse().map((song, index) => (
-              <SongCard key={`rec-${song.id}-${index}`} song={song} playlist={trending} />
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   );

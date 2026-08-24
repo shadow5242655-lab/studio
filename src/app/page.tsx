@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -5,14 +6,13 @@ import { Song, getTrending, formatDuration, searchSongs } from '@/lib/music-api'
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles, Loader2, Clock, Info, TrendingUp, Heart } from 'lucide-react';
+import { Play, Loader2, Clock, Info, TrendingUp } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -22,7 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const { playTrack, totalListeningTime, playedHistory, likedSongs } = useMusic();
+  const { playTrack, totalListeningTime, likedSongs } = useMusic();
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -106,10 +106,6 @@ export default function Home() {
           data-ai-hint="music concert"
         />
         <div className="absolute bottom-0 left-0 p-8 md:p-12 z-20 space-y-4 max-w-2xl">
-          <div className="flex items-center gap-2 text-primary font-bold tracking-widest text-xs uppercase">
-            <Sparkles className="h-4 w-4" />
-            Featured Experience
-          </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase italic">
             AYUMUSIC
           </h1>
@@ -153,10 +149,7 @@ export default function Home() {
         {recommendations.length > 0 && (
           <section>
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">Personalized for You</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-white italic">Personalized for You</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {recommendations.map((song) => (

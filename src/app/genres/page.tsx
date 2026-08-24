@@ -1,13 +1,13 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { Button } from '@/components/ui/button';
-import { Music2, Sparkles, Flame, CloudRain, Coffee, PartyPopper } from 'lucide-react';
+import { Music2, Flame, CloudRain, Coffee, PartyPopper, Disc } from 'lucide-react';
 
 const genres = [
-  { name: 'Pop', icon: Sparkles, color: 'from-pink-500' },
+  { name: 'Pop', icon: Disc, color: 'from-pink-500' },
   { name: 'Rock', icon: Flame, color: 'from-orange-500' },
   { name: 'Lofi', icon: CloudRain, color: 'from-blue-500' },
   { name: 'Acoustic', icon: Coffee, color: 'from-amber-500' },

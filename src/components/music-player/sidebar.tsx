@@ -3,23 +3,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, LogOut, User } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUser, useAuth } from '@/firebase';
-import { AuthModal } from '../auth/auth-modal';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { signOut } from 'firebase/auth';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { likedSongs, playlists, createPlaylist } = useMusic();
-  const { user } = useUser();
-  const auth = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
 
@@ -36,10 +30,6 @@ export function Sidebar() {
       setNewPlaylistName('');
       setIsDialogOpen(false);
     }
-  };
-
-  const handleSignOut = () => {
-    if (auth) signOut(auth);
   };
 
   return (
@@ -116,26 +106,6 @@ export function Sidebar() {
             </Link>
           ))}
         </div>
-      </div>
-
-      {/* User Section */}
-      <div className="mt-auto p-4 border-t border-white/5">
-        {user ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8 border border-white/10">
-                <AvatarImage src={user.photoURL || undefined} />
-                <AvatarFallback className="bg-neutral-800 text-[10px] font-black"><User className="h-4 w-4" /></AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-white truncate">{user.displayName || user.email}</span>
-                <button onClick={handleSignOut} className="text-[10px] text-primary font-bold hover:underline text-left">Sign Out</button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <AuthModal />
-        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

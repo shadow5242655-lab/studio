@@ -26,12 +26,25 @@ export function FullScreenPlayer() {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
+  const handleClose = () => {
+    // Definitive Navigation & Scroll Reset
+    setIsPlayerOpen(false);
+    router.push('/');
+    
+    // Target the main scrollable element
+    const scrollContainer = document.querySelector('main');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
     if (!startPos.current) return;
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
+    // High-Fidelity Validation Threshold
     if (dx < 10 && dy < 10 && dt < 300) {
       callback();
     }
@@ -72,7 +85,7 @@ export function FullScreenPlayer() {
           variant="ghost" 
           size="icon" 
           onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp(() => setIsPlayerOpen(false))}
+          onPointerUp={handlePointerUp(handleClose)}
           onPointerCancel={handlePointerCancel}
           className="text-white hover:bg-white/5 lag-free-tap"
         >

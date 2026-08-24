@@ -105,31 +105,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const lastProgressUpdateRef = useRef<number>(0);
   const totalSecondsAccumulatorRef = useRef<number>(0);
 
-  // --- 3. Persistence Init ---
-  useEffect(() => {
-    const savedLiked = localStorage.getItem('ayumusics_liked');
-    if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
-    const savedPlaylists = localStorage.getItem('ayumusics_playlists');
-    if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
-    const savedHistory = localStorage.getItem('ayumusics_history');
-    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
-    const savedDays = localStorage.getItem('ayumusics_activedays');
-    if (savedDays) setActiveDays(JSON.parse(savedDays));
-    const savedRules = localStorage.getItem('ayumusics_rules');
-    if (savedRules) setExclusionRules(JSON.parse(savedRules));
-    const savedSmartMood = localStorage.getItem('ayumusics_smartmood');
-    if (savedSmartMood) setSmartMoodState(JSON.parse(savedSmartMood));
-    const savedPop = localStorage.getItem('ayumusics_popularity');
-    if (savedPop) setSongPopularity(JSON.parse(savedPop));
-    const savedSeconds = localStorage.getItem('ayumusics_seconds');
-    if (savedSeconds) {
-      const secs = parseInt(savedSeconds);
-      setTotalSeconds(secs);
-      totalSecondsAccumulatorRef.current = secs;
-    }
-  }, []);
+  // --- 3. Stable Logic Initialization (Hoisted to prevent ReferenceErrors) ---
 
-  // --- 4. Hoisted Core Logic ---
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     setActiveDays(prev => {
@@ -251,7 +228,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, queue, playTrack]);
 
-  // --- 5. Controls ---
+  // --- 4. Controls ---
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -374,7 +351,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // --- 6. Optimized Progress Tracking ---
+  // --- 5. Optimized Progress Tracking ---
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       const currentTime = audioRef.current.currentTime;
@@ -403,6 +380,30 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying, totalSeconds, recordActiveDay]);
 
+  // --- 6. Persistence Init ---
+  useEffect(() => {
+    const savedLiked = localStorage.getItem('ayumusics_liked');
+    if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
+    const savedPlaylists = localStorage.getItem('ayumusics_playlists');
+    if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
+    const savedHistory = localStorage.getItem('ayumusics_history');
+    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
+    const savedDays = localStorage.getItem('ayumusics_activedays');
+    if (savedDays) setActiveDays(JSON.parse(savedDays));
+    const savedRules = localStorage.getItem('ayumusics_rules');
+    if (savedRules) setExclusionRules(JSON.parse(savedRules));
+    const savedSmartMood = localStorage.getItem('ayumusics_smartmood');
+    if (savedSmartMood) setSmartMoodState(JSON.parse(savedSmartMood));
+    const savedPop = localStorage.getItem('ayumusics_popularity');
+    if (savedPop) setSongPopularity(JSON.parse(savedPop));
+    const savedSeconds = localStorage.getItem('ayumusics_seconds');
+    if (savedSeconds) {
+      const secs = parseInt(savedSeconds);
+      setTotalSeconds(secs);
+      totalSecondsAccumulatorRef.current = secs;
+    }
+  }, []);
+
   // --- 7. Lifecycle Hooks ---
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
@@ -419,7 +420,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
     
-    // Crucial: define handlers inside useEffect or as stable refs to avoid TDE
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => nextTrack(); 
     const onPlay = () => setIsPlaying(true);

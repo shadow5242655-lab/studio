@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { Song, getBestDownload } from '@/lib/music-api';
+import { Song, getBestDownload, searchSongs } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -31,6 +31,7 @@ interface MusicContextType {
   playedHistory: string[];
   exclusionRules: ExclusionRule[];
   tasteProfile: any;
+  smartMood: boolean;
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   stopTrack: () => void;
@@ -51,6 +52,7 @@ interface MusicContextType {
   addExclusionRule: (type: 'artist' | 'genre' | 'song', value: string) => void;
   removeExclusionRule: (ruleId: string) => void;
   setTasteProfile: (profile: any) => void;
+  setSmartMood: (enabled: boolean) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -70,6 +72,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playedHistory, setPlayedHistory] = useState<string[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
   const [tasteProfile, setTasteProfileState] = useState<any>(null);
+  const [smartMood, setSmartMoodState] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -109,6 +112,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedTaste) {
       try { setTasteProfileState(JSON.parse(savedTaste)); } catch (e) {}
     }
+
+    const savedSmartMood = localStorage.getItem('ayumusic_smart_mood');
+    if (savedSmartMood) setSmartMoodState(savedSmartMood === 'true');
   }, []);
 
   useEffect(() => {
@@ -140,6 +146,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [tasteProfile]);
 
   useEffect(() => {
+    localStorage.setItem('ayumusic_smart_mood', smartMood.toString());
+  }, [smartMood]);
+
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && currentTrack) {
       interval = setInterval(() => {
@@ -169,7 +179,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [queue, currentTrack]);
+  }, [queue, currentTrack, smartMood]); // Depend on smartMood to ensure nextTrack has latest state
 
   useEffect(() => {
     if (audioRef.current) {
@@ -219,12 +229,36 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const nextTrack = () => {
-    if (queue.length === 0 || !currentTrack) return;
+  const nextTrack = async () => {
+    if (!currentTrack) return;
+
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
-    if (currentIndex === -1) return;
-    const nextIndex = (currentIndex + 1) % queue.length;
-    playTrack(queue[nextIndex]);
+    
+    // Check if we are at the end of the queue
+    if (currentIndex === queue.length - 1 && smartMood) {
+      // Smart Mood: Fetch more songs based on the current track's mood
+      try {
+        const seedQuery = `${currentTrack.name} ${currentTrack.artists.primary[0].name}`;
+        const moodSongs = await searchSongs(seedQuery);
+        // Filter out the current track and already queued tracks
+        const existingIds = new Set(queue.map(s => s.id));
+        const newMoodSongs = moodSongs.filter(s => !existingIds.has(s.id)).slice(0, 10);
+        
+        if (newMoodSongs.length > 0) {
+          const updatedQueue = [...queue, ...newMoodSongs];
+          setQueue(updatedQueue);
+          playTrack(newMoodSongs[0], updatedQueue);
+          return;
+        }
+      } catch (e) {
+        console.error('Mood fetch failed', e);
+      }
+    }
+
+    if (queue.length > 0) {
+      const nextIndex = (currentIndex + 1) % queue.length;
+      playTrack(queue[nextIndex]);
+    }
   };
 
   const prevTrack = () => {
@@ -325,11 +359,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setTasteProfileState(profile);
   };
 
+  const setSmartMood = (enabled: boolean) => {
+    setSmartMoodState(enabled);
+  };
+
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood,
       setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
-      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile
+      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
     }}>
       {children}
     </MusicContext.Provider>

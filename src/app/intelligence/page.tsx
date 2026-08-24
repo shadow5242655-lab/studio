@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMusic } from '@/components/music-player/player-context';
 import { generateVibePlaylist } from '@/ai/flows/vibe-playlist-flow';
 import { generateEmotionJourney } from '@/ai/flows/emotion-journey-flow';
@@ -10,15 +10,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind } from 'lucide-react';
+import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function IntelligencePage() {
   const { 
     playedHistory, removeFromHistory, clearHistory, 
     exclusionRules, addExclusionRule, removeExclusionRule,
-    tasteProfile, setTasteProfile, createPlaylist, likedSongs
+    tasteProfile, setTasteProfile, createPlaylist, likedSongs,
+    smartMood, setSmartMood
   } = useMusic();
   
   const { toast } = useToast();
@@ -68,7 +71,6 @@ export default function IntelligencePage() {
   const handleGeneratePersona = async () => {
     setLoadingPersona(true);
     try {
-      // Use recent liked songs or history as seed
       const seed = likedSongs.map(s => s.name).slice(0, 10);
       const result = await generateMusicPersona({ history: seed });
       setTasteProfile(result);
@@ -149,13 +151,29 @@ export default function IntelligencePage() {
 
             <Card className="bg-neutral-900 border-white/5 shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-2xl font-black italic uppercase italic tracking-tighter">Taste Adjustments</CardTitle>
-                <CardDescription>Refine how the AI understands you</CardDescription>
+                <CardTitle className="text-2xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
+                  <Radio className="h-5 w-5 text-primary" />
+                  Smart Mood Sync
+                </CardTitle>
+                <CardDescription>Architect your flow automatically</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-neutral-500">The AI builds your profile based on liked tracks and playtime. You can clear your history to reset this balance.</p>
-                <div className="pt-4">
-                  <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 px-4 py-2">Verified Architecture</Badge>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                  <div className="space-y-1">
+                    <Label htmlFor="smart-mood" className="text-lg font-bold italic tracking-tighter uppercase">Enable Sync</Label>
+                    <p className="text-xs text-neutral-500">Automatically play songs with matching vibes when the queue ends.</p>
+                  </div>
+                  <Switch 
+                    id="smart-mood" 
+                    checked={smartMood} 
+                    onCheckedChange={setSmartMood}
+                  />
+                </div>
+                
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
+                   <p className="text-xs text-neutral-400 leading-relaxed italic">
+                     When you listen to a genre like <span className="text-primary font-bold">Lofi</span>, our neural engine will instantly bridge the next track to match that specific frequency, ensuring your mood remains uninterrupted.
+                   </p>
                 </div>
               </CardContent>
             </Card>

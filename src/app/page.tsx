@@ -23,7 +23,6 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
 
   const fetchSongs = useCallback(async () => {
     try {
-      // Fetch multiple pages to provide a very deep scroll experience
       const page1 = initialQuery 
         ? await searchSongs(initialQuery, 1)
         : await getTrending(1);
@@ -157,7 +156,6 @@ export default function Home() {
       </div>
 
       <div className="py-16 md:py-24 space-y-16 md:space-y-24">
-        {/* All Major Sections with Expanded Genre List */}
         <MusicSection title="Trending Now" icon={TrendingUp} />
         <MusicSection title="Punjabi Beats" initialQuery="Punjabi" icon={Zap} />
         <MusicSection title="Bhojpuri Soul" initialQuery="Bhojpuri" icon={Flame} />

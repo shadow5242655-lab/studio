@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useRef } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, 
-  Music2, Mic2, Download, Shuffle, Repeat, Repeat1 
+  Music2, Mic2, Download, Shuffle, Repeat, Repeat1, Loader2 
 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
@@ -15,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 export function NowPlayingBar() {
   const { 
-    currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
+    currentTrack, isPlaying, isBuffering, togglePlay, nextTrack, prevTrack, 
     setIsPlayerOpen, setIsLyricsOpen, isShuffle, toggleShuffle, 
     repeatMode, toggleRepeat 
   } = useMusic();
@@ -59,7 +60,6 @@ export function NowPlayingBar() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/10 px-6 flex items-center justify-between z-50 animate-in slide-in-from-bottom duration-500">
-      {/* Absolute Progress Slider */}
       <div className="absolute top-0 left-0 right-0 h-[3px] group">
         <Slider
           value={[progress]}
@@ -70,7 +70,6 @@ export function NowPlayingBar() {
         />
       </div>
 
-      {/* Track Info */}
       <div 
         className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap group"
         onPointerDown={handlePointerDown}
@@ -84,6 +83,11 @@ export function NowPlayingBar() {
           ) : (
             <div className="h-full w-full flex items-center justify-center">
               <Music2 className="h-6 w-6 text-neutral-600" />
+            </div>
+          )}
+          {isBuffering && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
             </div>
           )}
         </div>
@@ -107,7 +111,6 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Main Playback Controls */}
       <div className="flex flex-col items-center gap-1 flex-1">
         <div className="flex items-center gap-6">
           <Button 
@@ -138,7 +141,13 @@ export function NowPlayingBar() {
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
-            {isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="h-7 w-7 fill-current" />}
+            {isBuffering ? (
+              <Loader2 className="h-7 w-7 animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="h-7 w-7 fill-current" />
+            ) : (
+              <Play className="h-7 w-7 fill-current" />
+            )}
           </Button>
 
           <Button 
@@ -171,7 +180,6 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Utilities: Volume, Lyrics & Download */}
       <div className="flex items-center justify-end gap-6 w-[30%]">
         <div className="flex items-center gap-2 hidden md:flex">
           <Volume2 className="h-4 w-4 text-neutral-500" />

@@ -1,18 +1,32 @@
+
 'use client';
 
 import React, { useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle, Mic2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle, Mic2, Loader2, ListMusic, Forward } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { getBestImage, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger, 
+  DropdownMenuSub, 
+  DropdownMenuSubTrigger, 
+  DropdownMenuSubContent, 
+  DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 
 export function FullScreenPlayer() {
-  const { currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist, setIsLyricsOpen } = useMusic();
+  const { 
+    currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
+    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, 
+    playlists, addToPlaylist, setIsLyricsOpen, playNext, addToQueue 
+  } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
   const router = useRouter();
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
@@ -27,15 +41,15 @@ export function FullScreenPlayer() {
   };
 
   const handleClose = () => {
-    // Definitive Navigation & Scroll Reset
     setIsPlayerOpen(false);
     router.push('/');
-    
-    // Target the main scrollable element
-    const scrollContainer = document.querySelector('main');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    // Return to the upper part of the home screen
+    setTimeout(() => {
+      const scrollContainer = document.querySelector('main');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
@@ -44,7 +58,6 @@ export function FullScreenPlayer() {
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
-    // High-Fidelity Validation Threshold
     if (dx < 10 && dy < 10 && dt < 300) {
       callback();
     }
@@ -98,16 +111,23 @@ export function FullScreenPlayer() {
               <MoreHorizontal className="h-6 w-6" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="glass-card text-white w-56 border-white/10">
+          <DropdownMenuContent className="glass-card text-white w-56 border-white/10" align="end">
+            <DropdownMenuItem onPointerDown={() => playNext(currentTrack)} className="hover:bg-primary/20 cursor-pointer">
+              <Forward className="mr-2 h-4 w-4" /> Play Next
+            </DropdownMenuItem>
+            <DropdownMenuItem onPointerDown={() => addToQueue(currentTrack)} className="hover:bg-primary/20 cursor-pointer">
+              <ListMusic className="mr-2 h-4 w-4" /> Add to Queue
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="hover:bg-primary/20"><PlusCircle className="mr-2 h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger className="hover:bg-primary/20 cursor-pointer"><PlusCircle className="mr-2 h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="glass-card text-white border-white/10">
                 {playlists.map(p => (
-                  <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)} className="hover:bg-primary/20">{p.name}</DropdownMenuItem>
+                  <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)} className="hover:bg-primary/20 cursor-pointer">{p.name}</DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onPointerDown={handleDownload} className="hover:bg-primary/20"><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+            <DropdownMenuItem onPointerDown={handleDownload} className="hover:bg-primary/20 cursor-pointer"><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -119,12 +139,17 @@ export function FullScreenPlayer() {
               src={imageSrc} 
               alt={currentTrack.name} 
               fill 
-              className="object-cover transition-transform duration-[20s] linear animate-slow-zoom" 
+              className={cn("object-cover transition-transform duration-[20s] linear animate-slow-zoom", isBuffering && "opacity-50")} 
               priority 
               sizes="(max-width: 768px) 100vw, 400px"
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center"><Music2 className="h-20 w-20 text-neutral-800" /></div>
+          )}
+          {isBuffering && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+            </div>
           )}
         </div>
 
@@ -202,7 +227,13 @@ export function FullScreenPlayer() {
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
-            {isPlaying ? <Pause className="h-12 w-12 fill-current" /> : <Play className="h-12 w-12 fill-current" />}
+            {isBuffering ? (
+              <Loader2 className="h-12 w-12 animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="h-12 w-12 fill-current" />
+            ) : (
+              <Play className="h-12 w-12 fill-current" />
+            )}
           </Button>
           <Button 
             variant="ghost" 

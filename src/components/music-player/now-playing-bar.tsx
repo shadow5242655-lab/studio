@@ -1,7 +1,8 @@
+
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, ListMusic, Maximize2, Heart, Music2, X } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, ListMusic, Maximize2, Heart, Music2, X, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { cn } from '@/lib/utils';
 export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
-    toggleLike, isLiked, setIsPlayerOpen, stopTrack 
+    toggleLike, isLiked, setIsPlayerOpen, stopTrack, setIsLyricsOpen 
   } = useMusic();
 
   const { progress, duration, volume, setVolume, seek, commitSeek, setIsSeeking } = useMusicProgress();
@@ -113,8 +114,13 @@ export function NowPlayingBar() {
 
       {/* Extra Controls */}
       <div className="hidden md:flex items-center justify-end gap-3 w-[30%]">
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white touch-btn">
-          <ListMusic className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-muted-foreground hover:text-primary touch-btn"
+          onPointerDown={() => setIsLyricsOpen(true)}
+        >
+          <Mic2 className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-3 w-32 group ml-2">
           <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-white shrink-0" />

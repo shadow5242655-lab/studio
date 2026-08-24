@@ -35,7 +35,14 @@ export interface ArtistDetails {
   topAlbums?: Album[];
 }
 
+export interface LyricsData {
+  synced?: { time: number; text: string }[];
+  plain?: string;
+  id?: number;
+}
+
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
+const LYRICS_API = 'https://lrclib.net/api/get';
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
@@ -84,18 +91,6 @@ export async function getArtistDetails(artistId: string): Promise<ArtistDetails 
   }
 }
 
-export async function getCharts(): Promise<PlaylistResult[]> {
-  try {
-    const res = await fetch(`${API_BASE}/search/playlists?query=Charts&limit=10`);
-    const data = await res.json();
-    const results = data.data?.results || data.data || [];
-    return Array.isArray(results) ? results : [];
-  } catch (error) {
-    console.error('Charts fetch failed:', error);
-    return [];
-  }
-}
-
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Trending%20Songs&page=${page}&limit=20`);
@@ -108,24 +103,41 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
   }
 }
 
-export async function getLyrics(songId: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
-    const data = await res.json();
-    const lyricsObj = data.data || data;
-    if (typeof lyricsObj === 'string') return lyricsObj;
-    if (lyricsObj && typeof lyricsObj.lyrics === 'string') return lyricsObj.lyrics;
-    
-    const res2 = await fetch(`${API_BASE}/lyrics?id=${songId}`);
-    const data2 = await res2.json();
-    const lyricsObj2 = data2.data || data2;
-    if (typeof lyricsObj2 === 'string') return lyricsObj2;
-    if (lyricsObj2 && typeof lyricsObj2.lyrics === 'string') return lyricsObj2.lyrics;
+function parseLRC(lrc: string): { time: number; text: string }[] {
+  const lines = lrc.split('\n');
+  const result: { time: number; text: string }[] = [];
+  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
 
-    return null;
+  lines.forEach(line => {
+    const match = timeRegex.exec(line);
+    if (match) {
+      const minutes = parseInt(match[1]);
+      const seconds = parseInt(match[2]);
+      const milliseconds = parseInt(match[3]);
+      const time = minutes * 60 + seconds + milliseconds / (match[3].length === 3 ? 1000 : 100);
+      const text = line.replace(timeRegex, '').trim();
+      if (text) {
+        result.push({ time, text });
+      }
+    }
+  });
+  return result.sort((a, b) => a.time - b.time);
+}
+
+export async function getLyrics(artist: string, title: string): Promise<LyricsData | null> {
+  try {
+    const res = await fetch(`${LYRICS_API}?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    
+    return {
+      synced: data.syncedLyrics ? parseLRC(data.syncedLyrics) : undefined,
+      plain: data.plainLyrics || undefined,
+      id: data.id
+    };
   } catch (error) {
     console.error('Lyrics fetch failed:', error);
-    return null;
+    throw error;
   }
 }
 

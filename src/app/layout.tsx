@@ -4,6 +4,7 @@ import './globals.css';
 import { Sidebar, Header } from '@/components/music-player/sidebar';
 import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
 import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
+import { LyricsDrawer } from '@/components/music-player/lyrics-drawer';
 import { MusicProvider } from '@/components/music-player/player-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
@@ -32,6 +33,7 @@ export default function RootLayout({
             </div>
             <NowPlayingBar />
             <FullScreenPlayer />
+            <LyricsDrawer />
             <Toaster />
           </MusicProvider>
         </FirebaseClientProvider>

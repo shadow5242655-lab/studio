@@ -1,7 +1,8 @@
+
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Heart, Music2, MoreHorizontal, Download, PlusCircle, X } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Heart, Music2, MoreHorizontal, Download, PlusCircle, X, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
-    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist 
+    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist,
+    setIsLyricsOpen
   } = useMusic();
 
   const { progress, duration, seek, commitSeek, setIsSeeking } = useMusicProgress();
@@ -58,6 +60,15 @@ export function FullScreenPlayer() {
         </div>
 
         <div className="flex items-center gap-1 md:gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white/40 hover:text-primary rounded-full h-12 w-12 touch-btn"
+            onPointerDown={() => setIsLyricsOpen(true)}
+          >
+            <Mic2 className="h-6 w-6" />
+          </Button>
+          
           <Button 
             variant="ghost" 
             size="icon" 

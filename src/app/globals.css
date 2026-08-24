@@ -37,7 +37,6 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    /* Eliminate tap delay */
     touch-action: manipulation;
   }
 }
@@ -72,10 +71,6 @@
   background: #333;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
 .spotify-gradient {
   background: radial-gradient(circle at top left, #1a0505 0%, #020202 100%);
 }
@@ -101,4 +96,5 @@
 
 .touch-feedback {
   @apply active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer;
+  touch-action: manipulation;
 }

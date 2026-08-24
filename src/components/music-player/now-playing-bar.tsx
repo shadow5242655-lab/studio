@@ -33,8 +33,8 @@ export function NowPlayingBar() {
 
       {/* Track Info */}
       <div 
-        className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0 cursor-pointer touch-feedback touch-btn"
-        onPointerUp={() => setIsPlayerOpen(true)}
+        className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0 cursor-pointer touch-feedback"
+        onPointerDown={() => setIsPlayerOpen(true)}
       >
         <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
@@ -94,11 +94,8 @@ export function NowPlayingBar() {
       <div className="flex items-center justify-end gap-2 md:gap-3 w-[20%] md:w-[30%]">
         <Button 
           variant="ghost" 
-          className="text-[10px] font-black italic tracking-tighter text-white bg-primary/20 hover:bg-primary/40 gap-1 px-4 h-9 rounded-full hidden sm:flex touch-btn"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            setIsLyricsOpen(true);
-          }}
+          className="text-[10px] font-black italic tracking-tighter text-white bg-primary/20 hover:bg-primary/40 gap-2 px-4 h-9 rounded-full hidden sm:flex touch-btn"
+          onPointerDown={() => setIsLyricsOpen(true)}
         >
           <Mic2 className="h-3 w-3" />
           LYRICS
@@ -107,10 +104,7 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className="text-primary hover:bg-primary/10 sm:hidden touch-btn"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            setIsLyricsOpen(true);
-          }}
+          onPointerDown={() => setIsLyricsOpen(true)}
         >
           <Mic2 className="h-5 w-5" />
         </Button>
@@ -128,7 +122,7 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className="text-muted-foreground hover:text-white hidden md:flex touch-btn"
-          onPointerUp={() => setIsPlayerOpen(true)}
+          onPointerDown={() => setIsPlayerOpen(true)}
         >
           <Maximize2 className="h-4 w-4" />
         </Button>
@@ -136,10 +130,7 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className="text-muted-foreground hover:text-primary touch-btn ml-2"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            stopTrack();
-          }}
+          onPointerDown={stopTrack}
         >
           <X className="h-6 w-6" />
         </Button>

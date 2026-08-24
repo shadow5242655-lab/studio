@@ -61,15 +61,6 @@ export function FullScreenPlayer() {
         <div className="flex items-center gap-1 md:gap-3">
           <Button 
             variant="ghost" 
-            className="text-[10px] font-black italic tracking-[0.2em] text-white bg-primary/20 hover:bg-primary/40 rounded-full px-6 h-11 gap-2 touch-btn"
-            onPointerDown={() => setIsLyricsOpen(true)}
-          >
-            <Mic2 className="h-4 w-4" />
-            LYRICS
-          </Button>
-          
-          <Button 
-            variant="ghost" 
             size="icon" 
             className={cn("h-11 w-11 rounded-full transition-all touch-btn", liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white")}
             onPointerDown={() => toggleLike(currentTrack)}
@@ -88,11 +79,11 @@ export function FullScreenPlayer() {
                 <DropdownMenuSubTrigger className="gap-3 py-3"><PlusCircle className="h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
                   {playlists.map(p => (
-                    <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>{p.name}</DropdownMenuItem>
+                    <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)}>{p.name}</DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem onClick={handleDownload} className="gap-3 py-3"><Download className="h-4 w-4" />Download Track</DropdownMenuItem>
+              <DropdownMenuItem onPointerDown={handleDownload} className="gap-3 py-3"><Download className="h-4 w-4" />Download Track</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -139,16 +130,23 @@ export function FullScreenPlayer() {
             </div>
           </div>
           <div className="flex items-center justify-between px-2">
-            <div className="w-10" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white/40 h-10 w-10 touch-btn hover:text-primary"
+              onPointerDown={() => setIsLyricsOpen(true)}
+            >
+              <Mic2 className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-6 md:gap-12">
-              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn hover:scale-110 active:scale-90" onPointerDown={prevTrack}><SkipBack className="h-8 w-8 fill-white" /></Button>
+              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn" onPointerDown={prevTrack}><SkipBack className="h-8 w-8 fill-white" /></Button>
               <Button 
-                className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 touch-btn shadow-2xl border-4 border-white/10 hover:scale-105 active:scale-95" 
+                className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 touch-btn shadow-2xl border-4 border-white/10" 
                 onPointerDown={togglePlay}
               >
                 {isPlaying ? <Pause className="h-8 w-8 md:h-10 md:w-10 fill-white" /> : <Play className="h-8 w-8 md:h-10 md:w-10 fill-white ml-1" />}
               </Button>
-              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn hover:scale-110 active:scale-90" onPointerDown={nextTrack}><SkipForward className="h-8 w-8 fill-white" /></Button>
+              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn" onPointerDown={nextTrack}><SkipForward className="h-8 w-8 fill-white" /></Button>
             </div>
             <Button variant="ghost" size="icon" className="text-white/20 h-10 w-10 touch-btn"><Repeat className="h-5 w-5" /></Button>
           </div>

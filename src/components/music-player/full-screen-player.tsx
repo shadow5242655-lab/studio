@@ -5,14 +5,16 @@ import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHor
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, getArtistNames, formatDuration, getBestDownload } from '@/lib/music-api';
+import { getBestImage, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
 
 export function FullScreenPlayer() {
   const { currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist, setIsLyricsOpen } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
+  const router = useRouter();
 
   if (!isPlayerOpen || !currentTrack) return null;
 
@@ -22,6 +24,12 @@ export function FullScreenPlayer() {
   const handleDownload = () => {
     const url = getBestDownload(currentTrack);
     if (url) window.open(url, '_blank');
+  };
+
+  const handleArtistClick = (e: React.PointerEvent, artistName: string) => {
+    e.stopPropagation();
+    setIsPlayerOpen(false);
+    router.push(`/search?q=${encodeURIComponent(artistName)}`);
   };
 
   return (
@@ -74,7 +82,19 @@ export function FullScreenPlayer() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col min-w-0">
               <h2 className="text-3xl md:text-4xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
-              <p className="text-lg text-primary/70 font-bold uppercase tracking-widest truncate">{getArtistNames(currentTrack)}</p>
+              <p className="text-lg text-primary/70 font-bold uppercase tracking-widest truncate">
+                {currentTrack.artists.primary.map((artist, index) => (
+                  <span key={artist.id || index}>
+                    <span 
+                      onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                      className="hover:text-white hover:underline cursor-pointer"
+                    >
+                      {artist.name}
+                    </span>
+                    {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </p>
             </div>
             <Button 
               variant="ghost" 

@@ -5,12 +5,14 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, Music2, Mic2, Download } f
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, getArtistNames, formatDuration, getBestDownload } from '@/lib/music-api';
+import { getBestImage, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export function NowPlayingBar() {
   const { currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, setIsPlayerOpen, setIsLyricsOpen } = useMusic();
   const { progress, duration, volume, setVolume, seek } = useMusicProgress();
+  const router = useRouter();
   const startPos = useRef<{ x: number, y: number } | null>(null);
 
   if (!currentTrack) return null;
@@ -34,6 +36,11 @@ export function NowPlayingBar() {
   const handleDownload = () => {
     const url = getBestDownload(currentTrack);
     if (url) window.open(url, '_blank');
+  };
+
+  const handleArtistClick = (e: React.PointerEvent, artistName: string) => {
+    e.stopPropagation();
+    router.push(`/search?q=${encodeURIComponent(artistName)}`);
   };
 
   return (
@@ -66,7 +73,19 @@ export function NowPlayingBar() {
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter">{currentTrack.name}</span>
-          <span className="text-[10px] text-primary/70 font-bold truncate uppercase tracking-widest">{getArtistNames(currentTrack)}</span>
+          <span className="text-[10px] text-primary/70 font-bold truncate uppercase tracking-widest">
+            {currentTrack.artists.primary.map((artist, index) => (
+              <span key={artist.id || index}>
+                <span 
+                  onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                  className="hover:text-white hover:underline"
+                >
+                  {artist.name}
+                </span>
+                {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
+              </span>
+            ))}
+          </span>
         </div>
       </div>
 

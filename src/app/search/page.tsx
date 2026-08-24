@@ -1,33 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Search, Music, Disc, ListMusic, Loader2, ChevronRight } from 'lucide-react';
+import { Search, Music, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
   Song, searchSongs, 
-  Album, searchAlbums, 
-  PlaylistResult, searchPlaylists,
-  getBestImage,
-  getArtistNames,
   applySmartRank3
 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import Image from 'next/image';
 import { useMusic } from '@/components/music-player/player-context';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-
-type SearchCategory = 'all' | 'songs' | 'albums' | 'playlists';
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<SearchCategory>('all');
   const [rawSongs, setRawSongs] = useState<Song[]>([]);
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [playlists, setPlaylists] = useState<PlaylistResult[]>([]);
   const [loading, setLoading] = useState(false);
   const { playTrack, songPopularity, recordSearchSelection } = useMusic();
 
@@ -42,28 +30,16 @@ function SearchContent() {
     const timer = setTimeout(async () => {
       if (!query.trim()) {
         setRawSongs([]);
-        setAlbums([]);
-        setPlaylists([]);
         return;
       }
       setLoading(true);
       try {
-        const [songData, albumData, playlistData] = await Promise.all([
-          searchSongs(query),
-          searchAlbums(query),
-          searchPlaylists(query)
-        ]);
-        
+        const songData = await searchSongs(query);
         // Deduplicate results
         const uniqueSongs = Array.from(new Map(songData.map(item => [item.id, item])).values());
-        const uniqueAlbums = Array.from(new Map(albumData.map(item => [item.id, item])).values());
-        const uniquePlaylists = Array.from(new Map(playlistData.map(item => [item.id, item])).values());
-
         setRawSongs(uniqueSongs);
-        setAlbums(uniqueAlbums);
-        setPlaylists(uniquePlaylists);
       } catch (error) {
-        console.error('Unified search failed', error);
+        console.error('Search failed', error);
       } finally {
         setLoading(false);
       }
@@ -82,185 +58,66 @@ function SearchContent() {
     playTrack(song, rankedSongs);
   };
 
-  const categories: { label: string; value: SearchCategory; icon: any }[] = [
-    { label: 'All', value: 'all', icon: Search },
-    { label: 'Songs', value: 'songs', icon: Music },
-    { label: 'Albums', value: 'albums', icon: Disc },
-    { label: 'Playlists', value: 'playlists', icon: ListMusic },
-  ];
-
   return (
-    <div className="p-8 pb-32 min-h-full">
-      <div className="max-w-xl relative mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+    <div className="p-8 pb-32 min-h-full max-w-7xl mx-auto">
+      <div className="max-w-2xl relative mb-12">
+        <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-neutral-500" />
         <Input
-          placeholder="Artists, songs, or playlists"
-          className="pl-12 bg-neutral-900 border-none rounded-full h-14 text-xl focus-visible:ring-primary/50 shadow-2xl"
+          placeholder="Search for high-fidelity sounds, artists, or vibes..."
+          className="pl-16 bg-neutral-900 border-none rounded-2xl h-16 text-xl focus-visible:ring-primary/50 shadow-2xl transition-all"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          autoFocus
         />
         {loading && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <div className="absolute right-6 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         )}
       </div>
 
-      {query && (
-        <div className="flex items-center gap-2 mb-12 overflow-x-auto no-scrollbar pb-2">
-          {categories.map((cat) => (
-            <Button
-              key={cat.value}
-              variant={category === cat.value ? 'default' : 'secondary'}
-              onClick={() => setCategory(cat.value)}
-              className={cn(
-                "rounded-full px-6 gap-2 transition-all font-bold",
-                category === cat.value ? "bg-primary text-white scale-105 shadow-lg shadow-primary/20" : "bg-neutral-900 text-neutral-400 hover:text-white"
-              )}
-            >
-              <cat.icon className="h-4 w-4" />
-              {cat.label}
-            </Button>
-          ))}
-        </div>
-      )}
-
       {query ? (
-        <div className="space-y-16 animate-in fade-in duration-500">
-          {/* Songs Section - Powered by SmartRank3 */}
-          {(category === 'all' || category === 'songs') && (
-            <section>
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <Music className="h-6 w-6 text-primary" />
+        <div className="space-y-12 animate-in fade-in duration-500">
+          <section>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Music className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black tracking-tighter uppercase italic">Search Results</h2>
+                <p className="text-[9px] font-bold text-primary italic tracking-widest uppercase">SmartRank3 Prioritized</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {loading ? (
+                Array(10).fill(0).map((_, i) => (
+                  <div key={`skeleton-song-${i}`} className="space-y-3">
+                    <Skeleton className="aspect-square w-full rounded-2xl" />
+                    <Skeleton className="h-4 w-3/4" />
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tighter uppercase italic">Songs</h2>
-                    <p className="text-[9px] font-bold text-primary italic tracking-widest uppercase">SmartRank3 Prioritized</p>
-                  </div>
+                ))
+              ) : rankedSongs.map((song) => (
+                <div key={`search-song-${song.id}`} onClick={() => handleSongClick(song)}>
+                  <SongCard song={song} playlist={rankedSongs} />
                 </div>
-                {category === 'all' && rankedSongs.length > 5 && (
-                  <Button variant="ghost" className="text-primary gap-2" onClick={() => setCategory('songs')}>
-                    View All <ChevronRight className="h-4 w-4" />
-                  </Button>
-                )}
+              ))}
+            </div>
+            
+            {!loading && rankedSongs.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="text-neutral-500 italic text-xl font-bold uppercase tracking-widest">No matching frequencies found.</p>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {loading ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <div key={`skeleton-song-${i}`} className="space-y-3">
-                      <Skeleton className="aspect-square w-full rounded-2xl" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  ))
-                ) : (category === 'all' ? rankedSongs.slice(0, 5) : rankedSongs).map((song) => (
-                  <div key={`search-song-${song.id}`} onClick={() => handleSongClick(song)}>
-                    <SongCard song={song} playlist={rankedSongs} />
-                  </div>
-                ))}
-              </div>
-              {category === 'all' && rankedSongs.length === 0 && !loading && (
-                <p className="text-neutral-500 italic">No songs found.</p>
-              )}
-            </section>
-          )}
-
-          {/* Albums Section */}
-          {(category === 'all' || category === 'albums') && (
-            <section>
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <Disc className="h-6 w-6 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-black tracking-tighter uppercase italic">Albums</h2>
-                </div>
-                {category === 'all' && albums.length > 5 && (
-                  <Button variant="ghost" className="text-primary gap-2" onClick={() => setCategory('albums')}>
-                    View All <ChevronRight className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {loading ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <div key={`skeleton-album-${i}`} className="space-y-3">
-                      <Skeleton className="aspect-square w-full rounded-2xl" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  ))
-                ) : (category === 'all' ? albums.slice(0, 5) : albums).map((album) => (
-                  <div key={`search-album-${album.id}`} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
-                    <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
-                      {getBestImage(album) ? (
-                        <Image src={getBestImage(album)!} alt={album.name} fill className="object-cover transition-transform group-hover:scale-110" />
-                      ) : (
-                        <Disc className="h-16 w-16 text-neutral-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                      )}
-                    </div>
-                    <h3 className="font-bold text-white truncate mb-1">{album.name}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{getArtistNames(album)}</p>
-                  </div>
-                ))}
-              </div>
-              {category === 'all' && albums.length === 0 && !loading && (
-                <p className="text-neutral-500 italic">No albums found.</p>
-              )}
-            </section>
-          )}
-
-          {/* Playlists Section */}
-          {(category === 'all' || category === 'playlists') && (
-            <section>
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <ListMusic className="h-6 w-6 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-black tracking-tighter uppercase italic">Playlists</h2>
-                </div>
-                {category === 'all' && playlists.length > 5 && (
-                  <Button variant="ghost" className="text-primary gap-2" onClick={() => setCategory('playlists')}>
-                    View All <ChevronRight className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {loading ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <div key={`skeleton-playlist-${i}`} className="space-y-3">
-                      <Skeleton className="aspect-square w-full rounded-2xl" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  ))
-                ) : (category === 'all' ? playlists.slice(0, 5) : playlists).map((playlist) => (
-                  <div key={`search-playlist-${playlist.id}`} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
-                    <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
-                      {getBestImage(playlist) ? (
-                        <Image src={getBestImage(playlist)!} alt={playlist.name} fill className="object-cover transition-transform group-hover:scale-110" />
-                      ) : (
-                        <ListMusic className="h-16 w-16 text-neutral-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                      )}
-                    </div>
-                    <h3 className="font-bold text-white truncate mb-1">{playlist.name}</h3>
-                    <p className="text-xs text-muted-foreground truncate">Playlist • {playlist.songCount || 'Various'} tracks</p>
-                  </div>
-                ))}
-              </div>
-              {category === 'all' && playlists.length === 0 && !loading && (
-                <p className="text-neutral-500 italic">No playlists found.</p>
-              )}
-            </section>
-          )}
+            )}
+          </section>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-          <div className="bg-neutral-900 p-12 rounded-full mb-8 shadow-2xl border border-white/5">
-            <Search className="h-20 w-20 text-neutral-800" />
+        <div className="flex flex-col items-center justify-center py-32 text-center opacity-40">
+          <div className="bg-neutral-900 p-12 rounded-full mb-8 border border-white/5">
+            <Search className="h-24 w-24 text-neutral-800" />
           </div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Start your discovery</h2>
-          <p className="text-neutral-500 max-sm font-medium">Search for your favorite songs, artists, albums, and playlists in one place.</p>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Artist Discovery</h2>
+          <p className="text-neutral-500 max-w-sm font-medium">Search for an artist or tap their name on any track to instantly filter their high-fidelity lineage.</p>
         </div>
       )}
     </div>
@@ -269,7 +126,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-neutral-500">Loading search...</div>}>
+    <Suspense fallback={<div className="p-8 text-neutral-500">Loading discovery engine...</div>}>
       <SearchContent />
     </Suspense>
   );

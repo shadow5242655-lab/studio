@@ -6,7 +6,7 @@ import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 interface SongCardProps {
   song: Song;
@@ -15,6 +15,7 @@ interface SongCardProps {
 
 export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps) {
   const { playTrack, currentTrack, isPlaying, togglePlay } = useMusic();
+  const router = useRouter();
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
   
@@ -34,6 +35,11 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
       playTrack(song, playlist);
     }
     startPos.current = null;
+  };
+
+  const handleArtistClick = (e: React.PointerEvent, artistName: string) => {
+    e.stopPropagation();
+    router.push(`/search?q=${encodeURIComponent(artistName)}`);
   };
 
   return (
@@ -81,7 +87,17 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           {song.name}
         </h3>
         <p className="text-[10px] text-neutral-400 truncate uppercase font-medium">
-          {getArtistNames(song)}
+          {song.artists.primary.map((artist, index) => (
+            <span key={artist.id || index}>
+              <span 
+                onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                className="hover:text-white hover:underline cursor-pointer"
+              >
+                {artist.name}
+              </span>
+              {index < song.artists.primary.length - 1 ? ', ' : ''}
+            </span>
+          ))}
         </p>
       </div>
     </div>

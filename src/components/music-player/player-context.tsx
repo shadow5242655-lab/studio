@@ -10,6 +10,19 @@ export interface Playlist {
   createdAt: number;
 }
 
+export interface ExclusionRule {
+  id: string;
+  type: 'artist' | 'song' | 'genre';
+  value: string;
+}
+
+export interface TasteProfile {
+  personaTitle: string;
+  description: string;
+  dominantMood: string;
+  recommendationStyle: string;
+}
+
 interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
@@ -24,6 +37,8 @@ interface MusicStateContextType {
   loadingLyrics: boolean;
   lyricsError: string | null;
   smartMood: boolean;
+  exclusionRules: ExclusionRule[];
+  tasteProfile: TasteProfile | null;
   setIsPlayerOpen: (open: boolean) => void;
   setIsLyricsOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
@@ -41,6 +56,9 @@ interface MusicStateContextType {
   removeFromHistory: (songId: string) => void;
   clearHistory: () => void;
   setSmartMood: (enabled: boolean) => void;
+  addExclusionRule: (type: ExclusionRule['type'], value: string) => void;
+  removeExclusionRule: (id: string) => void;
+  setTasteProfile: (profile: TasteProfile | null) => void;
 }
 
 interface MusicProgressContextType {
@@ -59,7 +77,7 @@ const MusicStateContext = createContext<MusicStateContextType | undefined>(undef
 const MusicProgressContext = createContext<MusicProgressContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
-  // --- STATE CONTEXT DATA (Low Frequency Updates) ---
+  // --- STATE CONTEXT DATA ---
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayerOpenState, setIsPlayerOpenState] = useState(false);
@@ -73,6 +91,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [lyrics, setLyrics] = useState<LyricsData | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
+  const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile | null>(null);
 
   // --- PROGRESS CONTEXT DATA (High Frequency 60FPS updates) ---
   const [volumeState, setVolumeState] = useState(0.7);
@@ -96,7 +116,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const onPause = () => setIsPlaying(false);
     
     const handleEnded = () => {
-      // Auto-play logic
       if (queue.length > 0) {
         nextTrack();
       }
@@ -113,16 +132,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [queue]); // Re-add listener if queue changes to ensure nextTrack is fresh
+  }, [queue]);
 
-  // 60FPS Loop for progress updates - Crucial for zero-lag UI
   useEffect(() => {
     const updateProgress = (time: number) => {
       if (audioRef.current && isPlaying && !isSeeking) {
         const currentTime = audioRef.current.currentTime;
         setProgress(currentTime);
         
-        // Track listening time for insights
         if (time - lastTimeRef.current > 10000) {
           setTotalListeningTime(prev => prev + 10);
           lastTimeRef.current = time;
@@ -257,12 +274,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   
   const clearHistory = useCallback(() => setPlayedHistory([]), []);
 
+  const addExclusionRule = useCallback((type: ExclusionRule['type'], value: string) => {
+    setExclusionRules(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), type, value }]);
+  }, []);
+
+  const removeExclusionRule = useCallback((id: string) => {
+    setExclusionRules(prev => prev.filter(r => r.id !== id));
+  }, []);
+
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen: isPlayerOpenState, isLyricsOpen: isLyricsOpenState, queue, likedSongs, playlists, songPopularity, playedHistory,
-    lyrics, loadingLyrics, lyricsError, smartMood,
+    lyrics, loadingLyrics, lyricsError, smartMood, exclusionRules, tasteProfile,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked,
-    createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood
-  }), [currentTrack, isPlaying, isPlayerOpenState, isLyricsOpenState, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood]);
+    createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood,
+    addExclusionRule, removeExclusionRule, setTasteProfile
+  }), [currentTrack, isPlaying, isPlayerOpenState, isLyricsOpenState, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, exclusionRules, tasteProfile, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood, addExclusionRule, removeExclusionRule, setTasteProfile]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume: volumeState, totalListeningTime, isSeeking, seek, commitSeek, setVolume, setIsSeeking

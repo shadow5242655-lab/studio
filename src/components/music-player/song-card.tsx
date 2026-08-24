@@ -1,11 +1,12 @@
 'use client';
 
-import React, { memo } from 'react';
-import { Play, Music2, Pause } from 'lucide-react';
+import React, { memo, useMemo } from 'react';
+import { Play, Music2, Pause, Star } from 'lucide-react';
 import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface SongCardProps {
   song: Song;
@@ -17,32 +18,45 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
 
+  const rankInfo = useMemo(() => {
+    const name = song.name.toLowerCase();
+    if (name.includes('cover') || name.includes('reprise')) return { label: 'COVER', variant: 'outline' as const };
+    if (name.includes('remix') || name.includes('edit')) return { label: 'VERSION', variant: 'secondary' as const };
+    return { label: 'ORIGINAL', variant: 'default' as const };
+  }, [song.name]);
+
   return (
     <div 
-      className="group bg-neutral-900/40 p-4 rounded-xl transition-all hover:bg-neutral-800/60 cursor-pointer relative"
-      onClick={() => playTrack(song, playlist)}
+      className="group glass-card p-4 rounded-2xl transition-all hover:bg-white/10 cursor-pointer relative lag-free-tap"
+      onPointerDown={() => playTrack(song, playlist)}
     >
-      <div className="relative aspect-square mb-4 rounded-lg overflow-hidden shadow-lg bg-neutral-900 flex items-center justify-center">
+      <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 flex items-center justify-center">
         {imageSrc ? (
           <Image
             src={imageSrc}
             alt={song.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform group-hover:scale-110"
             sizes="(max-width: 768px) 50vw, 200px"
           />
         ) : (
           <Music2 className="h-12 w-12 text-neutral-800" />
         )}
         
+        <div className="absolute top-2 left-2 flex gap-1">
+          <Badge variant={rankInfo.variant} className="text-[8px] font-black tracking-tighter px-1.5 py-0">
+            {rankInfo.label}
+          </Badge>
+        </div>
+        
         <div 
-          onClick={(e) => {
+          onPointerDown={(e) => {
             e.stopPropagation();
             if (isActive) togglePlay();
             else playTrack(song, playlist);
           }}
           className={cn(
-            "absolute bottom-2 right-2 p-3 bg-green-500 text-black rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0 hover:scale-105 active:scale-95",
+            "absolute bottom-2 right-2 p-3 bg-primary text-black rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0 hover:scale-105 active:scale-95",
             isActive && isPlaying && "opacity-100 translate-y-0"
           )}
         >
@@ -52,12 +66,12 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
 
       <div className="space-y-1">
         <h3 className={cn(
-          "font-semibold text-sm truncate",
-          isActive ? "text-green-500" : "text-white"
+          "font-bold text-sm truncate uppercase tracking-tight italic",
+          isActive ? "text-primary neon-glow" : "text-white"
         )}>
           {song.name}
         </h3>
-        <p className="text-xs text-neutral-400 truncate">
+        <p className="text-[10px] text-neutral-400 truncate uppercase font-medium">
           {getArtistNames(song)}
         </p>
       </div>

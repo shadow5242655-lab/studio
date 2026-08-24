@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 
 export function FullScreenPlayer() {
-  const { currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist } = useMusic();
+  const { currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist, setIsLyricsOpen } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
 
   if (!isPlayerOpen || !currentTrack) return null;
@@ -21,72 +21,80 @@ export function FullScreenPlayer() {
 
   const handleDownload = () => {
     const url = getBestDownload(currentTrack);
-    if (url) {
-      window.open(url, '_blank');
-    }
+    if (url) window.open(url, '_blank');
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
-      <header className="flex items-center justify-between p-6">
-        <Button variant="ghost" size="icon" onClick={() => setIsPlayerOpen(false)} className="text-white">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
+      <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-t from-primary/10 to-transparent" />
+      
+      <header className="flex items-center justify-between p-6 z-10">
+        <Button variant="ghost" size="icon" onPointerDown={() => setIsPlayerOpen(false)} className="text-white hover:bg-white/5 lag-free-tap">
           <ChevronDown className="h-8 w-8" />
         </Button>
-        <span className="text-xs font-bold tracking-widest uppercase">Now Playing</span>
+        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-primary italic neon-glow">Resonating Now</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/5 lag-free-tap">
               <MoreHorizontal className="h-6 w-6" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-56">
+          <DropdownMenuContent className="glass-card text-white w-56">
             <DropdownMenuSub>
               <DropdownMenuSubTrigger><PlusCircle className="mr-2 h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
+              <DropdownMenuSubContent className="glass-card text-white">
                 {playlists.map(p => (
-                  <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>{p.name}</DropdownMenuItem>
+                  <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)}>{p.name}</DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onClick={handleDownload}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+            <DropdownMenuItem onPointerDown={handleDownload}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-12">
-        <div className="relative aspect-square w-full max-w-sm rounded-xl overflow-hidden shadow-2xl bg-neutral-900">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-10 z-10">
+        <div className="relative aspect-square w-full max-w-sm rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
           {imageSrc ? (
-            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority />
+            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover transition-transform duration-[20s] linear animate-slow-zoom" priority />
           ) : (
             <div className="h-full w-full flex items-center justify-center"><Music2 className="h-20 w-20 text-neutral-800" /></div>
           )}
         </div>
 
-        <div className="w-full space-y-2">
+        <Button 
+          onPointerDown={() => setIsLyricsOpen(true)}
+          className="h-14 px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-3 lag-free-tap hover:bg-primary/10 transition-colors"
+        >
+          <Mic2 className="h-5 w-5" />
+          Lyrics
+        </Button>
+
+        <div className="w-full space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col min-w-0">
-              <h2 className="text-2xl font-bold text-white truncate">{currentTrack.name}</h2>
-              <p className="text-lg text-neutral-400 truncate">{getArtistNames(currentTrack)}</p>
+              <h2 className="text-3xl md:text-4xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
+              <p className="text-lg text-primary/70 font-bold uppercase tracking-widest truncate">{getArtistNames(currentTrack)}</p>
             </div>
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => toggleLike(currentTrack)}
-              className={cn(liked ? "text-green-500" : "text-neutral-400")}
+              onPointerDown={() => toggleLike(currentTrack)}
+              className={cn("lag-free-tap transition-colors", liked ? "text-primary" : "text-neutral-500")}
             >
-              <Heart className={cn("h-7 w-7", liked && "fill-current")} />
+              <Heart className={cn("h-8 w-8", liked && "fill-current neon-glow")} />
             </Button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Slider 
               value={[progress]} 
               max={duration || 100} 
-              step={1} 
+              step={0.1} 
               onValueChange={(vals) => seek(vals[0])}
               className="py-4" 
             />
-            <div className="flex items-center justify-between text-xs text-neutral-400">
+            <div className="flex items-center justify-between text-[10px] font-black tracking-widest text-neutral-500 uppercase">
               <span>{formatDuration(progress)}</span>
               <span>{formatDuration(duration)}</span>
             </div>
@@ -94,16 +102,16 @@ export function FullScreenPlayer() {
         </div>
 
         <div className="flex items-center justify-between w-full max-w-xs">
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110" onClick={prevTrack}>
+          <Button variant="ghost" size="icon" className="text-white hover:scale-110 lag-free-tap" onPointerDown={prevTrack}>
             <SkipBack className="h-10 w-10 fill-current" />
           </Button>
           <Button 
-            className="bg-white text-black rounded-full h-20 w-20 p-0 hover:scale-105" 
-            onClick={togglePlay}
+            className="bg-primary text-black rounded-full h-24 w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.3)] lag-free-tap" 
+            onPointerDown={togglePlay}
           >
-            {isPlaying ? <Pause className="h-10 w-10 fill-current" /> : <Play className="h-10 w-10 fill-current" />}
+            {isPlaying ? <Pause className="h-12 w-12 fill-current" /> : <Play className="h-12 w-12 fill-current" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110" onClick={nextTrack}>
+          <Button variant="ghost" size="icon" className="text-white hover:scale-110 lag-free-tap" onPointerDown={nextTrack}>
             <SkipForward className="h-10 w-10 fill-current" />
           </Button>
         </div>

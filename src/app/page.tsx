@@ -133,6 +133,7 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Massive Scrollable Catalog */}
       <div className="space-y-24">
         <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} />
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits" icon={Zap} />

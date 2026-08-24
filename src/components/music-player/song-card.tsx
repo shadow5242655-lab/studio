@@ -68,6 +68,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           <Music2 className="h-12 w-12 text-neutral-800" />
         )}
         
+        {/* Quick-Play Button Overlay */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div 
             onPointerDown={handlePointerDown}

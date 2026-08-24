@@ -160,7 +160,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // --- 5. Core Playback Logic (Declared BEFORE hooks use them) ---
+  // --- 5. Core Playback Logic ---
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     recordActiveDay();
@@ -373,6 +373,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying, totalSeconds, recordActiveDay]);
 
+  // --- 8. Lifecycle (Event listeners last to ensure functions are defined) ---
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
     else {
@@ -387,15 +388,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
+    
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => nextTrack(); 
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
     audio.addEventListener('ended', onEnded);
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    
     return () => {
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
     };
   }, [nextTrack]);
 

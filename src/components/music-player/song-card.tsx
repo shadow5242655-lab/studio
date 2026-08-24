@@ -1,11 +1,12 @@
 'use client';
 
 import React, { memo, useRef } from 'react';
-import { Play, Music2, Pause } from 'lucide-react';
-import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
+import { Play, Music2, Pause, Download } from 'lucide-react';
+import { Song, getBestImage, getArtistNames, getBestDownload } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface SongCardProps {
   song: Song;
@@ -17,7 +18,6 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
   
-  // High-fidelity touch tracking to prevent accidental scroll triggers
   const startPos = useRef<{ x: number, y: number } | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -29,11 +29,16 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     
-    // Threshold of 5px to distinguish between a tap and a scroll
     if (dx < 5 && dy < 5) {
       playTrack(song, playlist);
     }
     startPos.current = null;
+  };
+
+  const handleDownload = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    const url = getBestDownload(song);
+    if (url) window.open(url, '_blank');
   };
 
   return (
@@ -56,18 +61,29 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           <Music2 className="h-12 w-12 text-neutral-800" />
         )}
         
-        <div 
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            if (isActive) togglePlay();
-            else playTrack(song, playlist);
-          }}
-          className={cn(
-            "absolute bottom-2 right-2 p-3 bg-primary text-black rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0 hover:scale-105 active:scale-95",
-            isActive && isPlaying && "opacity-100 translate-y-0"
-          )}
-        >
-          {isActive && isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onPointerDown={handleDownload}
+            className="h-10 w-10 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all scale-90 group-hover:scale-100"
+          >
+            <Download className="h-5 w-5" />
+          </Button>
+          
+          <div 
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              if (isActive) togglePlay();
+              else playTrack(song, playlist);
+            }}
+            className={cn(
+              "p-4 bg-primary text-black rounded-full shadow-xl transition-all scale-90 group-hover:scale-110 hover:bg-primary/90 active:scale-95",
+              isActive && isPlaying && "scale-100"
+            )}
+          >
+            {isActive && isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current" />}
+          </div>
         </div>
       </div>
 

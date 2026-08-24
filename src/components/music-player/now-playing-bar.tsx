@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Music2, Mic2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Music2, Mic2, Download } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, getArtistNames, formatDuration } from '@/lib/music-api';
+import { getBestImage, getArtistNames, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
 
 export function NowPlayingBar() {
@@ -29,6 +29,11 @@ export function NowPlayingBar() {
       callback();
     }
     startPos.current = null;
+  };
+
+  const handleDownload = () => {
+    const url = getBestDownload(currentTrack);
+    if (url) window.open(url, '_blank');
   };
 
   return (
@@ -88,7 +93,7 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Volume & Lyrics */}
+      {/* Volume, Lyrics & Download */}
       <div className="flex items-center justify-end gap-6 w-[30%]">
         <div className="flex items-center gap-2 hidden md:flex">
           <Volume2 className="h-4 w-4 text-neutral-500" />
@@ -100,14 +105,24 @@ export function NowPlayingBar() {
             className="w-24"
           />
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-primary/50 hover:text-primary transition-colors lag-free-tap" 
-          onPointerDown={() => setIsLyricsOpen(true)}
-        >
-          <Mic2 className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-neutral-500 hover:text-white transition-colors lag-free-tap" 
+            onPointerDown={handleDownload}
+          >
+            <Download className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-primary/50 hover:text-primary transition-colors lag-free-tap" 
+            onPointerDown={() => setIsLyricsOpen(true)}
+          >
+            <Mic2 className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
     </div>
   );

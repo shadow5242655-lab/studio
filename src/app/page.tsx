@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3 } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMusic } from '@/components/music-player/player-context';
 
-const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
+const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs, isPopular = false }: { title: string; initialQuery?: string; icon: any; songs?: Song[]; isPopular?: boolean }) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const { songPopularity } = useMusic();
 
   useEffect(() => {
     if (externalSongs) {
@@ -22,12 +23,24 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      const unique = Array.from(new Map(data.map(item => [item.id, item])).values());
+      
+      // Deduplicate
+      let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
+      
+      // If isPopular mode, sort by the user's local popularity map
+      if (isPopular) {
+        unique = unique.sort((a, b) => {
+          const popA = songPopularity[a.id] || 0;
+          const popB = songPopularity[b.id] || 0;
+          return popB - popA;
+        });
+      }
+
       setSongs(unique);
       setLoading(false);
     };
     fetch();
-  }, [initialQuery, externalSongs]);
+  }, [initialQuery, externalSongs, isPopular, songPopularity]);
 
   if (!loading && songs.length === 0) return null;
 
@@ -122,10 +135,12 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
-        <MusicSection title="Trending Pulse" initialQuery="Top Trending" icon={TrendingUp} />
-        <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi Hits" icon={Zap} />
+        {/* Re-architected Trending Pulse using Popularity weights */}
+        <MusicSection title="Trending Pulse" initialQuery="Most Popular Hits" icon={Star} isPopular={true} />
+        
+        <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi Hits 2024" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Chill" icon={Wind} />
-        <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Hits" icon={Flame} />
+        <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Superhits" icon={Flame} />
         <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Hits" icon={Radio} />
         <MusicSection title="HIP HOP KINGS" initialQuery="Indian Hip Hop" icon={Headphones} />
         <MusicSection title="Acoustic Resonance" initialQuery="Unplugged" icon={Music2} />

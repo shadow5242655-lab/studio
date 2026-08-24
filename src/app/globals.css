@@ -83,12 +83,3 @@
   0%, 100% { transform: scaleY(0.4); }
   50% { transform: scaleY(1); }
 }
-
-.premium-shadow {
-  box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.15);
-}
-
-.text-stroke {
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
-  color: transparent;
-}

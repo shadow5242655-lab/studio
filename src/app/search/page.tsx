@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Music, Disc, ListMusic, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -18,16 +18,16 @@ import { useMusic } from '@/components/music-player/player-context';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [rawSongs, setRawSongs] = useState<Song[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const { playTrack } = useMusic();
+  const { playTrack, songPopularity, recordSearchSelection } = useMusic();
 
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!query.trim()) {
-        setSongs([]);
+        setRawSongs([]);
         setAlbums([]);
         setPlaylists([]);
         return;
@@ -39,7 +39,7 @@ export default function SearchPage() {
           searchAlbums(query),
           searchPlaylists(query)
         ]);
-        setSongs(songData);
+        setRawSongs(songData);
         setAlbums(albumData);
         setPlaylists(playlistData);
       } catch (error) {
@@ -51,6 +51,20 @@ export default function SearchPage() {
 
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Sort songs by local popularity tracker: most searched/clicked first
+  const sortedSongs = useMemo(() => {
+    return [...rawSongs].sort((a, b) => {
+      const countA = songPopularity[a.id] || 0;
+      const countB = songPopularity[b.id] || 0;
+      return countB - countA;
+    });
+  }, [rawSongs, songPopularity]);
+
+  const handleSongClick = (song: Song) => {
+    recordSearchSelection(song);
+    playTrack(song, sortedSongs);
+  };
 
   return (
     <div className="p-8 pb-32 min-h-full">
@@ -77,7 +91,10 @@ export default function SearchPage() {
               <div className="bg-primary/10 p-2 rounded-lg">
                 <Music className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-3xl font-black tracking-tighter uppercase italic">Songs</h2>
+              <div>
+                <h2 className="text-3xl font-black tracking-tighter uppercase italic">Songs</h2>
+                <p className="text-[10px] text-neutral-500 font-bold tracking-widest uppercase">Sorted by your popularity</p>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {loading ? (
@@ -88,9 +105,11 @@ export default function SearchPage() {
                     <Skeleton className="h-3 w-1/2" />
                   </div>
                 ))
-              ) : songs.length > 0 ? (
-                songs.map((song) => (
-                  <SongCard key={song.id} song={song} playlist={songs} />
+              ) : sortedSongs.length > 0 ? (
+                sortedSongs.map((song) => (
+                  <div key={song.id} onClick={() => handleSongClick(song)}>
+                    <SongCard song={song} playlist={sortedSongs} />
+                  </div>
                 ))
               ) : (
                 <p className="text-neutral-500 italic col-span-full">No songs found.</p>

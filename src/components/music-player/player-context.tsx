@@ -21,6 +21,7 @@ interface MusicContextType {
   likedSongs: Song[];
   playlists: Playlist[];
   totalListeningTime: number;
+  songPopularity: Record<string, number>;
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   togglePlay: () => void;
@@ -34,6 +35,7 @@ interface MusicContextType {
   addToPlaylist: (playlistId: string, track: Song) => void;
   removeFromPlaylist: (playlistId: string, trackId: string) => void;
   deletePlaylist: (playlistId: string) => void;
+  recordSearchSelection: (song: Song) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -49,6 +51,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [totalListeningTime, setTotalListeningTime] = useState(0);
+  const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -80,6 +83,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedTime) {
       setTotalListeningTime(parseInt(savedTime, 10));
     }
+
+    const savedPopularity = localStorage.getItem('ayumusic_popularity');
+    if (savedPopularity) {
+      try {
+        setSongPopularity(JSON.parse(savedPopularity));
+      } catch (e) {
+        console.error("Failed to parse popularity map", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -97,6 +109,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
   }, [totalListeningTime]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_popularity', JSON.stringify(songPopularity));
+  }, [songPopularity]);
 
   // Track total time played
   useEffect(() => {
@@ -236,11 +252,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlaylists(prev => prev.filter(p => p.id !== playlistId));
   };
 
+  const recordSearchSelection = (song: Song) => {
+    setSongPopularity(prev => ({
+      ...prev,
+      [song.id]: (prev[song.id] || 0) + 1
+    }));
+  };
+
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity,
       setIsPlayerOpen, playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
-      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist
+      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection
     }}>
       {children}
     </MusicContext.Provider>

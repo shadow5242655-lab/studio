@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -24,7 +23,9 @@ export default function GenresPage() {
     async function fetchGenre() {
       setLoading(true);
       const data = await searchSongs(selectedGenre);
-      setSongs(data);
+      // Deduplicate results
+      const uniqueSongs = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setSongs(uniqueSongs);
       setLoading(false);
     }
     fetchGenre();
@@ -63,11 +64,11 @@ export default function GenresPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {loading ? (
             Array(10).fill(0).map((_, i) => (
-              <div key={i} className="h-48 bg-neutral-900 rounded-xl animate-pulse" />
+              <div key={`genre-skeleton-${i}`} className="h-48 bg-neutral-900 rounded-xl animate-pulse" />
             ))
           ) : (
             songs.map((song) => (
-              <SongCard key={song.id} song={song} playlist={songs} />
+              <SongCard key={`genre-song-${song.id}`} song={song} playlist={songs} />
             ))
           )}
         </div>

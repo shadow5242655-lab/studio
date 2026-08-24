@@ -13,7 +13,6 @@ import {
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 import { useMusic } from '@/components/music-player/player-context';
 
 export default function SearchPage() {
@@ -39,9 +38,15 @@ export default function SearchPage() {
           searchAlbums(query),
           searchPlaylists(query)
         ]);
-        setRawSongs(songData);
-        setAlbums(albumData);
-        setPlaylists(playlistData);
+        
+        // Deduplicate
+        const uniqueSongs = Array.from(new Map(songData.map(item => [item.id, item])).values());
+        const uniqueAlbums = Array.from(new Map(albumData.map(item => [item.id, item])).values());
+        const uniquePlaylists = Array.from(new Map(playlistData.map(item => [item.id, item])).values());
+
+        setRawSongs(uniqueSongs);
+        setAlbums(uniqueAlbums);
+        setPlaylists(uniquePlaylists);
       } catch (error) {
         console.error('Unified search failed', error);
       } finally {
@@ -52,7 +57,6 @@ export default function SearchPage() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Sort songs by local popularity tracker: most searched/clicked first
   const sortedSongs = useMemo(() => {
     return [...rawSongs].sort((a, b) => {
       const countA = songPopularity[a.id] || 0;
@@ -85,7 +89,6 @@ export default function SearchPage() {
 
       {query ? (
         <div className="space-y-16 animate-in fade-in duration-500">
-          {/* Songs Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-primary/10 p-2 rounded-lg">
@@ -99,7 +102,7 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="space-y-3">
+                  <div key={`skeleton-song-${i}`} className="space-y-3">
                     <Skeleton className="aspect-square w-full rounded-2xl" />
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -107,7 +110,7 @@ export default function SearchPage() {
                 ))
               ) : sortedSongs.length > 0 ? (
                 sortedSongs.map((song) => (
-                  <div key={song.id} onClick={() => handleSongClick(song)}>
+                  <div key={`search-song-${song.id}`} onClick={() => handleSongClick(song)}>
                     <SongCard song={song} playlist={sortedSongs} />
                   </div>
                 ))
@@ -117,7 +120,6 @@ export default function SearchPage() {
             </div>
           </section>
 
-          {/* Albums Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-neutral-800 p-2 rounded-lg">
@@ -128,7 +130,7 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="space-y-3">
+                  <div key={`skeleton-album-${i}`} className="space-y-3">
                     <Skeleton className="aspect-square w-full rounded-2xl" />
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -136,7 +138,7 @@ export default function SearchPage() {
                 ))
               ) : albums.length > 0 ? (
                 albums.map((album) => (
-                  <div key={album.id} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
+                  <div key={`search-album-${album.id}`} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
                     <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
                       {getBestImage(album) ? (
                         <Image src={getBestImage(album)!} alt={album.name} fill className="object-cover transition-transform group-hover:scale-110" />
@@ -154,7 +156,6 @@ export default function SearchPage() {
             </div>
           </section>
 
-          {/* Playlists Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-neutral-800 p-2 rounded-lg">
@@ -165,7 +166,7 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="space-y-3">
+                  <div key={`skeleton-playlist-${i}`} className="space-y-3">
                     <Skeleton className="aspect-square w-full rounded-2xl" />
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -173,7 +174,7 @@ export default function SearchPage() {
                 ))
               ) : playlists.length > 0 ? (
                 playlists.map((playlist) => (
-                  <div key={playlist.id} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
+                  <div key={`search-playlist-${playlist.id}`} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
                     <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
                       {getBestImage(playlist) ? (
                         <Image src={getBestImage(playlist)!} alt={playlist.name} fill className="object-cover transition-transform group-hover:scale-110" />

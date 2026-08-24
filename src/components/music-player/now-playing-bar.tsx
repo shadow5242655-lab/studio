@@ -13,13 +13,19 @@ export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
     progress, duration, seek, volume, setVolume, toggleLike, isLiked,
-    setIsPlayerOpen, stopTrack 
+    setIsPlayerOpen, setPlayerView, stopTrack 
   } = useMusic();
 
   if (!currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
   const liked = isLiked(currentTrack.id);
+
+  const handleLyricsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPlayerView('lyrics');
+    setIsPlayerOpen(true);
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-effect border-t border-white/5 px-4 md:px-6 flex items-center justify-between z-50 group">
@@ -120,7 +126,7 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className="text-muted-foreground hover:text-white touch-feedback"
-          onClick={() => setIsPlayerOpen(true)}
+          onClick={handleLyricsClick}
         >
           <Mic2 className="h-4 w-4" />
         </Button>

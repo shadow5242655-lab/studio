@@ -16,10 +16,13 @@ export interface ExclusionRule {
   value: string;
 }
 
+type PlayerView = 'cover' | 'lyrics';
+
 interface MusicContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
   isPlayerOpen: boolean;
+  playerView: PlayerView;
   volume: number;
   progress: number;
   duration: number;
@@ -35,6 +38,7 @@ interface MusicContextType {
   lyrics: string | null;
   loadingLyrics: boolean;
   setIsPlayerOpen: (open: boolean) => void;
+  setPlayerView: (view: PlayerView) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   stopTrack: () => void;
   togglePlay: () => void;
@@ -62,7 +66,8 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [isPlayerOpenState, setIsPlayerOpenState] = useState(false);
+  const [playerView, setPlayerViewState] = useState<PlayerView>('cover');
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -223,6 +228,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume]);
 
+  const setIsPlayerOpen = useCallback((open: boolean) => {
+    setIsPlayerOpenState(open);
+    if (!open) setPlayerViewState('cover'); // Reset to cover when closed
+  }, []);
+
+  const setPlayerView = useCallback((view: PlayerView) => {
+    setPlayerViewState(view);
+  }, []);
+
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
@@ -261,7 +275,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setDuration(0);
     setIsPlayerOpen(false);
     setLyrics(null);
-  }, [audioRef]);
+  }, [audioRef, setIsPlayerOpen]);
 
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
@@ -405,12 +419,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
-    setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+    currentTrack, isPlaying, isPlayerOpen: isPlayerOpenState, playerView, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
+    setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
     createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
   }), [
-    currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
-    setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+    currentTrack, isPlaying, isPlayerOpenState, playerView, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
+    setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
     createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
   ]);
 

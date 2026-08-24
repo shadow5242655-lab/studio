@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, X, Loader2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, X, Loader2, Mic2 } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ export function FullScreenPlayer() {
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, progress, duration, 
     seek, toggleLike, isLiked, playlists, addToPlaylist,
-    lyrics, loadingLyrics
+    lyrics, loadingLyrics, playerView, setPlayerView
   } = useMusic();
 
   if (!isPlayerOpen || !currentTrack) return null;
@@ -120,7 +120,11 @@ export function FullScreenPlayer() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 relative z-10 min-h-0">
-        <Tabs defaultValue="cover" className="w-full flex-1 flex flex-col items-center justify-center min-h-0">
+        <Tabs 
+          value={playerView} 
+          onValueChange={(val) => setPlayerView(val as any)}
+          className="w-full flex-1 flex flex-col items-center justify-center min-h-0"
+        >
           <TabsList className="bg-white/5 border-white/10 mb-8 rounded-full p-1 h-auto">
             <TabsTrigger value="cover" className="rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-widest italic data-[state=active]:bg-primary">Resonance</TabsTrigger>
             <TabsTrigger value="lyrics" className="rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-widest italic data-[state=active]:bg-primary">Lineage</TabsTrigger>
@@ -195,8 +199,16 @@ export function FullScreenPlayer() {
           </div>
 
           <div className="flex items-center justify-between px-2">
-            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10 touch-feedback">
-              <Shuffle className="h-5 w-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn(
+                "h-10 w-10 touch-feedback transition-colors",
+                playerView === 'lyrics' ? "text-primary bg-white/5" : "text-white/20 hover:text-white"
+              )}
+              onClick={() => setPlayerView(playerView === 'lyrics' ? 'cover' : 'lyrics')}
+            >
+              <Mic2 className="h-5 w-5" />
             </Button>
             
             <div className="flex items-center gap-6 md:gap-12">

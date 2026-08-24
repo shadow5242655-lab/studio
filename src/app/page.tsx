@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Song, getTrending } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles, Plus, Loader2 } from 'lucide-react';
+import { Play, Sparkles, Loader2 } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 
 export default function Home() {
@@ -14,32 +14,71 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const { playTrack } = useMusic();
+  
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchTrending = useCallback(async (pageNum: number) => {
+    try {
+      const data = await getTrending(pageNum);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch songs:', error);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     async function init() {
-      const data = await getTrending(1);
+      const data = await fetchTrending(1);
       setTrending(data);
       setLoading(false);
     }
     init();
-  }, []);
+  }, [fetchTrending]);
 
-  const handleHeroPlay = () => {
-    if (trending.length > 0) {
-      playTrack(trending[0], trending);
-    }
-  };
-
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     if (loadingMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
-    const newData = await getTrending(nextPage);
+    const newData = await fetchTrending(nextPage);
     if (newData.length > 0) {
       setTrending(prev => [...prev, ...newData]);
       setPage(nextPage);
     }
     setLoadingMore(false);
+  }, [page, loadingMore, fetchTrending]);
+
+  // Setup Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    if (loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    observerRef.current = observer;
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, loadingMore, handleLoadMore]);
+
+  const handleHeroPlay = () => {
+    if (trending.length > 0) {
+      playTrack(trending[0], trending);
+    }
   };
 
   return (
@@ -99,24 +138,18 @@ export default function Home() {
             )}
           </div>
 
-          {!loading && (
-            <div className="mt-12 flex justify-center">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="rounded-full border-primary/20 hover:bg-primary/10 px-10 gap-2 font-bold transition-all"
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Plus className="h-5 w-5" />
-                )}
-                {loadingMore ? 'Loading More...' : 'Show More Music'}
-              </Button>
-            </div>
-          )}
+          {/* Infinite Scroll Sentinel */}
+          <div 
+            ref={sentinelRef} 
+            className="h-20 flex items-center justify-center mt-10"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-3 text-primary font-bold animate-pulse">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span>Loading more music...</span>
+              </div>
+            )}
+          </div>
         </section>
 
         <section>

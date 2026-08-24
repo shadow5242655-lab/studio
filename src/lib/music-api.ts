@@ -1,4 +1,3 @@
-
 export interface Song {
   id: string;
   name: string;
@@ -6,6 +5,7 @@ export interface Song {
   image: { link: string; url?: string; quality: string }[];
   downloadUrl: { link: string; url?: string; quality: string }[];
   duration: number;
+  rankType?: 'ORIGINAL' | 'COVER' | 'ALTERNATE';
 }
 
 export interface Album {
@@ -44,12 +44,32 @@ export interface LyricsData {
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
 const LYRICS_API = 'https://lrclib.net/api/get';
 
+/**
+ * SmartRank3 Logic: Categorizes songs based on title keywords.
+ */
+export function getSmartRank(song: Song): 'ORIGINAL' | 'COVER' | 'ALTERNATE' {
+  const name = song.name.toLowerCase();
+  if (name.includes('cover') || name.includes('tribute')) return 'COVER';
+  if (name.includes('remix') || name.includes('acoustic') || name.includes('reprise') || name.includes('unplugged')) return 'ALTERNATE';
+  return 'ORIGINAL';
+}
+
+/**
+ * Sorts a song array using SmartRank3: Original > Covers > Alternate.
+ */
+export function sortSmartRank(songs: Song[]): Song[] {
+  return [...songs].sort((a, b) => {
+    const rankMap = { 'ORIGINAL': 0, 'COVER': 1, 'ALTERNATE': 2 };
+    return rankMap[getSmartRank(a)] - rankMap[getSmartRank(b)];
+  });
+}
+
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
     const results = data.data?.results || data.data || [];
-    return Array.isArray(results) ? results : [];
+    return Array.isArray(results) ? sortSmartRank(results) : [];
   } catch (error) {
     console.error('Search failed:', error);
     return [];
@@ -80,23 +100,12 @@ export async function searchPlaylists(query: string, page: number = 1): Promise<
   }
 }
 
-export async function getArtistDetails(artistId: string): Promise<ArtistDetails | null> {
-  try {
-    const res = await fetch(`${API_BASE}/artists?id=${artistId}`);
-    const data = await res.json();
-    return data.data || null;
-  } catch (error) {
-    console.error('Artist details fetch failed:', error);
-    return null;
-  }
-}
-
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Trending%20Songs&page=${page}&limit=20`);
     const data = await res.json();
     const results = data.data?.results || data.data || [];
-    return Array.isArray(results) ? results : [];
+    return Array.isArray(results) ? sortSmartRank(results) : [];
   } catch (error) {
     console.error('Trending fetch failed:', error);
     return [];

@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Activity, Play, Info } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -56,7 +57,6 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
 export default function Home() {
   return (
     <div className="pb-40 space-y-16 pt-8 animate-in fade-in duration-1000">
-      {/* Hero Section as per Screenshot */}
       <header className="px-6 md:px-12 py-12 relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
            <img 
@@ -99,10 +99,11 @@ export default function Home() {
         </div>
       </header>
 
+      <MusicSection title="TRENDING LOVE SONGS" initialQuery="Romantic Hits" icon={TrendingUp} />
+      <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi" icon={Zap} />
       <MusicSection title="Trending Pulse" icon={TrendingUp} />
       <MusicSection title="Studio Originals" initialQuery="New Release" icon={Disc} />
       <MusicSection title="Acoustic Resonance" initialQuery="Unplugged" icon={Music2} />
-      <MusicSection title="Neural Mix" initialQuery="Top Charts" icon={Zap} />
     </div>
   );
 }

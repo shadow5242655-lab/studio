@@ -1,3 +1,4 @@
+
 export interface Song {
   id: string;
   name: string;
@@ -109,16 +110,12 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
 
 export async function getLyrics(songId: string): Promise<string | null> {
   try {
-    // Try both standard and specific lyrics endpoints to be robust
     const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
     const data = await res.json();
-    
-    // The API might return { data: { lyrics: "..." } } or just { data: "..." }
     const lyricsObj = data.data || data;
     if (typeof lyricsObj === 'string') return lyricsObj;
     if (lyricsObj && typeof lyricsObj.lyrics === 'string') return lyricsObj.lyrics;
     
-    // Second attempt with query param if first fails
     const res2 = await fetch(`${API_BASE}/lyrics?id=${songId}`);
     const data2 = await res2.json();
     const lyricsObj2 = data2.data || data2;
@@ -141,14 +138,12 @@ export function formatDuration(seconds: number) {
 
 export function getBestImage(item: any): string | null {
   if (!item || !item.image || !Array.isArray(item.image) || item.image.length === 0) return null;
-  // Item image array usually has low, medium, high. Use index 2 or last.
   const best = item.image[item.image.length - 1];
   return best?.link || best?.url || null;
 }
 
 export function getBestDownload(song: Song): string {
   if (!song || !song.downloadUrl || !Array.isArray(song.downloadUrl) || song.downloadUrl.length === 0) return '';
-  // Usually the last one is the highest quality (320kbps)
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   return best?.link || best?.url || '';
 }

@@ -18,18 +18,14 @@ export interface ExclusionRule {
 
 type PlayerView = 'cover' | 'lyrics';
 
-interface MusicContextType {
+interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
   isPlayerOpen: boolean;
   playerView: PlayerView;
-  volume: number;
-  progress: number;
-  duration: number;
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
-  totalListeningTime: number;
   songPopularity: Record<string, number>;
   playedHistory: string[];
   exclusionRules: ExclusionRule[];
@@ -44,8 +40,6 @@ interface MusicContextType {
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
-  seek: (time: number) => void;
-  setVolume: (vol: number) => void;
   toggleLike: (track: Song) => void;
   isLiked: (trackId: string) => boolean;
   createPlaylist: (name: string, initialSongs?: Song[]) => void;
@@ -61,12 +55,22 @@ interface MusicContextType {
   setSmartMood: (enabled: boolean) => void;
 }
 
-const MusicContext = createContext<MusicContextType | undefined>(undefined);
+interface MusicProgressContextType {
+  progress: number;
+  duration: number;
+  volume: number;
+  totalListeningTime: number;
+  seek: (time: number) => void;
+  setVolume: (vol: number) => void;
+}
+
+const MusicStateContext = createContext<MusicStateContextType | undefined>(undefined);
+const MusicProgressContext = createContext<MusicProgressContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPlayerOpenState, setIsPlayerOpenState] = useState(false);
+  const [isPlayerOpen, setIsPlayerOpenInternal] = useState(false);
   const [playerView, setPlayerViewState] = useState<PlayerView>('cover');
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
@@ -86,7 +90,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastSavedTotalTimeRef = useRef(0);
 
-  // Initialize audio ref once
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -109,7 +112,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Handle song end separately to avoid closure issues with queue
   useEffect(() => {
     if (!audioRef.current) return;
     const handleEnded = () => nextTrack();
@@ -119,14 +121,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedLikes = localStorage.getItem('ayumusic_likes');
-    if (savedLikes) {
-      try { setLikedSongs(JSON.parse(savedLikes)); } catch (e) {}
-    }
+    if (savedLikes) try { setLikedSongs(JSON.parse(savedLikes)); } catch (e) {}
 
     const savedPlaylists = localStorage.getItem('ayumusic_playlists');
-    if (savedPlaylists) {
-      try { setPlaylists(JSON.parse(savedPlaylists)); } catch (e) {}
-    }
+    if (savedPlaylists) try { setPlaylists(JSON.parse(savedPlaylists)); } catch (e) {}
 
     const savedVol = localStorage.getItem('ayumusic_volume');
     if (savedVol) setVolumeState(parseFloat(savedVol));
@@ -139,30 +137,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
 
     const savedPopularity = localStorage.getItem('ayumusic_popularity');
-    if (savedPopularity) {
-      try { setSongPopularity(JSON.parse(savedPopularity)); } catch (e) {}
-    }
+    if (savedPopularity) try { setSongPopularity(JSON.parse(savedPopularity)); } catch (e) {}
 
     const savedHistory = localStorage.getItem('ayumusic_history');
-    if (savedHistory) {
-      try { setPlayedHistory(JSON.parse(savedHistory)); } catch (e) {}
-    }
+    if (savedHistory) try { setPlayedHistory(JSON.parse(savedHistory)); } catch (e) {}
 
     const savedExclusions = localStorage.getItem('ayumusic_exclusions');
-    if (savedExclusions) {
-      try { setExclusionRules(JSON.parse(savedExclusions)); } catch (e) {}
-    }
+    if (savedExclusions) try { setExclusionRules(JSON.parse(savedExclusions)); } catch (e) {}
 
     const savedTaste = localStorage.getItem('ayumusic_taste');
-    if (savedTaste) {
-      try { setTasteProfileState(JSON.parse(savedTaste)); } catch (e) {}
-    }
+    if (savedTaste) try { setTasteProfileState(JSON.parse(savedTaste)); } catch (e) {}
 
     const savedSmartMood = localStorage.getItem('ayumusic_smart_mood');
     if (savedSmartMood) setSmartMoodState(savedSmartMood === 'true');
   }, []);
 
-  // Performance Optimization: Save total time to localStorage only every 10 seconds
   useEffect(() => {
     if (Math.abs(totalListeningTime - lastSavedTotalTimeRef.current) >= 10) {
       localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
@@ -172,31 +161,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('ayumusic_likes', JSON.stringify(likedSongs));
-  }, [likedSongs]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_playlists', JSON.stringify(playlists));
-  }, [playlists]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_popularity', JSON.stringify(songPopularity));
-  }, [songPopularity]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_history', JSON.stringify(playedHistory));
-  }, [playedHistory]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_exclusions', JSON.stringify(exclusionRules));
-  }, [exclusionRules]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_taste', JSON.stringify(tasteProfile));
-  }, [tasteProfile]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_smart_mood', smartMood.toString());
-  }, [smartMood]);
+  }, [likedSongs, playlists, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -215,22 +186,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       getLyrics(currentTrack.id).then(res => {
         setLyrics(res);
         setLoadingLyrics(false);
-      }).catch((e) => {
-        console.error("Lyrics error:", e);
-        setLoadingLyrics(false);
-      });
+      }).catch(() => setLoadingLyrics(false));
     }
   }, [currentTrack]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
+    if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
   const setIsPlayerOpen = useCallback((open: boolean) => {
-    setIsPlayerOpenState(open);
-    if (!open) setPlayerViewState('cover'); // Reset to cover when closed
+    setIsPlayerOpenInternal(open);
+    if (!open) setPlayerViewState('cover');
   }, []);
 
   const setPlayerView = useCallback((view: PlayerView) => {
@@ -239,30 +205,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
-    
-    setPlayedHistory(prev => {
-      const filtered = prev.filter(id => id !== track.id);
-      return [track.id, ...filtered].slice(0, 50);
-    });
-
+    setPlayedHistory(prev => [track.id, ...prev.filter(id => id !== track.id)].slice(0, 50));
     const url = getBestDownload(track);
-    if (!url) {
-      console.warn("No download URL found for track:", track.name);
-      return;
-    }
-
-    if (audioRef.current) {
+    if (audioRef.current && url) {
       if (currentTrack?.id !== track.id) {
         audioRef.current.src = url;
         setCurrentTrack(track);
       }
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.error("Playback start failed:", err);
-      });
+      audioRef.current.play().catch(console.error);
     }
-  }, [currentTrack, audioRef]);
+  }, [currentTrack]);
 
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
@@ -273,55 +225,34 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
-    setIsPlayerOpen(false);
-    setLyrics(null);
-  }, [audioRef, setIsPlayerOpen]);
+    setIsPlayerOpenInternal(false);
+  }, []);
 
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play().catch(console.error);
-      }
+      isPlaying ? audioRef.current.pause() : audioRef.current.play().catch(console.error);
     }
-  }, [isPlaying, audioRef]);
+  }, [isPlaying]);
 
   const nextTrack = useCallback(async () => {
     if (!currentTrack) return;
-
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
-    
     if (currentIndex === queue.length - 1 && smartMood) {
-      try {
-        const seedQuery = `${currentTrack.name} ${currentTrack.artists.primary[0].name}`;
-        const moodSongs = await searchSongs(seedQuery);
-        const existingIds = new Set(queue.map(s => s.id));
-        const newMoodSongs = moodSongs.filter(s => !existingIds.has(s.id)).slice(0, 10);
-        
-        if (newMoodSongs.length > 0) {
-          const updatedQueue = [...queue, ...newMoodSongs];
-          setQueue(updatedQueue);
-          playTrack(newMoodSongs[0], updatedQueue);
-          return;
-        }
-      } catch (e) {
-        console.error('Mood fetch failed', e);
+      const moodSongs = await searchSongs(`${currentTrack.name} ${currentTrack.artists.primary[0].name}`);
+      const newSongs = moodSongs.filter(s => !queue.find(q => q.id === s.id)).slice(0, 10);
+      if (newSongs.length > 0) {
+        setQueue(prev => [...prev, ...newSongs]);
+        playTrack(newSongs[0]);
+        return;
       }
     }
-
-    if (queue.length > 0) {
-      const nextIndex = (currentIndex + 1) % queue.length;
-      playTrack(queue[nextIndex]);
-    }
+    if (queue.length > 0) playTrack(queue[(currentIndex + 1) % queue.length]);
   }, [currentTrack, queue, smartMood, playTrack]);
 
   const prevTrack = useCallback(() => {
-    if (queue.length === 0 || !currentTrack) return;
+    if (!currentTrack || queue.length === 0) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
-    if (currentIndex === -1) return;
-    const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
-    playTrack(queue[prevIndex]);
+    playTrack(queue[(currentIndex - 1 + queue.length) % queue.length]);
   }, [currentTrack, queue, playTrack]);
 
   const seek = useCallback((time: number) => {
@@ -329,114 +260,58 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.currentTime = time;
       setProgress(time);
     }
-  }, [audioRef]);
-
-  const setVolume = useCallback((vol: number) => {
-    setVolumeState(vol);
   }, []);
 
+  const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
   const toggleLike = useCallback((track: Song) => {
-    setLikedSongs(prev => {
-      const exists = prev.find(s => s.id === track.id);
-      if (exists) {
-        return prev.filter(s => s.id !== track.id);
-      }
-      return [track, ...prev];
-    });
+    setLikedSongs(prev => prev.find(s => s.id === track.id) ? prev.filter(s => s.id !== track.id) : [track, ...prev]);
   }, []);
-
-  const isLiked = useCallback((trackId: string) => {
-    return !!likedSongs.find(s => s.id === trackId);
-  }, [likedSongs]);
-
+  const isLiked = useCallback((trackId: string) => !!likedSongs.find(s => s.id === trackId), [likedSongs]);
   const createPlaylist = useCallback((name: string, initialSongs: Song[] = []) => {
-    const newPlaylist: Playlist = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      songs: initialSongs,
-      createdAt: Date.now(),
-    };
-    setPlaylists(prev => [newPlaylist, ...prev]);
+    setPlaylists(prev => [{ id: Math.random().toString(36).substr(2, 9), name, songs: initialSongs, createdAt: Date.now() }, ...prev]);
   }, []);
-
-  const addToPlaylist = useCallback((playlistId: string, track: Song) => {
-    setPlaylists(prev => prev.map(p => {
-      if (p.id === playlistId) {
-        if (p.songs.find(s => s.id === track.id)) return p;
-        return { ...p, songs: [...p.songs, track] };
-      }
-      return p;
-    }));
+  const addToPlaylist = useCallback((id: string, track: Song) => {
+    setPlaylists(prev => prev.map(p => p.id === id ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] } : p));
   }, []);
-
-  const removeFromPlaylist = useCallback((playlistId: string, trackId: string) => {
-    setPlaylists(prev => prev.map(p => {
-      if (p.id === playlistId) {
-        return { ...p, songs: p.songs.filter(s => s.id !== trackId) };
-      }
-      return p;
-    }));
+  const removeFromPlaylist = useCallback((id: string, tid: string) => {
+    setPlaylists(prev => prev.map(p => p.id === id ? { ...p, songs: p.songs.filter(s => s.id !== tid) } : p));
   }, []);
+  const deletePlaylist = useCallback((id: string) => setPlaylists(prev => prev.filter(p => p.id !== id)), []);
+  const recordSearchSelection = useCallback((song: Song) => setSongPopularity(prev => ({ ...prev, [song.id]: (prev[song.id] || 0) + 1 })), []);
+  const removeFromHistory = useCallback((id: string) => setPlayedHistory(prev => prev.filter(hid => hid !== id)), []);
+  const clearHistory = useCallback(() => setPlayedHistory([]), []);
+  const addExclusionRule = useCallback((type: any, value: string) => setExclusionRules(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), type, value }]), []);
+  const removeExclusionRule = useCallback((id: string) => setExclusionRules(prev => prev.filter(r => r.id !== id)), []);
+  const setTasteProfile = useCallback((profile: any) => setTasteProfileState(profile), []);
+  const setSmartMood = useCallback((enabled: boolean) => setSmartMoodState(enabled), []);
 
-  const deletePlaylist = useCallback((playlistId: string) => {
-    setPlaylists(prev => prev.filter(p => p.id !== playlistId));
-  }, []);
-
-  const recordSearchSelection = useCallback((song: Song) => {
-    setSongPopularity(prev => ({
-      ...prev,
-      [song.id]: (prev[song.id] || 0) + 1
-    }));
-  }, []);
-
-  const removeFromHistory = useCallback((songId: string) => {
-    setPlayedHistory(prev => prev.filter(id => id !== songId));
-  }, []);
-
-  const clearHistory = useCallback(() => {
-    setPlayedHistory([]);
-  }, []);
-
-  const addExclusionRule = useCallback((type: 'artist' | 'genre' | 'song', value: string) => {
-    const newRule: ExclusionRule = {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      value
-    };
-    setExclusionRules(prev => [...prev, newRule]);
-  }, []);
-
-  const removeExclusionRule = useCallback((ruleId: string) => {
-    setExclusionRules(prev => prev.filter(r => r.id !== ruleId));
-  }, []);
-
-  const setTasteProfile = useCallback((profile: any) => {
-    setTasteProfileState(profile);
-  }, []);
-
-  const setSmartMood = useCallback((enabled: boolean) => {
-    setSmartMoodState(enabled);
-  }, []);
-
-  const value = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen: isPlayerOpenState, playerView, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
-    setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+  const stateValue = useMemo(() => ({
+    currentTrack, isPlaying, isPlayerOpen, playerView, queue, likedSongs, playlists, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
+    setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked,
     createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
-  }), [
-    currentTrack, isPlaying, isPlayerOpenState, playerView, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics,
-    setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
-    createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood
-  ]);
+  }), [currentTrack, isPlaying, isPlayerOpen, playerView, queue, likedSongs, playlists, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, setIsPlayerOpen, setPlayerView, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood]);
+
+  const progressValue = useMemo(() => ({
+    progress, duration, volume, totalListeningTime, seek, setVolume
+  }), [progress, duration, volume, totalListeningTime, seek, setVolume]);
 
   return (
-    <MusicContext.Provider value={value}>
-      {children}
-    </MusicContext.Provider>
+    <MusicStateContext.Provider value={stateValue}>
+      <MusicProgressContext.Provider value={progressValue}>
+        {children}
+      </MusicProgressContext.Provider>
+    </MusicStateContext.Provider>
   );
 }
 
-export function useMusic() {
-  const context = useContext(MusicContext);
+export const useMusic = () => {
+  const context = useContext(MusicStateContext);
   if (!context) throw new Error('useMusic must be used within MusicProvider');
   return context;
-}
+};
+
+export const useMusicProgress = () => {
+  const context = useContext(MusicProgressContext);
+  if (!context) throw new Error('useMusicProgress must be used within MusicProvider');
+  return context;
+};

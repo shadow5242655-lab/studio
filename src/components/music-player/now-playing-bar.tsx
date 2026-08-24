@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, Mic2, ListMusic, Maximize2, Heart, Music2, X } from 'lucide-react';
-import { useMusic } from './player-context';
+import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { getBestImage, getArtistNames, formatDuration } from '@/lib/music-api';
@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils';
 export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
-    progress, duration, seek, volume, setVolume, toggleLike, isLiked,
-    setIsPlayerOpen, setPlayerView, stopTrack 
+    toggleLike, isLiked, setIsPlayerOpen, setPlayerView, stopTrack 
   } = useMusic();
+
+  const { progress, duration, volume, setVolume, seek } = useMusicProgress();
 
   if (!currentTrack) return null;
 
@@ -29,7 +30,7 @@ export function NowPlayingBar() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-effect border-t border-white/5 px-4 md:px-6 flex items-center justify-between z-50 group">
-      {/* Progress Line for Mobile (Top of bar) */}
+      {/* Progress Line for Mobile */}
       <div className="absolute top-0 left-0 right-0 md:hidden h-1 bg-white/10 overflow-hidden">
         <div 
           className="h-full bg-primary transition-all duration-300" 
@@ -44,12 +45,7 @@ export function NowPlayingBar() {
       >
         <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
-            <Image 
-              src={imageSrc} 
-              alt={currentTrack.name} 
-              fill 
-              className="object-cover"
-            />
+            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center">
               <Music2 className="h-6 w-6 text-neutral-600" />
@@ -102,7 +98,6 @@ export function NowPlayingBar() {
             <Repeat className="h-4 w-4" />
           </Button>
         </div>
-        {/* Desktop Progress Bar */}
         <div className="hidden md:flex items-center gap-3 w-full max-w-lg">
           <span className="text-[10px] text-muted-foreground w-10 text-right font-mono font-bold">
             {formatDuration(progress)}
@@ -120,7 +115,7 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Extra Controls (Desktop only) */}
+      {/* Extra Controls */}
       <div className="hidden md:flex items-center justify-end gap-3 w-[30%]">
         <Button 
           variant="ghost" 

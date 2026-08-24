@@ -13,23 +13,29 @@ export function NowPlayingBar() {
   const { currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, setIsPlayerOpen, setIsLyricsOpen } = useMusic();
   const { progress, duration, volume, setVolume, seek } = useMusicProgress();
   const router = useRouter();
-  const startPos = useRef<{ x: number, y: number } | null>(null);
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
   if (!currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY };
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
   const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
     if (!startPos.current) return;
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
-    if (dx < 5 && dy < 5) {
+    const dt = Date.now() - startPos.current.time;
+    
+    if (dx < 10 && dy < 10 && dt < 300) {
       callback();
     }
+    startPos.current = null;
+  };
+
+  const handlePointerCancel = () => {
     startPos.current = null;
   };
 
@@ -60,6 +66,7 @@ export function NowPlayingBar() {
         className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp(() => setIsPlayerOpen(true))}
+        onPointerCancel={handlePointerCancel}
         style={{ touchAction: 'manipulation' }}
       >
         <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/10 shadow-xl">
@@ -77,7 +84,9 @@ export function NowPlayingBar() {
             {currentTrack.artists.primary.map((artist, index) => (
               <span key={artist.id || index}>
                 <span 
-                  onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
+                  onPointerCancel={handlePointerCancel}
                   className="hover:text-white hover:underline"
                 >
                   {artist.name}
@@ -92,16 +101,32 @@ export function NowPlayingBar() {
       {/* Controls */}
       <div className="flex flex-col items-center gap-1 flex-1">
         <div className="flex items-center gap-8">
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white lag-free-tap" onPointerDown={prevTrack}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-neutral-500 hover:text-white lag-free-tap" 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(prevTrack)}
+            onPointerCancel={handlePointerCancel}
+          >
             <SkipBack className="h-6 w-6 fill-current" />
           </Button>
           <Button 
             className="bg-white text-black rounded-full h-12 w-12 p-0 hover:scale-110 active:scale-95 transition-transform lag-free-tap shadow-lg"
-            onPointerDown={togglePlay}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(togglePlay)}
+            onPointerCancel={handlePointerCancel}
           >
             {isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="h-7 w-7 fill-current" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white lag-free-tap" onPointerDown={nextTrack}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-neutral-500 hover:text-white lag-free-tap" 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(nextTrack)}
+            onPointerCancel={handlePointerCancel}
+          >
             <SkipForward className="h-6 w-6 fill-current" />
           </Button>
         </div>
@@ -129,7 +154,9 @@ export function NowPlayingBar() {
             variant="ghost" 
             size="icon" 
             className="text-neutral-500 hover:text-white transition-colors lag-free-tap" 
-            onPointerDown={handleDownload}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(handleDownload)}
+            onPointerCancel={handlePointerCancel}
           >
             <Download className="h-5 w-5" />
           </Button>
@@ -137,7 +164,9 @@ export function NowPlayingBar() {
             variant="ghost" 
             size="icon" 
             className="text-primary/50 hover:text-primary transition-colors lag-free-tap" 
-            onPointerDown={() => setIsLyricsOpen(true)}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
+            onPointerCancel={handlePointerCancel}
           >
             <Mic2 className="h-6 w-6" />
           </Button>

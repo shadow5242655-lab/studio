@@ -2,7 +2,7 @@
 
 import React, { memo, useRef } from 'react';
 import { Play, Music2, Pause } from 'lucide-react';
-import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
+import { Song, getBestImage } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -19,21 +19,26 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
   
-  const startPos = useRef<{ x: number, y: number } | null>(null);
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY };
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
     if (!startPos.current) return;
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
+    const dt = Date.now() - startPos.current.time;
     
-    // Validate that this was a tap, not a scroll/slide
-    if (dx < 5 && dy < 5) {
-      playTrack(song, playlist);
+    // Validate that this was a clean tap (less than 10px movement and 300ms duration)
+    if (dx < 10 && dy < 10 && dt < 300) {
+      callback();
     }
+    startPos.current = null;
+  };
+
+  const handlePointerCancel = () => {
     startPos.current = null;
   };
 
@@ -46,7 +51,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     <div 
       className="group glass-card p-4 rounded-2xl transition-all hover:bg-white/10 cursor-pointer relative lag-free-tap"
       onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+      onPointerUp={handlePointerUp(() => playTrack(song, playlist))}
+      onPointerCancel={handlePointerCancel}
       style={{ touchAction: 'manipulation' }}
     >
       <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 flex items-center justify-center">
@@ -64,11 +70,13 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
         
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div 
-            onPointerDown={(e) => {
-              e.stopPropagation();
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp((e?: any) => {
+              if (e) e.stopPropagation();
               if (isActive) togglePlay();
               else playTrack(song, playlist);
-            }}
+            })}
+            onPointerCancel={handlePointerCancel}
             className={cn(
               "p-4 bg-primary text-black rounded-full shadow-xl transition-all scale-90 group-hover:scale-110 hover:bg-primary/90 active:scale-95",
               isActive && isPlaying && "scale-100"
@@ -90,7 +98,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           {song.artists.primary.map((artist, index) => (
             <span key={artist.id || index}>
               <span 
-                onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
                 className="hover:text-white hover:underline cursor-pointer"
               >
                 {artist.name}

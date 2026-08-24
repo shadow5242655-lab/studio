@@ -23,7 +23,6 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      // Initial deduplication
       let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
       setSongs(unique);
       setLoading(false);
@@ -31,7 +30,6 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     fetch();
   }, [initialQuery, externalSongs]);
 
-  // Apply SmartRank3 locally to ensure buttery smooth sorting without API thrashing
   const rankedSongs = useMemo(() => {
     return applySmartRank3(songs, songPopularity);
   }, [songs, songPopularity]);
@@ -64,20 +62,25 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
 
 export default function Home() {
   const { playRandomTrack } = useMusic();
-  const startPos = useRef<{ x: number, y: number } | null>(null);
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY };
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
   const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
     if (!startPos.current) return;
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
-    // Threshold to distinguish between tap and scroll
-    if (dx < 5 && dy < 5) {
+    const dt = Date.now() - startPos.current.time;
+    
+    if (dx < 10 && dy < 10 && dt < 300) {
       callback();
     }
+    startPos.current = null;
+  };
+
+  const handlePointerCancel = () => {
     startPos.current = null;
   };
 
@@ -113,6 +116,7 @@ export default function Home() {
               size="lg" 
               onPointerDown={handlePointerDown}
               onPointerUp={handlePointerUp(playRandomTrack)}
+              onPointerCancel={handlePointerCancel}
               className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20"
               style={{ touchAction: 'manipulation' }}
             >
@@ -130,9 +134,7 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
-        {/* Powered by SmartRank3 popularity sorting */}
         <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} />
-        
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />
         <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Super Hits" icon={Flame} />

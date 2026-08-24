@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
@@ -15,11 +15,32 @@ export function FullScreenPlayer() {
   const { currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist, setIsLyricsOpen } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
   const router = useRouter();
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
   if (!isPlayerOpen || !currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
   const liked = isLiked(currentTrack.id);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    const dt = Date.now() - startPos.current.time;
+    
+    if (dx < 10 && dy < 10 && dt < 300) {
+      callback();
+    }
+    startPos.current = null;
+  };
+
+  const handlePointerCancel = () => {
+    startPos.current = null;
+  };
 
   const handleDownload = () => {
     const url = getBestDownload(currentTrack);
@@ -37,7 +58,14 @@ export function FullScreenPlayer() {
       <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-t from-primary/10 to-transparent" />
       
       <header className="flex items-center justify-between p-6 z-10">
-        <Button variant="ghost" size="icon" onPointerDown={() => setIsPlayerOpen(false)} className="text-white hover:bg-white/5 lag-free-tap">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp(() => setIsPlayerOpen(false))}
+          onPointerCancel={handlePointerCancel}
+          className="text-white hover:bg-white/5 lag-free-tap"
+        >
           <ChevronDown className="h-8 w-8" />
         </Button>
         <span className="text-[10px] font-black tracking-[0.3em] uppercase text-primary italic neon-glow">Resonating Now</span>
@@ -71,7 +99,9 @@ export function FullScreenPlayer() {
         </div>
 
         <Button 
-          onPointerDown={() => setIsLyricsOpen(true)}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
+          onPointerCancel={handlePointerCancel}
           className="h-14 px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-3 lag-free-tap hover:bg-primary/10 transition-colors"
         >
           <Mic2 className="h-5 w-5" />
@@ -86,7 +116,9 @@ export function FullScreenPlayer() {
                 {currentTrack.artists.primary.map((artist, index) => (
                   <span key={artist.id || index}>
                     <span 
-                      onPointerDown={(e) => handleArtistClick(e, artist.name)}
+                      onPointerDown={handlePointerDown}
+                      onPointerUp={handlePointerUp((e?: any) => handleArtistClick(e || { stopPropagation: () => {} } as any, artist.name))}
+                      onPointerCancel={handlePointerCancel}
                       className="hover:text-white hover:underline cursor-pointer"
                     >
                       {artist.name}
@@ -99,7 +131,9 @@ export function FullScreenPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onPointerDown={() => toggleLike(currentTrack)}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp(() => toggleLike(currentTrack))}
+              onPointerCancel={handlePointerCancel}
               className={cn("lag-free-tap transition-colors", liked ? "text-primary" : "text-neutral-500")}
             >
               <Heart className={cn("h-8 w-8", liked && "fill-current neon-glow")} />
@@ -122,16 +156,32 @@ export function FullScreenPlayer() {
         </div>
 
         <div className="flex items-center justify-between w-full max-w-xs">
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110 lag-free-tap" onPointerDown={prevTrack}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:scale-110 lag-free-tap" 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(prevTrack)}
+            onPointerCancel={handlePointerCancel}
+          >
             <SkipBack className="h-10 w-10 fill-current" />
           </Button>
           <Button 
             className="bg-primary text-black rounded-full h-24 w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.3)] lag-free-tap" 
-            onPointerDown={togglePlay}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(togglePlay)}
+            onPointerCancel={handlePointerCancel}
           >
             {isPlaying ? <Pause className="h-12 w-12 fill-current" /> : <Play className="h-12 w-12 fill-current" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110 lag-free-tap" onPointerDown={nextTrack}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:scale-110 lag-free-tap" 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(nextTrack)}
+            onPointerCancel={handlePointerCancel}
+          >
             <SkipForward className="h-10 w-10 fill-current" />
           </Button>
         </div>

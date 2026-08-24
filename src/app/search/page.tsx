@@ -17,7 +17,7 @@ function SearchContent() {
   const [query, setQuery] = useState('');
   const [rawSongs, setRawSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
-  const { playTrack, songPopularity, recordSearchSelection } = useMusic();
+  const { songPopularity } = useMusic();
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -35,7 +35,6 @@ function SearchContent() {
       setLoading(true);
       try {
         const songData = await searchSongs(query);
-        // Deduplicate results
         const uniqueSongs = Array.from(new Map(songData.map(item => [item.id, item])).values());
         setRawSongs(uniqueSongs);
       } catch (error) {
@@ -48,15 +47,9 @@ function SearchContent() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Apply SmartRank3 to search results to prioritize originals over covers
   const rankedSongs = useMemo(() => {
     return applySmartRank3(rawSongs, songPopularity);
   }, [rawSongs, songPopularity]);
-
-  const handleSongClick = (song: Song) => {
-    recordSearchSelection(song);
-    playTrack(song, rankedSongs);
-  };
 
   return (
     <div className="p-8 pb-32 min-h-full max-w-7xl mx-auto">
@@ -98,9 +91,7 @@ function SearchContent() {
                   </div>
                 ))
               ) : rankedSongs.map((song) => (
-                <div key={`search-song-${song.id}`} onClick={() => handleSongClick(song)}>
-                  <SongCard song={song} playlist={rankedSongs} />
-                </div>
+                <SongCard key={`search-song-${song.id}`} song={song} playlist={rankedSongs} />
               ))}
             </div>
             

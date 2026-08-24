@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -25,19 +24,19 @@ export function NowPlayingBar() {
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-effect border-t border-white/5 px-4 md:px-6 flex items-center justify-between z-50 group">
       {/* Progress Line for Mobile (Top of bar) */}
-      <div className="absolute top-0 left-0 right-0 md:hidden h-0.5 bg-white/10 overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 md:hidden h-1 bg-white/10 overflow-hidden">
         <div 
-          className="h-full bg-primary transition-all" 
+          className="h-full bg-primary transition-all duration-300" 
           style={{ width: `${(progress / (duration || 100)) * 100}%` }}
         />
       </div>
 
       {/* Track Info */}
       <div 
-        className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0 cursor-pointer"
+        className="flex items-center gap-3 md:gap-4 w-[70%] md:w-[30%] min-w-0 cursor-pointer touch-feedback"
         onClick={() => setIsPlayerOpen(true)}
       >
-        <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-md overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
+        <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
             <Image 
               src={imageSrc} 
@@ -55,7 +54,7 @@ export function NowPlayingBar() {
           <span className="text-sm font-bold text-white group-hover:text-primary transition-colors truncate">
             {currentTrack.name}
           </span>
-          <span className="text-xs text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate font-medium">
             {getArtistNames(currentTrack)}
           </span>
         </div>
@@ -63,8 +62,8 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className={cn(
-            "shrink-0 transition-colors hidden sm:flex",
-            liked ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-white"
+            "shrink-0 transition-colors hidden sm:flex touch-feedback",
+            liked ? "text-primary" : "text-muted-foreground hover:text-white"
           )}
           onClick={(e) => {
             e.stopPropagation();
@@ -76,30 +75,30 @@ export function NowPlayingBar() {
       </div>
 
       {/* Main Controls */}
-      <div className="flex flex-col items-center gap-2 max-w-[40%] md:w-full md:px-4 shrink-0">
-        <div className="flex items-center gap-4 md:gap-6">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex">
+      <div className="flex flex-col items-center gap-2 max-w-[30%] md:w-full md:px-4 shrink-0">
+        <div className="flex items-center gap-4 md:gap-8">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-feedback">
             <Shuffle className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110 transition-transform hidden sm:flex" onClick={prevTrack}>
-            <SkipBack className="h-5 w-5 fill-white" />
+          <Button variant="ghost" size="icon" className="text-white touch-feedback hidden sm:flex" onClick={prevTrack}>
+            <SkipBack className="h-6 w-6 fill-white" />
           </Button>
           <Button 
-            className="bg-white text-black rounded-full h-10 w-10 md:h-12 md:w-12 hover:scale-110 p-0 shadow-lg transition-transform"
+            className="bg-white text-black rounded-full h-11 w-11 md:h-14 md:w-14 touch-feedback p-0 shadow-xl"
             onClick={togglePlay}
           >
-            {isPlaying ? <Pause className="h-6 w-6 fill-black" /> : <Play className="h-6 w-6 fill-black ml-1" />}
+            {isPlaying ? <Pause className="h-6 w-6 md:h-7 md:w-7 fill-black" /> : <Play className="h-6 w-6 md:h-7 md:w-7 fill-black ml-1" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:scale-110 transition-transform" onClick={nextTrack}>
-            <SkipForward className="h-5 w-5 fill-white" />
+          <Button variant="ghost" size="icon" className="text-white touch-feedback" onClick={nextTrack}>
+            <SkipForward className="h-6 w-6 fill-white" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-feedback">
             <Repeat className="h-4 w-4" />
           </Button>
         </div>
         {/* Desktop Progress Bar */}
         <div className="hidden md:flex items-center gap-3 w-full max-w-lg">
-          <span className="text-[10px] text-muted-foreground w-10 text-right font-mono">
+          <span className="text-[10px] text-muted-foreground w-10 text-right font-mono font-bold">
             {formatDuration(progress)}
           </span>
           <Slider
@@ -107,9 +106,9 @@ export function NowPlayingBar() {
             max={duration || 100}
             step={0.1}
             onValueChange={(vals) => seek(vals[0])}
-            className="flex-1 cursor-pointer"
+            className="flex-1 cursor-pointer py-4"
           />
-          <span className="text-[10px] text-muted-foreground w-10 font-mono">
+          <span className="text-[10px] text-muted-foreground w-10 font-mono font-bold">
             {formatDuration(duration)}
           </span>
         </div>
@@ -120,15 +119,15 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-white transition-all scale-90"
+          className="text-muted-foreground hover:text-white touch-feedback"
           onClick={() => setIsPlayerOpen(true)}
         >
           <Mic2 className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white touch-feedback">
           <ListMusic className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2 w-28 group ml-2">
+        <div className="flex items-center gap-3 w-32 group ml-2">
           <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-white shrink-0" />
           <Slider
             value={[volume * 100]}
@@ -141,7 +140,7 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-white transition-all scale-90"
+          className="text-muted-foreground hover:text-white touch-feedback"
           onClick={() => setIsPlayerOpen(true)}
         >
           <Maximize2 className="h-4 w-4" />
@@ -149,13 +148,13 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-primary transition-all scale-90 ml-1"
+          className="text-muted-foreground hover:text-primary touch-feedback ml-2"
           onClick={(e) => {
             e.stopPropagation();
             stopTrack();
           }}
         >
-          <X className="h-5 w-5" />
+          <X className="h-6 w-6" />
         </Button>
       </div>
     </div>

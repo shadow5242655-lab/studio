@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Play, Loader2, Clock, Info, TrendingUp } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,8 @@ export default function Home() {
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
 
   const fetchTrending = useCallback(async (pageNum: number) => {
     try {
@@ -99,10 +103,10 @@ export default function Home() {
       <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden bg-neutral-900">
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
         <img 
-          src="https://picsum.photos/seed/ayu-home/1600/900" 
+          src={heroImage?.imageUrl || "https://picsum.photos/seed/music-studio-neon/1600/900"} 
           alt="Hero" 
           className="w-full h-full object-cover opacity-60"
-          data-ai-hint="music concert"
+          data-ai-hint={heroImage?.imageHint || "music studio"}
         />
         <div className="absolute bottom-0 left-0 p-6 md:p-12 z-20 space-y-4 max-w-3xl">
           <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white uppercase italic leading-[0.8]">

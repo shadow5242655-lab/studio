@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMusic } from '@/components/music-player/player-context';
 import { SongCard } from '@/components/music-player/song-card';
 import { Music2, Play, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function PlaylistDetailsPage() {
+function PlaylistDetailsContent() {
   const searchParams = useSearchParams();
   const playlistId = searchParams.get('id');
   const { playlists, deletePlaylist, playTrack } = useMusic();
@@ -93,5 +93,13 @@ export default function PlaylistDetailsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PlaylistDetailsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full text-neutral-500">Loading soundscape...</div>}>
+      <PlaylistDetailsContent />
+    </Suspense>
   );
 }

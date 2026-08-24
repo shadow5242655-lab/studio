@@ -162,25 +162,11 @@ export default function Home() {
       </div>
 
       <div className="p-6 md:p-12 space-y-16 md:space-y-24">
-        {/* Personalized Recommendations */}
-        {recommendations.length > 0 && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
-              {recommendations.map((song) => (
-                <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Trending Hits */}
+        {/* Trending Hits - MOVED TO TOP */}
         <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-4">
              <TrendingUp className="h-8 w-8 text-primary" />
-             <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Trending Now</h2>
+             <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Trending Hits</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
@@ -197,11 +183,26 @@ export default function Home() {
               ))
             )}
           </div>
-
-          <div ref={sentinelRef} className="h-40 flex items-center justify-center">
-            {loadingMore && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />}
-          </div>
         </section>
+
+        {/* Personalized Recommendations */}
+        {recommendations.length > 0 && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+              {recommendations.map((song) => (
+                <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Sentinel for Infinite Scroll - Keeps loading more trending at bottom */}
+        <div ref={sentinelRef} className="h-40 flex items-center justify-center">
+          {loadingMore && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />}
+        </div>
       </div>
     </div>
   );

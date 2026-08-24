@@ -55,6 +55,8 @@ interface MusicStateContextType {
   removeExclusionRule: (id: string) => void;
   setTasteProfile: (profile: TasteProfile) => void;
   setSmartMood: (enabled: boolean) => void;
+  songPopularity: Record<string, number>;
+  recordSearchSelection: (song: Song) => void;
 }
 
 interface MusicProgressContextType {
@@ -80,6 +82,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
   const [tasteProfile, setTasteProfileState] = useState<TasteProfile | null>(null);
   const [smartMood, setSmartMoodState] = useState(false);
+  const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
@@ -106,6 +109,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const savedProfile = localStorage.getItem('ayumusics_taste');
     if (savedProfile) setTasteProfileState(JSON.parse(savedProfile));
+
+    const savedPop = localStorage.getItem('ayumusics_popularity');
+    if (savedPop) setSongPopularity(JSON.parse(savedPop));
   }, []);
 
   const updateProgress = useCallback(() => {
@@ -312,13 +318,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setSmartMoodState(enabled);
   }, []);
 
+  const recordSearchSelection = useCallback((song: Song) => {
+    setSongPopularity(prev => {
+      const next = { ...prev, [song.id]: (prev[song.id] || 0) + 1 };
+      localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
     playedHistory, exclusionRules, tasteProfile, smartMood,
-    lyrics, loadingLyrics,
+    lyrics, loadingLyrics, songPopularity,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
-    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood,
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood]);
+    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, songPopularity, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

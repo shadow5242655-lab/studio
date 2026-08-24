@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Activity } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Activity, Play, Info } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -54,16 +56,46 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
 export default function Home() {
   return (
     <div className="pb-40 space-y-16 pt-8 animate-in fade-in duration-1000">
-      <header className="px-6 md:px-12">
-        <div className="space-y-4 max-w-2xl">
-          <div className="inline-flex items-center gap-2 text-primary font-bold tracking-[0.2em] text-[10px] uppercase">
-            <Activity className="h-3 w-3 animate-pulse" />
-            Live Discovery
+      {/* Hero Section as per Screenshot */}
+      <header className="px-6 md:px-12 py-12 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-40">
+           <img 
+            src="https://picsum.photos/seed/music-resonance/1600/900" 
+            alt="Hero Background" 
+            className="w-full h-full object-cover brightness-[0.3]"
+            data-ai-hint="music background"
+           />
+           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        </div>
+        
+        <div className="relative z-10 space-y-8 max-w-3xl pt-20">
+          <div className="flex items-center gap-3">
+            <div className="h-1 w-12 bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Verified Frequency</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-2 italic uppercase leading-none">
-            The <span className="text-primary">Resonance</span>
+          
+          <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter italic uppercase leading-none text-white">
+            AYUMUSIC
           </h1>
-          <p className="text-neutral-400 font-medium text-lg uppercase tracking-widest">Premium High-Fidelity Sound Discovery.</p>
+          
+          <p className="text-xl md:text-2xl text-neutral-300 font-medium tracking-tight max-w-xl">
+            High-fidelity resonance for the modern listener.
+          </p>
+          
+          <div className="flex flex-wrap gap-4 pt-4">
+            <Link href="/search">
+              <Button size="lg" className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap">
+                <Play className="h-6 w-6 fill-current" />
+                EXPLORE
+              </Button>
+            </Link>
+            <Link href="/intelligence">
+              <Button size="lg" variant="outline" className="h-16 px-10 rounded-full font-black text-lg gap-3 border-white/20 text-white hover:bg-white/5 lag-free-tap">
+                <Info className="h-5 w-5" />
+                INSIGHTS
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 

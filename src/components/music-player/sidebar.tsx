@@ -20,9 +20,9 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
   const navItems = [
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
-    { name: 'Intelligence', icon: Brain, href: '/intelligence' },
     { name: 'Library', icon: Library, href: '/library' },
     { name: 'Browse Genres', icon: Compass, href: '/genres' },
+    { name: 'Intelligence', icon: Brain, href: '/intelligence' },
   ];
 
   const handleCreatePlaylist = () => {
@@ -68,8 +68,8 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
 
       <div className="mt-8 flex flex-col gap-1 px-2">
         <button 
-          onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:text-white hover:bg-white/5 transition-all group"
+          onPointerDown={() => setIsDialogOpen(true)}
+          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:text-white hover:bg-white/5 transition-all group lag-free-tap"
         >
           <div className="bg-neutral-800 text-white p-1 rounded-sm group-hover:bg-neutral-700">
             <PlusSquare className="h-4 w-4" />
@@ -126,8 +126,8 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button className="bg-primary text-white" onClick={handleCreatePlaylist}>Create</Button>
+            <Button variant="ghost" onPointerDown={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button className="bg-primary text-white lag-free-tap" onPointerDown={handleCreatePlaylist}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

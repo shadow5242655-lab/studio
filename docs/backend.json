@@ -1,0 +1,66 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Extended information for the authenticated user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "persona": { "type": "string", "description": "AI-generated listening persona" },
+        "eqSettings": {
+          "type": "object",
+          "properties": {
+            "bands": { "type": "array", "items": { "type": "number" } },
+            "bassBoost": { "type": "number" }
+          }
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Follow": {
+      "title": "Follow Relationship",
+      "description": "Represents a user following an artist or another user",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string" },
+        "followingId": { "type": "string" },
+        "type": { "type": "string", "enum": ["user", "artist"] },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "MusicStory": {
+      "title": "Music Story",
+      "description": "15-second music snippet with reactions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "songId": { "type": "string" },
+        "songName": { "type": "string" },
+        "reactions": { "type": "array", "items": { "type": "string" } },
+        "expiresAt": { "type": "number" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile data"
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "Follow relationships"
+    },
+    "/stories/{storyId}": {
+      "schema": "MusicStory",
+      "description": "Ephemeral music stories"
+    }
+  }
+}

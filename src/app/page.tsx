@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -101,44 +100,44 @@ export default function Home() {
   return (
     <div className="pb-32">
       {/* Immersive Hero Section */}
-      <div className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden bg-black">
+      <div className="relative min-h-[500px] md:h-[70vh] w-full overflow-hidden bg-black flex items-end">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/60 to-black z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent z-10" />
         
         <img 
           src={heroImage?.imageUrl || "https://picsum.photos/seed/music-festival-pro/1600/900"} 
           alt="Music Experience" 
-          className="w-full h-full object-cover opacity-80 scale-105"
+          className="absolute inset-0 w-full h-full object-cover opacity-80 scale-105"
           data-ai-hint={heroImage?.imageHint || "music festival"}
         />
         
-        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12 z-20 space-y-6 max-w-4xl">
+        <div className="relative flex flex-col justify-end p-6 md:p-12 z-20 space-y-4 md:space-y-6 max-w-4xl w-full">
           <div className="flex items-center gap-2 mb-2">
             <div className="h-1 w-12 bg-primary rounded-full" />
-            <span className="text-xs font-black uppercase tracking-[0.4em] text-white/70">Verified Experience</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/70">Verified Experience</span>
           </div>
           
-          <h1 className="text-6xl md:text-9xl font-black tracking-tighter text-white uppercase italic leading-[0.85]">
+          <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white uppercase italic leading-[0.85]">
             AYUMUSIC
           </h1>
           
-          <p className="text-neutral-300 text-lg md:text-2xl max-w-xl font-medium leading-tight">
+          <p className="text-neutral-300 text-base md:text-2xl max-w-xl font-medium leading-tight">
             Dive into high-fidelity sound. Your sanctuary for pure acoustic resonance.
           </p>
           
-          <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex flex-wrap gap-4 pt-4 pb-4">
             <Button 
               size="lg" 
-              className="rounded-full px-10 md:px-16 font-black gap-3 h-16 text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
+              className="rounded-full px-8 md:px-16 font-black gap-3 h-14 md:h-16 text-lg md:text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
               onClick={() => trending.length > 0 && playTrack(trending[0], trending)}
             >
-              <Play className="h-7 w-7 fill-current" />
+              <Play className="h-6 w-6 md:h-7 md:w-7 fill-current" />
               PLAY NOW
             </Button>
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="rounded-full px-10 font-bold border-white/20 text-white hover:bg-white/10 gap-3 h-16 backdrop-blur-sm">
+                <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-3 h-14 md:h-16 backdrop-blur-sm">
                   <Info className="h-5 w-5" />
                   INSIGHTS
                 </Button>
@@ -162,14 +161,14 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="p-6 md:p-12 space-y-24">
+      <div className="p-6 md:p-12 space-y-16 md:space-y-24">
         {/* Personalized Recommendations */}
         {recommendations.length > 0 && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
               {recommendations.map((song) => (
                 <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
               ))}
@@ -181,10 +180,10 @@ export default function Home() {
         <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-4">
              <TrendingUp className="h-8 w-8 text-primary" />
-             <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Trending Now</h2>
+             <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Trending Now</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
             {loading ? (
               Array(10).fill(0).map((_, i) => (
                 <div key={`skeleton-${i}`} className="space-y-4">

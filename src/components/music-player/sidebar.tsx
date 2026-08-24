@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -157,12 +156,12 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
-      <div className="flex items-center gap-6 flex-1">
+      <div className="flex items-center gap-4 md:gap-6 flex-1">
         <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="bg-primary p-1 rounded-lg">
             <Music2 className="h-5 w-5 text-white" />
           </div>
-          <span className="font-black text-lg tracking-tighter text-white uppercase italic hidden sm:block">AYUMUSIC</span>
+          <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </Link>
         
         <form onSubmit={handleSearch} className="relative w-full max-w-md hidden md:block">

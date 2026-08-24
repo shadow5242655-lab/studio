@@ -92,6 +92,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
+  const lastProgressUpdateRef = useRef<number>(0);
+  const totalSecondsAccumulatorRef = useRef<number>(0);
 
   useEffect(() => {
     const savedLiked = localStorage.getItem('ayumusics_liked');
@@ -113,31 +115,44 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedPop) setSongPopularity(JSON.parse(savedPop));
 
     const savedSeconds = localStorage.getItem('ayumusics_seconds');
-    if (savedSeconds) setTotalSeconds(parseInt(savedSeconds));
+    if (savedSeconds) {
+      const secs = parseInt(savedSeconds);
+      setTotalSeconds(secs);
+      totalSecondsAccumulatorRef.current = secs;
+    }
   }, []);
 
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       const currentTime = audioRef.current.currentTime;
-      setProgress(currentTime);
+      const now = performance.now();
+
+      // Throttled UI update (every 100ms) to prevent global re-render lag
+      if (now - lastProgressUpdateRef.current > 100) {
+        setProgress(currentTime);
+        lastProgressUpdateRef.current = now;
+      }
       
+      // Update resonance time in background
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
-          setTotalSeconds(prev => {
-            const next = prev + diff;
-            if (Math.floor(next) % 30 === 0) {
-              localStorage.setItem('ayumusics_seconds', Math.floor(next).toString());
-            }
-            return next;
-          });
+          totalSecondsAccumulatorRef.current += diff;
+          
+          // Sync to state every 5 seconds to reduce render overhead
+          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
+              Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
+            const rounded = Math.floor(totalSecondsAccumulatorRef.current);
+            setTotalSeconds(rounded);
+            localStorage.setItem('ayumusics_seconds', rounded.toString());
+          }
         }
       }
       lastTimeRef.current = currentTime;
       
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [isPlaying]);
+  }, [isPlaying, totalSeconds]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -216,7 +231,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const handleSmartMoodSync = useCallback(async () => {
     if (!currentTrack || !smartMood) return;
     
-    // Attempt to determine vibe from track name or artist
     const vibe = currentTrack.name.split(' ')[0] || currentTrack.artists.primary[0].name;
     const results = await searchSongs(vibe);
     const filtered = results.filter(s => s.id !== currentTrack.id);
@@ -225,7 +239,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const next = filtered[Math.floor(Math.random() * filtered.length)];
       playTrack(next);
     } else {
-      // Fallback to trending
       const trending = await getTrending();
       playTrack(trending[Math.floor(Math.random() * trending.length)]);
     }

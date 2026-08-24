@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import Link from 'next/link';
 import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain, BarChart3 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader, SheetDescription } from '@/components/ui/sheet';
 
-export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void }) {
+export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void }) {
   const pathname = usePathname();
   const { likedSongs, playlists, createPlaylist } = useMusic();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -135,17 +134,17 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
       </Dialog>
     </div>
   );
-}
+});
 
-export function Sidebar() {
+export const Sidebar = memo(function Sidebar() {
   return (
     <div className="hidden md:flex w-64 bg-black flex-col gap-2 p-2 h-full border-r border-white/5 shrink-0 z-40">
       <SidebarContent />
     </div>
   );
-}
+});
 
-export function Header() {
+export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [searchVal, setSearchVal] = useState('');
@@ -204,4 +203,4 @@ export function Header() {
       </div>
     </header>
   );
-}
+});

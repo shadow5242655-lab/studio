@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMusic } from '@/components/music-player/player-context';
 
-function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
+const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
       </ScrollArea>
     </section>
   );
-}
+});
 
 export default function Home() {
   const { playRandomTrack } = useMusic();

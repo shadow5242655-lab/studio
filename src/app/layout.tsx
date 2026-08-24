@@ -1,9 +1,10 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Sidebar } from '@/components/music-player/sidebar';
 import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
+import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
 import { MusicProvider } from '@/components/music-player/player-context';
+import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
@@ -26,6 +27,8 @@ export default function RootLayout({
             </main>
           </div>
           <NowPlayingBar />
+          <FullScreenPlayer />
+          <Toaster />
         </MusicProvider>
       </body>
     </html>

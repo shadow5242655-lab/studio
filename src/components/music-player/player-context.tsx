@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
@@ -7,11 +6,13 @@ import { Song, getBestDownload } from '@/lib/music-api';
 interface MusicContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
+  isPlayerOpen: boolean;
   volume: number;
   progress: number;
   duration: number;
   queue: Song[];
   likedSongs: Song[];
+  setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   togglePlay: () => void;
   nextTrack: () => void;
@@ -27,6 +28,7 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -35,7 +37,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Load persistence
   useEffect(() => {
     const savedLikes = localStorage.getItem('ayumusic_likes');
     if (savedLikes) {
@@ -52,7 +53,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save persistence
   useEffect(() => {
     localStorage.setItem('ayumusic_likes', JSON.stringify(likedSongs));
   }, [likedSongs]);
@@ -157,8 +157,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, volume, progress, duration, queue, likedSongs,
-      playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs,
+      setIsPlayerOpen, playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked
     }}>
       {children}
     </MusicContext.Provider>

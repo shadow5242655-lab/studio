@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -13,7 +12,8 @@ import { cn } from '@/lib/utils';
 export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
-    progress, duration, seek, volume, setVolume, toggleLike, isLiked
+    progress, duration, seek, volume, setVolume, toggleLike, isLiked,
+    setIsPlayerOpen 
   } = useMusic();
 
   if (!currentTrack) return null;
@@ -22,9 +22,12 @@ export function NowPlayingBar() {
   const liked = isLiked(currentTrack.id);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 glass-effect border-t border-white/5 px-6 flex items-center justify-between z-50">
+    <div className="fixed bottom-0 left-0 right-0 h-24 glass-effect border-t border-white/5 px-6 flex items-center justify-between z-50 group">
       {/* Track Info */}
-      <div className="flex items-center gap-4 w-[30%] min-w-0">
+      <div 
+        className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer"
+        onClick={() => setIsPlayerOpen(true)}
+      >
         <div className="relative h-14 w-14 rounded-md overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
             <Image 
@@ -40,10 +43,10 @@ export function NowPlayingBar() {
           )}
         </div>
         <div className="flex flex-col min-w-0 pr-4">
-          <span className="text-sm font-bold text-white hover:underline cursor-pointer truncate">
+          <span className="text-sm font-bold text-white group-hover:text-primary transition-colors truncate">
             {currentTrack.name}
           </span>
-          <span className="text-xs text-muted-foreground hover:text-white cursor-pointer truncate">
+          <span className="text-xs text-muted-foreground truncate">
             {getArtistNames(currentTrack)}
           </span>
         </div>
@@ -54,7 +57,10 @@ export function NowPlayingBar() {
             "shrink-0 transition-colors",
             liked ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-white"
           )}
-          onClick={() => toggleLike(currentTrack)}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleLike(currentTrack);
+          }}
         >
           <Heart className={cn("h-5 w-5", liked && "fill-current")} />
         </Button>
@@ -101,7 +107,12 @@ export function NowPlayingBar() {
 
       {/* Extra Controls */}
       <div className="flex items-center justify-end gap-3 w-[30%]">
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-muted-foreground hover:text-white transition-all scale-90"
+          onClick={() => setIsPlayerOpen(true)}
+        >
           <Mic2 className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
@@ -117,7 +128,12 @@ export function NowPlayingBar() {
             className="cursor-pointer"
           />
         </div>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-muted-foreground hover:text-white transition-all scale-90"
+          onClick={() => setIsPlayerOpen(true)}
+        >
           <Maximize2 className="h-4 w-4" />
         </Button>
       </div>

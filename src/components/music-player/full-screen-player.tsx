@@ -1,25 +1,38 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, Share2, MoreHorizontal, ListMusic } from 'lucide-react';
+import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, Share2, MoreHorizontal, ListMusic, Download, PlusCircle } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, getArtistNames, formatDuration } from '@/lib/music-api';
+import { getBestImage, getArtistNames, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, progress, duration, 
-    seek, toggleLike, isLiked 
+    seek, toggleLike, isLiked, playlists, addToPlaylist 
   } = useMusic();
 
   if (!isPlayerOpen || !currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
   const liked = isLiked(currentTrack.id);
+
+  const handleDownload = () => {
+    const url = getBestDownload(currentTrack);
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentTrack.name} - ${getArtistNames(currentTrack)}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] bg-neutral-950 flex flex-col animate-in slide-in-from-bottom duration-500">
@@ -37,12 +50,35 @@ export function FullScreenPlayer() {
           <ChevronDown className="h-8 w-8" />
         </Button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60">Playing from your library</span>
-          <span className="text-sm font-bold text-white truncate max-w-[200px]">AYUMUSIC</span>
+          <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60">Playing on AYUMUSIC</span>
+          <span className="text-sm font-bold text-white truncate max-w-[200px]">Premium Sound</span>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-          <MoreHorizontal className="h-6 w-6" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+              <MoreHorizontal className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-56">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-3">
+                <PlusCircle className="h-4 w-4" />
+                Add to Playlist
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
+                {playlists.map(p => (
+                  <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>
+                    {p.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuItem onClick={handleDownload} className="gap-3">
+              <Download className="h-4 w-4" />
+              Download Track
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       {/* Main Content */}
@@ -78,17 +114,27 @@ export function FullScreenPlayer() {
                 {getArtistNames(currentTrack)}
               </p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn(
-                "h-12 w-12 transition-all",
-                liked ? "text-primary hover:text-primary/80" : "text-white/40 hover:text-white"
-              )}
-              onClick={() => toggleLike(currentTrack)}
-            >
-              <Heart className={cn("h-8 w-8", liked && "fill-current")} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-12 w-12 text-white/40 hover:text-white"
+                onClick={handleDownload}
+              >
+                <Download className="h-8 w-8" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-12 w-12 transition-all",
+                  liked ? "text-primary hover:text-primary/80" : "text-white/40 hover:text-white"
+                )}
+                onClick={() => toggleLike(currentTrack)}
+              >
+                <Heart className={cn("h-8 w-8", liked && "fill-current")} />
+              </Button>
+            </div>
           </div>
 
           {/* Controls Bar */}
@@ -145,8 +191,7 @@ export function FullScreenPlayer() {
             <div className="space-y-2">
               <p className="text-lg font-bold text-white leading-tight">Syncing lyrics with AYUMUSIC...</p>
               <p className="text-lg font-bold text-white/20">The definitive sound experience.</p>
-              <p className="text-lg font-bold text-white/20">All types of clothes are available.</p>
-              <p className="text-lg font-bold text-white/20">Wait, this is a music app!</p>
+              <p className="text-lg font-bold text-white/20">High-fidelity audio streaming.</p>
               <p className="text-lg font-bold text-white/20">Enjoy your session.</p>
             </div>
           </div>

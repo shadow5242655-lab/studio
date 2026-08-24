@@ -1,22 +1,34 @@
-
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2 } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Download } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { likedSongs } = useMusic();
+  const { likedSongs, playlists, createPlaylist } = useMusic();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
 
   const navItems = [
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
     { name: 'Library', icon: Library, href: '/library' },
   ];
+
+  const handleCreatePlaylist = () => {
+    if (newPlaylistName.trim()) {
+      createPlaylist(newPlaylistName);
+      setNewPlaylistName('');
+      setIsDialogOpen(false);
+    }
+  };
 
   return (
     <div className="w-64 bg-black flex flex-col gap-2 p-2 h-full border-r border-white/5 shrink-0 z-40">
@@ -51,7 +63,10 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-8 flex flex-col gap-1 px-2">
-        <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:text-white hover:bg-white/5 transition-all group">
+        <button 
+          onClick={() => setIsDialogOpen(true)}
+          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground hover:text-white hover:bg-white/5 transition-all group"
+        >
           <div className="bg-neutral-800 text-white p-1 rounded-sm group-hover:bg-neutral-700">
             <PlusSquare className="h-4 w-4" />
           </div>
@@ -76,11 +91,46 @@ export function Sidebar() {
         </Link>
       </div>
 
+      <div className="mt-4 px-4 overflow-y-auto custom-scrollbar flex-1">
+        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-4 opacity-50">Playlists</p>
+        <div className="space-y-1">
+          {playlists.map(p => (
+            <Link 
+              key={p.id} 
+              href={`/playlists?id=${p.id}`}
+              className="block text-sm text-muted-foreground hover:text-white py-2 truncate transition-colors"
+            >
+              {p.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-auto p-6 border-t border-white/5">
         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-50 hover:opacity-100 transition-opacity cursor-default">
-          Legal • Privacy • AYUMUSIC © 2024
+          AYUMUSIC © 2024
         </p>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-neutral-900 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle>Create New Playlist</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              placeholder="Playlist name" 
+              value={newPlaylistName}
+              onChange={(e) => setNewPlaylistName(e.target.value)}
+              className="bg-neutral-800 border-white/10 focus:ring-primary"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button className="bg-primary text-white" onClick={handleCreatePlaylist}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

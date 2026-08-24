@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "music-hero",
-      "description": "Professional recording studio with neon lights and high-end mixing console",
-      "imageUrl": "https://picsum.photos/seed/music-studio-neon/1600/900",
-      "imageHint": "music studio"
+      "description": "Vibrant music festival crowd at night with glowing lights and neon stage effects",
+      "imageUrl": "https://picsum.photos/seed/music-vibe-live-pro/1600/900",
+      "imageHint": "music festival"
     }
   ]
 }

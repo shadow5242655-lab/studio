@@ -50,6 +50,7 @@ export default function Home() {
   useEffect(() => {
     async function init() {
       const data = await fetchTrending(1);
+      // Deduplicate
       const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
       setTrending(uniqueData);
       setLoading(false);
@@ -99,43 +100,58 @@ export default function Home() {
 
   return (
     <div className="pb-32">
-      {/* Hero */}
-      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden bg-neutral-900">
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
+      {/* Immersive Hero Section */}
+      <div className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden bg-black">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/60 to-black z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent z-10" />
+        
         <img 
-          src={heroImage?.imageUrl || "https://picsum.photos/seed/music-studio-neon/1600/900"} 
-          alt="Hero" 
-          className="w-full h-full object-cover opacity-60"
-          data-ai-hint={heroImage?.imageHint || "music studio"}
+          src={heroImage?.imageUrl || "https://picsum.photos/seed/music-festival-pro/1600/900"} 
+          alt="Music Experience" 
+          className="w-full h-full object-cover opacity-80 scale-105"
+          data-ai-hint={heroImage?.imageHint || "music festival"}
         />
-        <div className="absolute bottom-0 left-0 p-6 md:p-12 z-20 space-y-4 max-w-3xl">
-          <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white uppercase italic leading-[0.8]">
+        
+        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12 z-20 space-y-6 max-w-4xl">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-1 w-12 bg-primary rounded-full" />
+            <span className="text-xs font-black uppercase tracking-[0.4em] text-white/70">Verified Experience</span>
+          </div>
+          
+          <h1 className="text-6xl md:text-9xl font-black tracking-tighter text-white uppercase italic leading-[0.85]">
             AYUMUSIC
           </h1>
-          <p className="text-neutral-300 text-sm md:text-xl max-w-lg font-medium">
-            Listen to millions of songs in high fidelity. Your sanctuary for sound.
+          
+          <p className="text-neutral-300 text-lg md:text-2xl max-w-xl font-medium leading-tight">
+            Dive into high-fidelity sound. Your sanctuary for pure acoustic resonance.
           </p>
+          
           <div className="flex flex-wrap gap-4 pt-4">
-            <Button size="lg" className="rounded-full px-8 md:px-12 font-black gap-3 h-14 text-lg hover:scale-105 transition-transform" onClick={() => trending.length > 0 && playTrack(trending[0], trending)}>
-              <Play className="h-6 w-6 fill-current" />
+            <Button 
+              size="lg" 
+              className="rounded-full px-10 md:px-16 font-black gap-3 h-16 text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
+              onClick={() => trending.length > 0 && playTrack(trending[0], trending)}
+            >
+              <Play className="h-7 w-7 fill-current" />
               PLAY NOW
             </Button>
+            
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/10 text-white hover:bg-white/5 gap-3 h-14">
-                  <Info className="h-4 w-4" />
-                  STATS
+                <Button size="lg" variant="outline" className="rounded-full px-10 font-bold border-white/20 text-white hover:bg-white/10 gap-3 h-16 backdrop-blur-sm">
+                  <Info className="h-5 w-5" />
+                  INSIGHTS
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-neutral-950 border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Listening History</DialogTitle>
+                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Listening Architecture</DialogTitle>
                 </DialogHeader>
                 <div className="py-8 space-y-6">
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center gap-4">
                     <Clock className="h-8 w-8 text-primary" />
                     <div>
-                      <p className="text-xs font-bold uppercase text-neutral-500">Total Time</p>
+                      <p className="text-xs font-bold uppercase text-neutral-500">Total Playtime</p>
                       <p className="text-2xl font-black text-white italic">{formatTotalTime(totalListeningTime)}</p>
                     </div>
                   </div>
@@ -146,11 +162,13 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="p-6 md:p-12 space-y-20">
-        {/* Personalized Section */}
+      <div className="p-6 md:p-12 space-y-24">
+        {/* Personalized Recommendations */}
         {recommendations.length > 0 && (
-          <section>
-            <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic mb-8">For You</h2>
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
               {recommendations.map((song) => (
                 <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
@@ -159,17 +177,17 @@ export default function Home() {
           </section>
         )}
 
-        {/* Trending Section */}
-        <section>
-          <div className="flex items-center gap-4 mb-8">
-             <TrendingUp className="h-6 w-6 text-primary" />
-             <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">Trending</h2>
+        {/* Trending Hits */}
+        <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-4">
+             <TrendingUp className="h-8 w-8 text-primary" />
+             <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Trending Now</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             {loading ? (
               Array(10).fill(0).map((_, i) => (
-                <div key={i} className="space-y-4">
+                <div key={`skeleton-${i}`} className="space-y-4">
                   <Skeleton className="aspect-square w-full rounded-2xl bg-neutral-900" />
                   <Skeleton className="h-4 w-3/4 bg-neutral-900" />
                 </div>
@@ -182,7 +200,7 @@ export default function Home() {
           </div>
 
           <div ref={sentinelRef} className="h-40 flex items-center justify-center">
-            {loadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
+            {loadingMore && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />}
           </div>
         </section>
       </div>

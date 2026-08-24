@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, Loader2, Mic2, Info, X } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, MoreHorizontal, Download, PlusCircle, Loader2, Mic2, Info, X } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, progress, duration, 
-    seek, toggleLike, isLiked, playlists, addToPlaylist, stopTrack,
+    seek, toggleLike, isLiked, playlists, addToPlaylist,
     lyrics, loadingLyrics
   } = useMusic();
 
@@ -56,44 +56,53 @@ export function FullScreenPlayer() {
       
       {/* Header */}
       <header className="relative flex items-center justify-between p-6 md:p-8 z-20 shrink-0">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-white/10 rounded-full h-12 w-12"
-          onClick={() => setIsPlayerOpen(false)}
-        >
-          <ChevronDown className="h-8 w-8" />
-        </Button>
-        <div className="flex flex-col items-center">
-          <span className="text-[10px] uppercase font-black tracking-[0.4em] text-white/40 mb-1">Architecture</span>
-          <span className="text-sm font-black text-white italic tracking-tighter uppercase">AYUMUSIC</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/20 p-2 rounded-lg">
+             <Music2 className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[8px] uppercase font-black tracking-[0.4em] text-white/40 leading-none">Architecture</span>
+            <span className="text-sm font-black text-white italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
+          </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-12 w-12">
-              <MoreHorizontal className="h-6 w-6" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-64 backdrop-blur-xl">
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-3 py-3">
-                <PlusCircle className="h-4 w-4" />
-                Add to Playlist
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
-                {playlists.map(p => (
-                  <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>
-                    {p.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuItem onClick={handleDownload} className="gap-3 py-3">
-              <Download className="h-4 w-4" />
-              Download Track
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/10 rounded-full h-10 w-10">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-64 backdrop-blur-xl">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-3 py-3">
+                  <PlusCircle className="h-4 w-4" />
+                  Add to Playlist
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white">
+                  {playlists.map(p => (
+                    <DropdownMenuItem key={p.id} onClick={() => addToPlaylist(p.id, currentTrack)}>
+                      {p.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuItem onClick={handleDownload} className="gap-3 py-3">
+                <Download className="h-4 w-4" />
+                Download Track
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10 rounded-full h-12 w-12"
+            onClick={() => setIsPlayerOpen(false)}
+          >
+            <X className="h-8 w-8" />
+          </Button>
+        </div>
       </header>
 
       {/* Main Tabbed Container */}
@@ -131,7 +140,7 @@ export function FullScreenPlayer() {
               )}
             </div>
 
-            {/* Info Area - "Author Name Song Name etc" */}
+            {/* Info Area */}
             <div className="w-full text-center space-y-2 shrink-0">
               <h2 className="text-4xl md:text-7xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2">
                 {currentTrack.name}
@@ -204,7 +213,7 @@ export function FullScreenPlayer() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-4">
+          <div className="flex items-center justify-between px-4 pb-4">
             <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
               <Shuffle className="h-5 w-5" />
             </Button>
@@ -238,12 +247,6 @@ export function FullScreenPlayer() {
             
             <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
               <Repeat className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-center pt-2">
-             <Button variant="ghost" className="text-neutral-500 hover:text-primary text-[10px] font-black uppercase tracking-[0.4em] italic gap-2 h-10" onClick={stopTrack}>
-              Exit Architecture
             </Button>
           </div>
         </div>

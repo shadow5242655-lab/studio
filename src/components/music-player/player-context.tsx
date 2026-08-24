@@ -31,6 +31,7 @@ interface MusicStateContextType {
   likedSongs: Song[];
   playlists: Playlist[];
   playedHistory: HistoryItem[];
+  activeDays: string[];
   exclusionRules: ExclusionRule[];
   smartMood: boolean;
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
@@ -78,6 +79,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
+  const [activeDays, setActiveDays] = useState<string[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
   const [smartMood, setSmartMoodState] = useState(false);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
@@ -106,6 +108,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const savedHistory = localStorage.getItem('ayumusics_history');
     if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
 
+    const savedDays = localStorage.getItem('ayumusics_activedays');
+    if (savedDays) setActiveDays(JSON.parse(savedDays));
+
     const savedRules = localStorage.getItem('ayumusics_rules');
     if (savedRules) setExclusionRules(JSON.parse(savedRules));
 
@@ -123,29 +128,37 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const recordActiveDay = useCallback(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setActiveDays(prev => {
+      if (prev.includes(today)) return prev;
+      const next = [...prev, today];
+      localStorage.setItem('ayumusics_activedays', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       const currentTime = audioRef.current.currentTime;
       const now = performance.now();
 
-      // Isolated UI update for progress context
       if (now - lastProgressUpdateRef.current > 100) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
       }
       
-      // Update resonance time silently
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           
-          // Sync to main state lazily (every 10 seconds) to prevent main UI lag
           if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
               Math.floor(totalSecondsAccumulatorRef.current) % 10 === 0) {
             const rounded = Math.floor(totalSecondsAccumulatorRef.current);
             setTotalSeconds(rounded);
             localStorage.setItem('ayumusics_seconds', rounded.toString());
+            recordActiveDay();
           }
         }
       }
@@ -153,7 +166,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [isPlaying, totalSeconds]);
+  }, [isPlaying, totalSeconds, recordActiveDay]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -211,7 +224,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
-    // Update track lineage
+    recordActiveDay();
+
     setPlayedHistory(prev => {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
       const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
@@ -219,7 +233,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
 
-    // Stable popularity update
     setSongPopularity(prev => {
       const next = { ...prev, [track.id]: (prev[track.id] || 0) + 1 };
       localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
@@ -228,7 +241,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const url = getBestDownload(track);
     if (audioRef.current && url) {
-      // ONLY update src if track is actually different to prevent "refresh" lag
       if (currentTrack?.id !== track.id) {
         audioRef.current.src = url;
         setCurrentTrack(track);
@@ -236,7 +248,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
       audioRef.current.play().catch(console.error);
     }
-  }, [currentTrack]);
+  }, [currentTrack, recordActiveDay]);
+
+  const nextTrack = useCallback(() => {
+    if (!currentTrack || queue.length === 0) return;
+    const idx = queue.findIndex(s => s.id === currentTrack.id);
+    if (idx !== -1) playTrack(queue[(idx + 1) % queue.length]);
+  }, [currentTrack, queue, playTrack]);
+
+  const prevTrack = useCallback(() => {
+    if (!currentTrack || queue.length === 0) return;
+    const idx = queue.findIndex(s => s.id === currentTrack.id);
+    if (idx !== -1) playTrack(queue[(idx - 1 + queue.length) % queue.length]);
+  }, [currentTrack, queue, playTrack]);
 
   const handleSmartMoodSync = useCallback(async () => {
     if (!currentTrack || !smartMood) return;
@@ -254,7 +278,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const onEnded = () => smartMood ? handleSmartMoodSync() : nextTrack();
     audio.addEventListener('ended', onEnded);
     return () => audio.removeEventListener('ended', onEnded);
-  }, [smartMood, handleSmartMoodSync]);
+  }, [smartMood, handleSmartMoodSync, nextTrack]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -281,18 +305,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       else audioRef.current.play().catch(console.error);
     }
   }, [isPlaying]);
-
-  const nextTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const idx = queue.findIndex(s => s.id === currentTrack.id);
-    if (idx !== -1) playTrack(queue[(idx + 1) % queue.length]);
-  }, [currentTrack, queue, playTrack]);
-
-  const prevTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const idx = queue.findIndex(s => s.id === currentTrack.id);
-    if (idx !== -1) playTrack(queue[(idx - 1 + queue.length) % queue.length]);
-  }, [currentTrack, queue, playTrack]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
@@ -395,11 +407,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
-    playedHistory, exclusionRules, smartMood,
+    playedHistory, activeDays, exclusionRules, smartMood,
     lyrics, loadingLyrics, songPopularity, totalMinutes: Math.floor(totalSeconds / 60),
     setIsPlayerOpen, setIsLyricsOpen, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
     removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection]);
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, activeDays, exclusionRules, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

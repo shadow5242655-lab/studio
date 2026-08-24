@@ -1,13 +1,14 @@
+
 'use client';
 
 import React from 'react';
 import { useMusic } from '@/components/music-player/player-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Clock, Music, Heart, History, TrendingUp, BarChart3, Zap } from 'lucide-react';
+import { Activity, Clock, Music, Heart, History, TrendingUp, BarChart3, Zap, CalendarDays } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function InsightsPage() {
-  const { totalMinutes, playedHistory, likedSongs } = useMusic();
+  const { totalMinutes, playedHistory, likedSongs, activeDays = [] } = useMusic();
 
   return (
     <div className="p-8 pb-32 max-w-6xl mx-auto space-y-12 animate-in fade-in duration-700">
@@ -20,53 +21,75 @@ export default function InsightsPage() {
         <p className="text-neutral-400 max-w-xl text-lg font-medium">A definitive breakdown of your sound resonance and listening lineage.</p>
       </header>
 
-      {/* Grid for Big Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Clock className="h-20 w-20 text-primary" />
-          </div>
-          <CardHeader>
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Resonance Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-6xl font-black italic text-white uppercase tracking-tighter">
-              {totalMinutes} <span className="text-primary text-xl">MINS</span>
+      {/* Listening Pulse Grid */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-1 w-8 bg-primary" />
+          <h2 className="text-2xl font-black italic uppercase tracking-tighter">Listening Pulse</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Clock className="h-16 w-16 text-primary" />
             </div>
-            <p className="text-[10px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Total high-fidelity playback recorded</p>
-          </CardContent>
-        </Card>
+            <CardHeader>
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Resonance Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+                {totalMinutes} <span className="text-primary text-lg">MINS</span>
+              </div>
+              <p className="text-[9px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">High-fidelity playback</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Music className="h-20 w-20 text-white" />
-          </div>
-          <CardHeader>
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Track Lineage</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-6xl font-black italic text-white uppercase tracking-tighter">
-              {playedHistory.length} <span className="text-primary text-xl">TOTAL</span>
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Music className="h-16 w-16 text-white" />
             </div>
-            <p className="text-[10px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Unique soundscapes encountered</p>
-          </CardContent>
-        </Card>
+            <CardHeader>
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Tracks Played</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+                {playedHistory.length} <span className="text-primary text-lg">HITS</span>
+              </div>
+              <p className="text-[9px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Unique soundscapes</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Heart className="h-20 w-20 text-primary" />
-          </div>
-          <CardHeader>
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Saved Frequencies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-6xl font-black italic text-white uppercase tracking-tighter">
-              {likedSongs.length} <span className="text-primary text-xl">FAVS</span>
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <CalendarDays className="h-16 w-16 text-primary" />
             </div>
-            <p className="text-[10px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Songs marked as premium favorites</p>
-          </CardContent>
-        </Card>
-      </div>
+            <CardHeader>
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Active Days</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+                {activeDays.length} <span className="text-primary text-lg">DAYS</span>
+              </div>
+              <p className="text-[9px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Consistency rating</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Heart className="h-16 w-16 text-white" />
+            </div>
+            <CardHeader>
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Liked Tracks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+                {likedSongs.length} <span className="text-primary text-lg">FAVS</span>
+              </div>
+              <p className="text-[9px] text-neutral-500 mt-2 font-bold uppercase tracking-widest">Premium collection</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Lineage / History Section */}

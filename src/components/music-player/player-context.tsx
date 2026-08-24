@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { Song, getBestDownload, searchSongs, getLyrics } from '@/lib/music-api';
 
 export interface Playlist {
@@ -79,6 +79,37 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio ref once
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+    const audio = audioRef.current;
+    
+    const updateProgress = () => setProgress(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('play', () => setIsPlaying(true));
+    audio.addEventListener('pause', () => setIsPlaying(false));
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateProgress);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('play', () => setIsPlaying(true));
+      audio.removeEventListener('pause', () => setIsPlaying(false));
+    };
+  }, []);
+
+  // Handle song end separately to avoid closure issues with queue
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const handleEnded = () => nextTrack();
+    audioRef.current.addEventListener('ended', handleEnded);
+    return () => audioRef.current?.removeEventListener('ended', handleEnded);
+  }, [queue, currentTrack, smartMood]);
 
   useEffect(() => {
     const savedLikes = localStorage.getItem('ayumusic_likes');
@@ -170,33 +201,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       getLyrics(currentTrack.id).then(res => {
         setLyrics(res);
         setLoadingLyrics(false);
-      }).catch(() => {
+      }).catch((e) => {
+        console.error("Lyrics error:", e);
         setLoadingLyrics(false);
       });
     }
   }, [currentTrack]);
-
-  useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-    
-    const audio = audioRef.current;
-    
-    const updateProgress = () => setProgress(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => nextTrack();
-
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, [queue, currentTrack, smartMood]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -204,7 +214,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume]);
 
-  const playTrack = (track: Song, fromQueue?: Song[]) => {
+  const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
     setPlayedHistory(prev => {
@@ -213,15 +223,23 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
 
     const url = getBestDownload(track);
+    if (!url) {
+      console.warn("No download URL found for track:", track.name);
+      return;
+    }
+
     if (audioRef.current) {
       if (currentTrack?.id !== track.id) {
         audioRef.current.src = url;
         setCurrentTrack(track);
       }
-      audioRef.current.play().catch(console.error);
-      setIsPlaying(true);
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error("Playback start failed:", err);
+      });
     }
-  };
+  }, [currentTrack, audioRef]);
 
   const stopTrack = () => {
     if (audioRef.current) {
@@ -243,11 +261,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       } else {
         audioRef.current.play().catch(console.error);
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
-  const nextTrack = async () => {
+  const nextTrack = useCallback(async () => {
     if (!currentTrack) return;
 
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
@@ -274,7 +291,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const nextIndex = (currentIndex + 1) % queue.length;
       playTrack(queue[nextIndex]);
     }
-  };
+  }, [currentTrack, queue, smartMood, playTrack]);
 
   const prevTrack = () => {
     if (queue.length === 0 || !currentTrack) return;

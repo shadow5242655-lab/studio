@@ -40,7 +40,8 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return Array.isArray(results) ? results : [];
   } catch (error) {
     console.error('Search failed:', error);
     return [];
@@ -51,7 +52,8 @@ export async function searchAlbums(query: string, page: number = 1): Promise<Alb
   try {
     const res = await fetch(`${API_BASE}/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return Array.isArray(results) ? results : [];
   } catch (error) {
     console.error('Album search failed:', error);
     return [];
@@ -62,7 +64,8 @@ export async function searchPlaylists(query: string, page: number = 1): Promise<
   try {
     const res = await fetch(`${API_BASE}/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return Array.isArray(results) ? results : [];
   } catch (error) {
     console.error('Playlist search failed:', error);
     return [];
@@ -84,7 +87,8 @@ export async function getCharts(): Promise<PlaylistResult[]> {
   try {
     const res = await fetch(`${API_BASE}/search/playlists?query=Charts&limit=10`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return Array.isArray(results) ? results : [];
   } catch (error) {
     console.error('Charts fetch failed:', error);
     return [];
@@ -93,10 +97,10 @@ export async function getCharts(): Promise<PlaylistResult[]> {
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    // Refined query to get high-quality trending songs like "Bairiya", "O Maahi", etc.
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Trending%20Songs&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return Array.isArray(results) ? results : [];
   } catch (error) {
     console.error('Trending fetch failed:', error);
     return [];
@@ -107,7 +111,11 @@ export async function getLyrics(songId: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
     const data = await res.json();
-    return data.data?.lyrics || (typeof data.data === 'string' ? data.data : null);
+    // Handle Saavn API proxy variations
+    const lyricsData = data.data?.lyrics || data.data || null;
+    if (typeof lyricsData === 'string') return lyricsData;
+    if (lyricsData?.lyrics) return lyricsData.lyrics;
+    return null;
   } catch (error) {
     console.error('Lyrics fetch failed:', error);
     return null;
@@ -129,6 +137,7 @@ export function getBestImage(item: any): string | null {
 
 export function getBestDownload(song: Song): string {
   if (!song || !song.downloadUrl || !Array.isArray(song.downloadUrl) || song.downloadUrl.length === 0) return '';
+  // Usually the last one is the highest quality (320kbps)
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   return best?.link || best?.url || '';
 }

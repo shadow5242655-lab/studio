@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Search, Music, Disc, ListMusic, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -14,14 +15,23 @@ import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { useMusic } from '@/components/music-player/player-context';
+import { useSearchParams } from 'next/navigation';
 
-export default function SearchPage() {
+function SearchContent() {
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [rawSongs, setRawSongs] = useState<Song[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistResult[]>([]);
   const [loading, setLoading] = useState(false);
   const { playTrack, songPopularity, recordSearchSelection } = useMusic();
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setQuery(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -202,5 +212,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-neutral-500">Loading search...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }

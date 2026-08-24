@@ -1,7 +1,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Sidebar, MobileHeader } from '@/components/music-player/sidebar';
+import { Sidebar, Header } from '@/components/music-player/sidebar';
 import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
 import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
 import { MusicProvider } from '@/components/music-player/player-context';
@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className="antialiased bg-black text-white h-screen overflow-hidden flex flex-col selection:bg-primary selection:text-white">
         <FirebaseClientProvider>
           <MusicProvider>
-            <MobileHeader />
+            <Header />
             <div className="flex flex-1 overflow-hidden">
               <Sidebar />
               <main className="flex-1 overflow-y-auto bg-neutral-950 spotify-gradient relative">

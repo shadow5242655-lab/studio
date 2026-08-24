@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -143,28 +143,59 @@ export function Sidebar() {
   );
 }
 
-export function MobileHeader() {
+export function Header() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [searchVal, setSearchVal] = useState('');
   
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchVal.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchVal)}`);
+    }
+  };
+
   return (
-    <header className="md:hidden flex items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
-      <Link href="/" className="flex items-center gap-2 group">
-        <div className="bg-primary p-1 rounded-lg">
-          <Music2 className="h-5 w-5 text-white" />
-        </div>
-        <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
-      </Link>
+    <header className="flex items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
+      <div className="flex items-center gap-6 flex-1">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <div className="bg-primary p-1 rounded-lg">
+            <Music2 className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-black text-lg tracking-tighter text-white uppercase italic hidden sm:block">AYUMUSIC</span>
+        </Link>
+        
+        <form onSubmit={handleSearch} className="relative w-full max-w-md hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+          <Input
+            placeholder="Search for songs, artists..."
+            className="pl-9 h-9 bg-neutral-900 border-white/10 rounded-full text-xs focus-visible:ring-primary/50 text-white"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+          />
+        </form>
+      </div>
       
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Menu className="h-6 w-6" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[280px] p-0 bg-black border-r border-white/10">
-          <SidebarContent onNavItemClick={() => setOpen(false)} />
-        </SheetContent>
-      </Sheet>
+      <div className="flex items-center gap-3">
+        <div className="md:hidden">
+          <Link href="/search">
+            <Button variant="ghost" size="icon" className="text-white">
+              <Search className="h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+        
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white md:hidden">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] p-0 bg-black border-r border-white/10">
+            <SidebarContent onNavItemClick={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      </div>
     </header>
   );
 }

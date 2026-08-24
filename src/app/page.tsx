@@ -8,6 +8,7 @@ import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Mic2, Heart, Radio, W
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useMusic } from '@/components/music-player/player-context';
 
 function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -57,6 +58,8 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
 }
 
 export default function Home() {
+  const { playRandomTrack } = useMusic();
+
   return (
     <div className="pb-40 space-y-20 pt-8 animate-in fade-in duration-1000">
       <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[70vh] flex items-center">
@@ -85,12 +88,14 @@ export default function Home() {
           </p>
           
           <div className="flex flex-wrap gap-4 pt-4">
-            <Link href="/search">
-              <Button size="lg" className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20">
-                <Play className="h-6 w-6 fill-current" />
-                EXPLORE
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              onPointerDown={playRandomTrack}
+              className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20"
+            >
+              <Play className="h-6 w-6 fill-current" />
+              EXPLORE
+            </Button>
             <Link href="/intelligence">
               <Button size="lg" variant="outline" className="h-16 px-10 rounded-full font-black text-lg gap-3 border-white/20 text-white hover:bg-white/5 lag-free-tap">
                 <Info className="h-5 w-5" />

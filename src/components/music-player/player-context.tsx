@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -38,9 +38,11 @@ interface MusicStateContextType {
   smartMood: boolean;
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
+  totalMinutes: number;
   setIsPlayerOpen: (open: boolean) => void;
   setIsLyricsOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
+  playRandomTrack: () => Promise<void>;
   stopTrack: () => void;
   togglePlay: () => void;
   nextTrack: () => void;
@@ -84,6 +86,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [tasteProfile, setTasteProfileState] = useState<TasteProfile | null>(null);
   const [smartMood, setSmartMoodState] = useState(false);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
+  const [totalSeconds, setTotalSeconds] = useState(0);
   
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
@@ -94,6 +97,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const savedLiked = localStorage.getItem('ayumusics_liked');
@@ -113,11 +117,31 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const savedPop = localStorage.getItem('ayumusics_popularity');
     if (savedPop) setSongPopularity(JSON.parse(savedPop));
+
+    const savedSeconds = localStorage.getItem('ayumusics_seconds');
+    if (savedSeconds) setTotalSeconds(parseInt(savedSeconds));
   }, []);
 
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
-      setProgress(audioRef.current.currentTime);
+      const currentTime = audioRef.current.currentTime;
+      setProgress(currentTime);
+      
+      // Track seconds for listening time
+      if (lastTimeRef.current > 0) {
+        const diff = currentTime - lastTimeRef.current;
+        if (diff > 0 && diff < 2) { // Guard against seeks
+          setTotalSeconds(prev => {
+            const next = prev + diff;
+            if (Math.floor(next) % 30 === 0) { // Persist every 30 seconds
+              localStorage.setItem('ayumusics_seconds', Math.floor(next).toString());
+            }
+            return next;
+          });
+        }
+      }
+      lastTimeRef.current = currentTime;
+      
       frameRef.current = requestAnimationFrame(updateProgress);
     }
   }, [isPlaying]);
@@ -125,8 +149,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isPlaying) {
       frameRef.current = requestAnimationFrame(updateProgress);
-    } else if (frameRef.current) {
-      cancelAnimationFrame(frameRef.current);
+    } else {
+      lastTimeRef.current = 0;
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
     }
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
@@ -197,6 +222,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack]);
 
+  const playRandomTrack = useCallback(async () => {
+    const trending = await getTrending();
+    if (trending.length > 0) {
+      const randomTrack = trending[Math.floor(Math.random() * trending.length)];
+      playTrack(randomTrack, trending);
+    }
+  }, [playTrack]);
+
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -206,11 +239,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
+    lastTimeRef.current = 0;
   }, []);
 
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
-      isPlaying ? audioRef.current.pause() : audioRef.current.play().catch(console.error);
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(console.error);
+      }
     }
   }, [isPlaying]);
 
@@ -227,7 +265,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack, queue, playTrack]);
 
   const seek = useCallback((time: number) => {
-    if (audioRef.current) audioRef.current.currentTime = time;
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      lastTimeRef.current = time;
+    }
     setProgress(time);
   }, []);
 
@@ -330,10 +371,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
     playedHistory, exclusionRules, tasteProfile, smartMood,
-    lyrics, loadingLyrics, songPopularity,
-    setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
+    lyrics, loadingLyrics, songPopularity, totalMinutes: Math.floor(totalSeconds / 60),
+    setIsPlayerOpen, setIsLyricsOpen, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
     removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, songPopularity, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection]);
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

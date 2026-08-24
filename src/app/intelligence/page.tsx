@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio } from 'lucide-react';
+import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -21,7 +22,7 @@ export default function IntelligencePage() {
     playedHistory = [], removeFromHistory, clearHistory, 
     exclusionRules = [], addExclusionRule, removeExclusionRule,
     tasteProfile, setTasteProfile, createPlaylist, likedSongs = [],
-    smartMood, setSmartMood
+    smartMood, setSmartMood, totalMinutes
   } = useMusic();
   
   const { toast } = useToast();
@@ -91,6 +92,54 @@ export default function IntelligencePage() {
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white uppercase italic leading-none">Intelligence</h1>
         <p className="text-neutral-400 max-w-2xl text-lg font-medium">Control your history, architect your taste, and let AI bridge your emotional spectrum.</p>
       </header>
+
+      {/* Resonance Stats Section */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-neutral-900 border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Activity className="h-20 w-20 text-primary" />
+          </div>
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-neutral-500">Resonance Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+              {totalMinutes} <span className="text-primary text-xl">MINS</span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-2 font-bold uppercase tracking-widest">Total high-fidelity listening recorded</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-neutral-900 border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Music2 className="h-20 w-20 text-white" />
+          </div>
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-neutral-500">Track Lineage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+              {playedHistory.length} <span className="text-primary text-xl">TRACKS</span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-2 font-bold uppercase tracking-widest">Unique sounds encountered in history</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-neutral-900 border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Zap className="h-20 w-20 text-primary" />
+          </div>
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-neutral-500">Likability Frequency</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-5xl font-black italic text-white uppercase tracking-tighter">
+              {likedSongs.length} <span className="text-primary text-xl">SAVED</span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-2 font-bold uppercase tracking-widest">Sounds verified as premium favorites</p>
+          </CardContent>
+        </Card>
+      </section>
 
       <Tabs defaultValue="taste" className="space-y-8">
         <TabsList className="bg-neutral-900 border border-white/5 p-1 rounded-xl h-auto flex flex-wrap gap-1">

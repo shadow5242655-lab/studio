@@ -1,11 +1,11 @@
+
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Loader2, Clock, Info, TrendingUp } from 'lucide-react';
+import { Play, Info, TrendingUp, ChevronRight, Loader2, Music2 } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
@@ -15,85 +15,120 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
-export default function Home() {
-  const [trending, setTrending] = useState<Song[]>([]);
-  const [recommendations, setRecommendations] = useState<Song[]>([]);
+function MusicSection({ title, initialQuery, icon: Icon }: { title: string; initialQuery?: string; icon: any }) {
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const { playTrack, totalListeningTime, likedSongs } = useMusic();
-  
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const { playTrack } = useMusic();
 
-  const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
-
-  const fetchTrending = useCallback(async (pageNum: number) => {
+  const fetchSongs = useCallback(async (pageNum: number) => {
     try {
-      const data = await getTrending(pageNum);
+      const data = initialQuery 
+        ? await searchSongs(initialQuery, pageNum)
+        : await getTrending(pageNum);
+      
+      if (data.length < 5) setHasMore(false);
       return data;
     } catch (error) {
+      setHasMore(false);
       return [];
     }
-  }, []);
-
-  const fetchRecommendations = useCallback(async () => {
-    if (likedSongs.length === 0) return;
-    const seed = likedSongs[0].artists.primary[0].name;
-    const data = await searchSongs(seed);
-    const uniqueRecs = Array.from(new Map(data.map(item => [item.id, item])).values());
-    setRecommendations(uniqueRecs.slice(0, 5));
-  }, [likedSongs]);
+  }, [initialQuery]);
 
   useEffect(() => {
     async function init() {
-      const data = await fetchTrending(1);
+      const data = await fetchSongs(1);
       const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
-      setTrending(uniqueData);
+      setSongs(uniqueData);
       setLoading(false);
-      fetchRecommendations();
     }
     init();
-  }, [fetchTrending, fetchRecommendations]);
+  }, [fetchSongs]);
 
-  const handleLoadMore = useCallback(async () => {
-    if (loadingMore) return;
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
-    const newData = await fetchTrending(nextPage);
+    const newData = await fetchSongs(nextPage);
+    
     if (newData.length > 0) {
-      setTrending(prev => {
+      setSongs(prev => {
         const existingIds = new Set(prev.map(s => s.id));
         const uniqueNewData = newData.filter(s => !existingIds.has(s.id));
         return [...prev, ...uniqueNewData];
       });
       setPage(nextPage);
+    } else {
+      setHasMore(false);
     }
     setLoadingMore(false);
-  }, [page, loadingMore, fetchTrending]);
+  };
 
-  useEffect(() => {
-    if (loading) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore) {
-          handleLoadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    observerRef.current = observer;
-    return () => observerRef.current?.disconnect();
-  }, [loading, loadingMore, handleLoadMore]);
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between px-6 md:px-12">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/20 p-2 rounded-xl">
+            <Icon className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase italic leading-none">{title}</h2>
+        </div>
+      </div>
+
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex w-max space-x-6 px-6 md:px-12 pb-6">
+          {loading ? (
+            Array(5).fill(0).map((_, i) => (
+              <div key={`skeleton-${title}-${i}`} className="w-[200px] h-[280px] bg-neutral-900 animate-pulse rounded-2xl" />
+            ))
+          ) : (
+            <>
+              {songs.map((song) => (
+                <div key={`${title}-${song.id}`} className="w-[200px]">
+                  <SongCard song={song} playlist={songs} />
+                </div>
+              ))}
+              {hasMore && (
+                <div className="flex items-center justify-center pr-6">
+                  <Button 
+                    variant="ghost" 
+                    className="h-[280px] w-32 rounded-2xl border border-white/5 bg-neutral-900/30 hover:bg-neutral-800 transition-all flex flex-col gap-4 font-black uppercase italic tracking-tighter"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <ChevronRight className="h-8 w-8 text-primary" />
+                        Load More
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </section>
+  );
+}
+
+export default function Home() {
+  const { playTrack, totalListeningTime } = useMusic();
+  const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
 
   const formatTotalTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    if (hours > 0) return `${hours}h ${minutes}m ${remainingSeconds}s`;
-    return `${minutes}m ${remainingSeconds}s`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
   };
 
   return (
@@ -128,7 +163,7 @@ export default function Home() {
             <Button 
               size="lg" 
               className="rounded-full px-8 md:px-16 font-black gap-3 h-14 md:h-16 text-lg md:text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
-              onClick={() => trending.length > 0 && playTrack(trending[0], trending)}
+              onClick={() => {}}
             >
               <Play className="h-6 w-6 md:h-7 md:w-7 fill-current" />
               PLAY NOW
@@ -147,7 +182,7 @@ export default function Home() {
                 </DialogHeader>
                 <div className="py-8 space-y-6">
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center gap-4">
-                    <Clock className="h-8 w-8 text-primary" />
+                    <Music2 className="h-8 w-8 text-primary" />
                     <div>
                       <p className="text-xs font-bold uppercase text-neutral-500">Total Playtime</p>
                       <p className="text-2xl font-black text-white italic">{formatTotalTime(totalListeningTime)}</p>
@@ -160,53 +195,10 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="p-6 md:p-12 space-y-16 md:space-y-24">
-        {/* Trending Hits - PROMINENT AT TOP */}
-        <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <div className="flex items-center gap-4 mb-12 border-b border-white/5 pb-6">
-             <div className="bg-primary/20 p-3 rounded-2xl shadow-[0_0_20px_rgba(255,0,0,0.2)]">
-               <TrendingUp className="h-8 w-8 text-primary" />
-             </div>
-             <div>
-               <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white uppercase italic leading-none">Trending Hits</h2>
-               <p className="text-neutral-500 text-xs font-bold uppercase tracking-[0.3em] mt-2">Discover what the world is listening to</p>
-             </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-10">
-            {loading ? (
-              Array(10).fill(0).map((_, i) => (
-                <div key={`skeleton-${i}`} className="space-y-4">
-                  <Skeleton className="aspect-square w-full rounded-2xl bg-neutral-900" />
-                  <Skeleton className="h-4 w-3/4 bg-neutral-900" />
-                </div>
-              ))
-            ) : (
-              trending.map((song) => (
-                <SongCard key={`trending-${song.id}`} song={song} playlist={trending} />
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Personalized Recommendations */}
-        {recommendations.length > 0 && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Made For You</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
-              {recommendations.map((song) => (
-                <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Sentinel for Infinite Scroll */}
-        <div ref={sentinelRef} className="h-40 flex items-center justify-center">
-          {loadingMore && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />}
-        </div>
+      <div className="py-16 md:py-24 space-y-16 md:space-y-24">
+        <MusicSection title="Trending Hits" icon={TrendingUp} />
+        <MusicSection title="Pop Frequency" initialQuery="Pop" icon={Play} />
+        <MusicSection title="Lofi Sanctuary" initialQuery="Lofi" icon={Music2} />
       </div>
     </div>
   );

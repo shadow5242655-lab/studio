@@ -1,12 +1,12 @@
+
 'use client';
 
 import React from 'react';
-import { Play, Music2, Pause, MoreVertical, Heart, PlusCircle, Download } from 'lucide-react';
-import { Song, getBestImage, getArtistNames, getBestDownload } from '@/lib/music-api';
+import { Play, Music2, Pause } from 'lucide-react';
+import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 interface SongCardProps {
   song: Song;
@@ -14,10 +14,9 @@ interface SongCardProps {
 }
 
 export function SongCard({ song, playlist }: SongCardProps) {
-  const { playTrack, currentTrack, isPlaying, togglePlay, toggleLike, isLiked, playlists, addToPlaylist } = useMusic();
+  const { playTrack, currentTrack, isPlaying, togglePlay } = useMusic();
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
-  const liked = isLiked(song.id);
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,19 +24,6 @@ export function SongCard({ song, playlist }: SongCardProps) {
       togglePlay();
     } else {
       playTrack(song, playlist);
-    }
-  };
-
-  const handleDownload = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = getBestDownload(song);
-    if (url) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${song.name} - ${getArtistNames(song)}.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
   };
 
@@ -73,52 +59,6 @@ export function SongCard({ song, playlist }: SongCardProps) {
           ) : (
             <Play className="h-6 w-6 fill-current ml-1" />
           )}
-        </div>
-
-        {/* Options Overlay */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-black transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-56">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleLike(song); }} className="gap-3">
-                <Heart className={cn("h-4 w-4", liked && "fill-primary text-primary")} />
-                {liked ? 'Remove from Favorites' : 'Add to Favorites'}
-              </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-3">
-                  <PlusCircle className="h-4 w-4" />
-                  Add to Playlist
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="bg-neutral-900 border-white/10 text-white min-w-[180px]">
-                  {playlists.length > 0 ? (
-                    playlists.map(p => (
-                      <DropdownMenuItem 
-                        key={p.id} 
-                        onClick={(e) => { e.stopPropagation(); addToPlaylist(p.id, song); }}
-                        className="truncate"
-                      >
-                        {p.name}
-                      </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground italic">No playlists created</div>
-                  )}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={handleDownload} className="gap-3">
-                <Download className="h-4 w-4" />
-                Download Track
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Playing Indicator */}

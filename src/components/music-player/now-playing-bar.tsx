@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -93,10 +94,11 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-primary hover:bg-primary/10 touch-btn"
+          className="text-primary hover:bg-primary/10 touch-btn flex flex-col items-center gap-0.5"
           onPointerDown={() => setIsLyricsOpen(true)}
         >
           <Mic2 className="h-5 w-5" />
+          <span className="text-[8px] font-black uppercase">LYRICS</span>
         </Button>
 
         <div className="hidden lg:flex items-center gap-3 w-32 group ml-2">

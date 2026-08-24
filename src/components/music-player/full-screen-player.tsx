@@ -37,7 +37,7 @@ export function FullScreenPlayer() {
   return (
     <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
       {/* Immersive Background Layer */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         {imageSrc ? (
           <Image 
             src={imageSrc} 
@@ -103,9 +103,9 @@ export function FullScreenPlayer() {
       </header>
 
       {/* Main Content Container */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 relative z-10 min-h-0">
-        {/* Image Area - Responsive square with constraints */}
-        <div className="w-full max-w-[340px] md:max-w-[480px] aspect-square relative shadow-[0_40px_80px_-15px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-white/10 group mb-8 md:mb-12 shrink-0">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 relative z-10 min-h-0 overflow-y-auto no-scrollbar">
+        {/* Image Area */}
+        <div className="w-full max-w-[320px] md:max-w-[480px] aspect-square relative shadow-[0_40px_80px_-15px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-white/10 group mb-6 md:mb-12 shrink-0">
           {imageSrc ? (
             <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" priority sizes="(max-width: 768px) 80vw, 480px" />
           ) : (
@@ -116,15 +116,16 @@ export function FullScreenPlayer() {
         </div>
 
         {/* Info Area */}
-        <div className="w-full text-center space-y-3 mb-8 shrink-0">
-          <h2 className="text-3xl md:text-6xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2 px-4">
+        <div className="w-full text-center space-y-2 mb-6 shrink-0">
+          <h2 className="text-2xl md:text-5xl font-black text-white tracking-tighter italic uppercase leading-tight line-clamp-2 px-4">
             {currentTrack.name}
           </h2>
-          <p className="text-lg md:text-2xl text-primary font-bold uppercase tracking-[0.2em] truncate opacity-80 italic px-4">
+          <p className="text-base md:text-2xl text-primary font-bold uppercase tracking-[0.2em] truncate opacity-80 italic px-4">
             {getArtistNames(currentTrack)}
           </p>
           
-          <div className="pt-2 flex justify-center">
+          {/* Like Button Integrated Here to avoid collisions */}
+          <div className="pt-4 flex justify-center">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -138,59 +139,59 @@ export function FullScreenPlayer() {
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Global Controls */}
-      <div className="w-full max-w-4xl mx-auto px-6 md:px-12 py-8 space-y-6 z-20 shrink-0">
-        <div className="space-y-3">
-          <Slider
-            value={[progress]}
-            max={duration || 100}
-            step={0.1}
-            onValueChange={(vals) => seek(vals[0])}
-            className="cursor-pointer"
-          />
-          <div className="flex items-center justify-between text-[10px] font-black tracking-[0.3em] text-neutral-500 font-mono italic">
-            <span>{formatDuration(progress)}</span>
-            <span>{formatDuration(duration)}</span>
+        {/* Global Controls moved inside scroll area for better mobile fit */}
+        <div className="w-full max-w-2xl mx-auto px-4 pb-12 space-y-6 shrink-0">
+          <div className="space-y-3">
+            <Slider
+              value={[progress]}
+              max={duration || 100}
+              step={0.1}
+              onValueChange={(vals) => seek(vals[0])}
+              className="cursor-pointer"
+            />
+            <div className="flex items-center justify-between text-[10px] font-black tracking-[0.3em] text-neutral-500 font-mono italic">
+              <span>{formatDuration(progress)}</span>
+              <span>{formatDuration(duration)}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between px-4 pb-6">
-          <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
-            <Shuffle className="h-5 w-5" />
-          </Button>
-          
-          <div className="flex items-center gap-6 md:gap-12">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white h-12 w-12 hover:scale-110 transition-transform"
-              onClick={prevTrack}
-            >
-              <SkipBack className="h-8 w-8 fill-white" />
+          <div className="flex items-center justify-between px-2">
+            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
+              <Shuffle className="h-5 w-5" />
             </Button>
             
-            <Button 
-              className="bg-primary text-white rounded-full h-16 w-16 md:h-20 md:w-20 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,0,0,0.4)] active:scale-95 border-4 border-white/10"
-              onClick={togglePlay}
-            >
-              {isPlaying ? <Pause className="h-7 w-7 md:h-9 md:w-9 fill-white" /> : <Play className="h-7 w-7 md:h-9 md:w-9 fill-white ml-1" />}
-            </Button>
+            <div className="flex items-center gap-6 md:gap-12">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white h-12 w-12 hover:scale-110 transition-transform"
+                onClick={prevTrack}
+              >
+                <SkipBack className="h-7 w-7 md:h-8 md:w-8 fill-white" />
+              </Button>
+              
+              <Button 
+                className="bg-primary text-white rounded-full h-16 w-16 md:h-20 md:w-20 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,0,0,0.4)] active:scale-95 border-4 border-white/10"
+                onClick={togglePlay}
+              >
+                {isPlaying ? <Pause className="h-7 w-7 md:h-9 md:w-9 fill-white" /> : <Play className="h-7 w-7 md:h-9 md:w-9 fill-white ml-1" />}
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white h-12 w-12 hover:scale-110 transition-transform"
+                onClick={nextTrack}
+              >
+                <SkipForward className="h-7 w-7 md:h-8 md:w-8 fill-white" />
+              </Button>
+            </div>
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white h-12 w-12 hover:scale-110 transition-transform"
-              onClick={nextTrack}
-            >
-              <SkipForward className="h-8 w-8 fill-white" />
+            <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
+              <Repeat className="h-5 w-5" />
             </Button>
           </div>
-          
-          <Button variant="ghost" size="icon" className="text-white/20 hover:text-white h-10 w-10">
-            <Repeat className="h-5 w-5" />
-          </Button>
         </div>
       </div>
     </div>

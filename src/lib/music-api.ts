@@ -93,7 +93,8 @@ export async function getCharts(): Promise<PlaylistResult[]> {
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=Top%20Hits&page=${page}&limit=20`);
+    // Refined query to get high-quality trending songs like "Bairiya", "O Maahi", etc.
+    const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Trending%20Songs&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
@@ -106,7 +107,6 @@ export async function getLyrics(songId: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
     const data = await res.json();
-    // Some responses wrap lyrics in data.lyrics, others just data.
     return data.data?.lyrics || (typeof data.data === 'string' ? data.data : null);
   } catch (error) {
     console.error('Lyrics fetch failed:', error);

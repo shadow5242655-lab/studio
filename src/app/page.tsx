@@ -49,7 +49,6 @@ export default function Home() {
   useEffect(() => {
     async function init() {
       const data = await fetchTrending(1);
-      // Deduplicate
       const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
       setTrending(uniqueData);
       setLoading(false);
@@ -162,14 +161,19 @@ export default function Home() {
       </div>
 
       <div className="p-6 md:p-12 space-y-16 md:space-y-24">
-        {/* Trending Hits - MOVED TO TOP */}
+        {/* Trending Hits - PROMINENT AT TOP */}
         <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-4">
-             <TrendingUp className="h-8 w-8 text-primary" />
-             <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic">Trending Hits</h2>
+          <div className="flex items-center gap-4 mb-12 border-b border-white/5 pb-6">
+             <div className="bg-primary/20 p-3 rounded-2xl shadow-[0_0_20px_rgba(255,0,0,0.2)]">
+               <TrendingUp className="h-8 w-8 text-primary" />
+             </div>
+             <div>
+               <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white uppercase italic leading-none">Trending Hits</h2>
+               <p className="text-neutral-500 text-xs font-bold uppercase tracking-[0.3em] mt-2">Discover what the world is listening to</p>
+             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-10">
             {loading ? (
               Array(10).fill(0).map((_, i) => (
                 <div key={`skeleton-${i}`} className="space-y-4">
@@ -199,7 +203,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Sentinel for Infinite Scroll - Keeps loading more trending at bottom */}
+        {/* Sentinel for Infinite Scroll */}
         <div ref={sentinelRef} className="h-40 flex items-center justify-center">
           {loadingMore && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />}
         </div>

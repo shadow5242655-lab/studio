@@ -39,7 +39,8 @@
 }
 
 .glass-card {
-  @apply bg-white/5 backdrop-blur-[20px] border border-white/10 shadow-2xl;
+  @apply bg-white/5 backdrop-blur-[40px] border border-white/10 shadow-2xl;
+  backdrop-filter: blur(40px) saturate(150%);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -67,4 +68,13 @@
 
 .neon-glow {
   text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+}
+
+@keyframes slow-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 20s linear infinite alternate;
 }

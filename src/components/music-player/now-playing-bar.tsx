@@ -50,8 +50,8 @@ export function NowPlayingBar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/5 px-6 flex items-center justify-between z-50 backdrop-blur-3xl">
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-neutral-800">
+    <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/10 px-6 flex items-center justify-between z-50">
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/5">
         <Slider
           value={[progress]}
           max={duration || 100}
@@ -63,7 +63,7 @@ export function NowPlayingBar() {
 
       {/* Track Info */}
       <div 
-        className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap"
+        className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap group"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp(() => setIsPlayerOpen(true))}
         onPointerCancel={handlePointerCancel}
@@ -71,7 +71,7 @@ export function NowPlayingBar() {
       >
         <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/10 shadow-xl">
           {imageSrc ? (
-            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover" />
+            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover group-hover:scale-110 transition-transform" />
           ) : (
             <div className="h-full w-full flex items-center justify-center">
               <Music2 className="h-6 w-6 text-neutral-600" />

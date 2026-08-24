@@ -55,7 +55,17 @@ export function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-      <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-t from-primary/10 to-transparent" />
+      <div className="absolute inset-0 z-0">
+        {imageSrc && (
+          <Image 
+            src={imageSrc} 
+            alt="Background Blur" 
+            fill 
+            className="object-cover opacity-20 blur-[100px] scale-150"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+      </div>
       
       <header className="flex items-center justify-between p-6 z-10">
         <Button 
@@ -75,24 +85,31 @@ export function FullScreenPlayer() {
               <MoreHorizontal className="h-6 w-6" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="glass-card text-white w-56">
+          <DropdownMenuContent className="glass-card text-white w-56 border-white/10">
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger><PlusCircle className="mr-2 h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="glass-card text-white">
+              <DropdownMenuSubTrigger className="hover:bg-primary/20"><PlusCircle className="mr-2 h-4 w-4" />Add to Playlist</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="glass-card text-white border-white/10">
                 {playlists.map(p => (
-                  <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)}>{p.name}</DropdownMenuItem>
+                  <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, currentTrack)} className="hover:bg-primary/20">{p.name}</DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onPointerDown={handleDownload}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+            <DropdownMenuItem onPointerDown={handleDownload} className="hover:bg-primary/20"><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-10 z-10">
-        <div className="relative aspect-square w-full max-w-sm rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
+        <div className="relative aspect-square w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
           {imageSrc ? (
-            <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover transition-transform duration-[20s] linear animate-slow-zoom" priority />
+            <Image 
+              src={imageSrc} 
+              alt={currentTrack.name} 
+              fill 
+              className="object-cover transition-transform duration-[20s] linear animate-slow-zoom" 
+              priority 
+              sizes="(max-width: 768px) 100vw, 400px"
+            />
           ) : (
             <div className="h-full w-full flex items-center justify-center"><Music2 className="h-20 w-20 text-neutral-800" /></div>
           )}
@@ -111,8 +128,8 @@ export function FullScreenPlayer() {
         <div className="w-full space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col min-w-0">
-              <h2 className="text-3xl md:text-4xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
-              <p className="text-lg text-primary/70 font-bold uppercase tracking-widest truncate">
+              <h2 className="text-3xl md:text-5xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
+              <p className="text-lg md:text-xl text-primary/70 font-bold uppercase tracking-widest truncate">
                 {currentTrack.artists.primary.map((artist, index) => (
                   <span key={artist.id || index}>
                     <span 
@@ -134,9 +151,9 @@ export function FullScreenPlayer() {
               onPointerDown={handlePointerDown}
               onPointerUp={handlePointerUp(() => toggleLike(currentTrack))}
               onPointerCancel={handlePointerCancel}
-              className={cn("lag-free-tap transition-colors", liked ? "text-primary" : "text-neutral-500")}
+              className={cn("lag-free-tap transition-colors h-14 w-14", liked ? "text-primary" : "text-neutral-500")}
             >
-              <Heart className={cn("h-8 w-8", liked && "fill-current neon-glow")} />
+              <Heart className={cn("h-10 w-10", liked && "fill-current neon-glow")} />
             </Button>
           </div>
 
@@ -155,11 +172,11 @@ export function FullScreenPlayer() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between w-full max-w-xs">
+        <div className="flex items-center justify-between w-full max-w-xs pb-12">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 lag-free-tap" 
+            className="text-white hover:scale-110 transition-transform lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
@@ -167,7 +184,7 @@ export function FullScreenPlayer() {
             <SkipBack className="h-10 w-10 fill-current" />
           </Button>
           <Button 
-            className="bg-primary text-black rounded-full h-24 w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.3)] lag-free-tap" 
+            className="bg-primary text-black rounded-full h-24 w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
@@ -177,7 +194,7 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 lag-free-tap" 
+            className="text-white hover:scale-110 transition-transform lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}

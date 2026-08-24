@@ -1,70 +1,184 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Music, Disc, ListMusic, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Song, searchSongs } from '@/lib/music-api';
+import { 
+  Song, searchSongs, 
+  Album, searchAlbums, 
+  PlaylistResult, searchPlaylists,
+  getBestImage,
+  getArtistNames
+} from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { useMusic } from '@/components/music-player/player-context';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const { playTrack } = useMusic();
 
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!query.trim()) {
-        setResults([]);
+        setSongs([]);
+        setAlbums([]);
+        setPlaylists([]);
         return;
       }
       setLoading(true);
-      const data = await searchSongs(query);
-      setResults(data);
-      setLoading(false);
+      try {
+        const [songData, albumData, playlistData] = await Promise.all([
+          searchSongs(query),
+          searchAlbums(query),
+          searchPlaylists(query)
+        ]);
+        setSongs(songData);
+        setAlbums(albumData);
+        setPlaylists(playlistData);
+      } catch (error) {
+        console.error('Unified search failed', error);
+      } finally {
+        setLoading(false);
+      }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [query]);
 
   return (
-    <div className="p-8 pb-32">
-      <div className="max-w-md relative mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+    <div className="p-8 pb-32 min-h-full">
+      <div className="max-w-xl relative mb-12">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
         <Input
-          placeholder="What do you want to listen to?"
-          className="pl-10 bg-neutral-800 border-none rounded-full h-12 text-lg focus-visible:ring-white/20"
+          placeholder="Artists, songs, or playlists"
+          className="pl-12 bg-neutral-900 border-none rounded-full h-14 text-xl focus-visible:ring-primary/50 shadow-2xl"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {loading && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        )}
       </div>
 
       {query ? (
-        <div className="space-y-8">
-          <h2 className="text-2xl font-bold">Search results for "{query}"</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {loading ? (
-              Array(10).fill(0).map((_, i) => (
-                <div key={i} className="space-y-3">
-                  <Skeleton className="aspect-square w-full rounded-md" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              ))
-            ) : (
-              results.map((song) => (
-                <SongCard key={song.id} song={song} playlist={results} />
-              ))
-            )}
-          </div>
+        <div className="space-y-16 animate-in fade-in duration-500">
+          {/* Songs Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Music className="h-6 w-6 text-primary" />
+              </div>
+              <h2 className="text-3xl font-black tracking-tighter uppercase italic">Songs</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="aspect-square w-full rounded-2xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))
+              ) : songs.length > 0 ? (
+                songs.map((song) => (
+                  <SongCard key={song.id} song={song} playlist={songs} />
+                ))
+              ) : (
+                <p className="text-neutral-500 italic col-span-full">No songs found.</p>
+              )}
+            </div>
+          </section>
+
+          {/* Albums Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-neutral-800 p-2 rounded-lg">
+                <Disc className="h-6 w-6 text-white" />
+              </div>
+              <h2 className="text-3xl font-black tracking-tighter uppercase italic">Albums</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="aspect-square w-full rounded-2xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))
+              ) : albums.length > 0 ? (
+                albums.map((album) => (
+                  <div key={album.id} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
+                    <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
+                      {getBestImage(album) ? (
+                        <Image src={getBestImage(album)!} alt={album.name} fill className="object-cover transition-transform group-hover:scale-110" />
+                      ) : (
+                        <Disc className="h-16 w-16 text-neutral-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                    <h3 className="font-bold text-white truncate mb-1">{album.name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{getArtistNames(album)}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-neutral-500 italic col-span-full">No albums found.</p>
+              )}
+            </div>
+          </section>
+
+          {/* Playlists Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-neutral-800 p-2 rounded-lg">
+                <ListMusic className="h-6 w-6 text-white" />
+              </div>
+              <h2 className="text-3xl font-black tracking-tighter uppercase italic">Playlists</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="aspect-square w-full rounded-2xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))
+              ) : playlists.length > 0 ? (
+                playlists.map((playlist) => (
+                  <div key={playlist.id} className="group bg-neutral-900/30 p-5 rounded-2xl transition-all hover:bg-neutral-800/80 border border-white/5 shadow-sm">
+                    <div className="relative aspect-square mb-5 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/5">
+                      {getBestImage(playlist) ? (
+                        <Image src={getBestImage(playlist)!} alt={playlist.name} fill className="object-cover transition-transform group-hover:scale-110" />
+                      ) : (
+                        <ListMusic className="h-16 w-16 text-neutral-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                    <h3 className="font-bold text-white truncate mb-1">{playlist.name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">Playlist • {playlist.songCount || 'Various'} tracks</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-neutral-500 italic col-span-full">No playlists found.</p>
+              )}
+            </div>
+          </section>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="bg-neutral-800 p-8 rounded-full mb-6">
-            <Search className="h-16 w-16 text-neutral-400" />
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="bg-neutral-900 p-12 rounded-full mb-8 shadow-2xl border border-white/5">
+            <Search className="h-20 w-20 text-neutral-800" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Start searching</h2>
-          <p className="text-muted-foreground">Find your favorite songs, artists, and albums.</p>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Start your discovery</h2>
+          <p className="text-neutral-500 max-w-sm font-medium">Search for your favorite songs, artists, albums, and playlists in one place.</p>
         </div>
       )}
     </div>

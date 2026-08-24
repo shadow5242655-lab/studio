@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, searchSongs } from '@/lib/music-api';
 
 export interface Playlist {
   id: string;
@@ -14,13 +14,6 @@ export interface ExclusionRule {
   id: string;
   type: 'artist' | 'genre' | 'song';
   value: string;
-}
-
-export interface TasteProfile {
-  personaTitle: string;
-  description: string;
-  dominantMood: string;
-  recommendationStyle: string;
 }
 
 export interface HistoryItem {
@@ -38,7 +31,6 @@ interface MusicStateContextType {
   playlists: Playlist[];
   playedHistory: HistoryItem[];
   exclusionRules: ExclusionRule[];
-  tasteProfile: TasteProfile | null;
   smartMood: boolean;
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
@@ -60,7 +52,6 @@ interface MusicStateContextType {
   clearHistory: () => void;
   addExclusionRule: (type: 'artist' | 'genre' | 'song', value: string) => void;
   removeExclusionRule: (id: string) => void;
-  setTasteProfile: (profile: TasteProfile) => void;
   setSmartMood: (enabled: boolean) => void;
   songPopularity: Record<string, number>;
   recordSearchSelection: (song: Song) => void;
@@ -87,7 +78,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
-  const [tasteProfile, setTasteProfileState] = useState<TasteProfile | null>(null);
   const [smartMood, setSmartMoodState] = useState(false);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -111,18 +101,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
 
     const savedHistory = localStorage.getItem('ayumusics_history');
-    if (savedHistory) {
-      const parsed = JSON.parse(savedHistory);
-      // Migrate strings to objects if necessary
-      const migrated = parsed.map((item: any) => typeof item === 'string' ? { id: item, name: 'Resonance Record' } : item);
-      setPlayedHistory(migrated);
-    }
+    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
 
     const savedRules = localStorage.getItem('ayumusics_rules');
     if (savedRules) setExclusionRules(JSON.parse(savedRules));
 
-    const savedProfile = localStorage.getItem('ayumusics_taste');
-    if (savedProfile) setTasteProfileState(JSON.parse(savedProfile));
+    const savedSmartMood = localStorage.getItem('ayumusics_smartmood');
+    if (savedSmartMood) setSmartMoodState(JSON.parse(savedSmartMood));
 
     const savedPop = localStorage.getItem('ayumusics_popularity');
     if (savedPop) setSongPopularity(JSON.parse(savedPop));
@@ -171,16 +156,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     
     const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => nextTrack();
-
+    
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('ended', onEnded);
     audio.addEventListener('play', () => setIsPlaying(true));
     audio.addEventListener('pause', () => setIsPlaying(false));
 
     return () => {
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('ended', onEnded);
     };
   }, []);
 
@@ -230,6 +212,40 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.play().catch(console.error);
     }
   }, [currentTrack]);
+
+  const handleSmartMoodSync = useCallback(async () => {
+    if (!currentTrack || !smartMood) return;
+    
+    // Attempt to determine vibe from track name or artist
+    const vibe = currentTrack.name.split(' ')[0] || currentTrack.artists.primary[0].name;
+    const results = await searchSongs(vibe);
+    const filtered = results.filter(s => s.id !== currentTrack.id);
+    
+    if (filtered.length > 0) {
+      const next = filtered[Math.floor(Math.random() * filtered.length)];
+      playTrack(next);
+    } else {
+      // Fallback to trending
+      const trending = await getTrending();
+      playTrack(trending[Math.floor(Math.random() * trending.length)]);
+    }
+  }, [currentTrack, smartMood, playTrack]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onEnded = () => {
+      if (smartMood) {
+        handleSmartMoodSync();
+      } else {
+        nextTrack();
+      }
+    };
+
+    audio.addEventListener('ended', onEnded);
+    return () => audio.removeEventListener('ended', onEnded);
+  }, [smartMood, handleSmartMoodSync]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -360,13 +376,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const setTasteProfile = useCallback((profile: TasteProfile) => {
-    setTasteProfileState(profile);
-    localStorage.setItem('ayumusics_taste', JSON.stringify(profile));
-  }, []);
-
   const setSmartMood = useCallback((enabled: boolean) => {
     setSmartMoodState(enabled);
+    localStorage.setItem('ayumusics_smartmood', JSON.stringify(enabled));
   }, []);
 
   const recordSearchSelection = useCallback((song: Song) => {
@@ -379,11 +391,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
-    playedHistory, exclusionRules, tasteProfile, smartMood,
+    playedHistory, exclusionRules, smartMood,
     lyrics, loadingLyrics, songPopularity, totalMinutes: Math.floor(totalSeconds / 60),
     setIsPlayerOpen, setIsLyricsOpen, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
-    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood, recordSearchSelection]);
+    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

@@ -4,13 +4,12 @@ import React, { useState } from 'react';
 import { useMusic } from '@/components/music-player/player-context';
 import { generateVibePlaylist } from '@/ai/flows/vibe-playlist-flow';
 import { generateEmotionJourney } from '@/ai/flows/emotion-journey-flow';
-import { generateMusicPersona } from '@/ai/flows/music-persona-flow';
 import { searchSongs } from '@/lib/music-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio, Activity } from 'lucide-react';
+import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -20,8 +19,7 @@ export default function IntelligencePage() {
   const { 
     playedHistory = [], removeFromHistory, clearHistory, 
     exclusionRules = [], addExclusionRule, removeExclusionRule,
-    tasteProfile, setTasteProfile, createPlaylist, likedSongs = [],
-    smartMood, setSmartMood
+    createPlaylist, smartMood, setSmartMood
   } = useMusic();
   
   const { toast } = useToast();
@@ -32,7 +30,6 @@ export default function IntelligencePage() {
   const [toMood, setToMood] = useState('');
   const [loadingJourney, setLoadingJourney] = useState(false);
   
-  const [loadingPersona, setLoadingPersona] = useState(false);
   const [exclusionInput, setExclusionInput] = useState('');
 
   const handleMixVibe = async () => {
@@ -68,19 +65,6 @@ export default function IntelligencePage() {
     }
   };
 
-  const handleGeneratePersona = async () => {
-    setLoadingPersona(true);
-    try {
-      const seed = likedSongs.map(s => s.name).slice(0, 10);
-      const result = await generateMusicPersona({ history: seed });
-      setTasteProfile(result);
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Persona Error', description: 'Could not read your frequency.' });
-    } finally {
-      setLoadingPersona(false);
-    }
-  };
-
   return (
     <div className="p-8 pb-32 max-w-6xl mx-auto space-y-12">
       <header className="space-y-4">
@@ -92,13 +76,13 @@ export default function IntelligencePage() {
         <p className="text-neutral-400 max-w-2xl text-lg font-medium">Control your history, architect your taste, and let AI bridge your emotional spectrum.</p>
       </header>
 
-      <Tabs defaultValue="taste" className="space-y-8">
+      <Tabs defaultValue="mixer" className="space-y-8">
         <TabsList className="bg-neutral-900 border border-white/5 p-1 rounded-xl h-auto flex flex-wrap gap-1">
-          <TabsTrigger value="taste" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
-            <Brain className="h-4 w-4" /> Taste Profile
-          </TabsTrigger>
           <TabsTrigger value="mixer" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
             <Zap className="h-4 w-4" /> AI Mixer
+          </TabsTrigger>
+          <TabsTrigger value="sync" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
+            <Radio className="h-4 w-4" /> Mood Sync
           </TabsTrigger>
           <TabsTrigger value="journey" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
             <Wind className="h-4 w-4" /> Emotion Journey
@@ -110,75 +94,6 @@ export default function IntelligencePage() {
             <ShieldAlert className="h-4 w-4" /> Exclusions
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="taste" className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="bg-neutral-900 border-white/5 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-2xl font-black italic uppercase italic tracking-tighter">Current Persona</CardTitle>
-                <CardDescription>Your poetic listening identity</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {tasteProfile ? (
-                  <div className="space-y-6">
-                    <div className="bg-white/5 p-6 rounded-2xl border border-white/5">
-                      <h3 className="text-3xl font-black text-primary italic uppercase mb-2">{tasteProfile.personaTitle}</h3>
-                      <p className="text-neutral-300 leading-relaxed italic">"{tasteProfile.description}"</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-white/5 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-black uppercase text-neutral-500 mb-1">Dominant Mood</p>
-                        <p className="font-bold text-white">{tasteProfile.dominantMood}</p>
-                      </div>
-                      <div className="p-4 bg-white/5 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-black uppercase text-neutral-500 mb-1">Recommendation</p>
-                        <p className="font-bold text-white">{tasteProfile.recommendationStyle}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 space-y-4">
-                    <Music2 className="h-12 w-12 text-neutral-800 mx-auto" />
-                    <p className="text-neutral-500 text-sm">No profile generated yet.</p>
-                  </div>
-                )}
-                <Button className="w-full font-bold h-12 gap-2" onClick={handleGeneratePersona} disabled={loadingPersona}>
-                  {loadingPersona ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {tasteProfile ? 'Recalibrate Persona' : 'Generate Profile'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-neutral-900 border-white/5 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-2xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
-                  <Radio className="h-5 w-5 text-primary" />
-                  Smart Mood Sync
-                </CardTitle>
-                <CardDescription>Architect your flow automatically</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-                  <div className="space-y-1">
-                    <Label htmlFor="smart-mood" className="text-lg font-bold italic tracking-tighter uppercase">Enable Sync</Label>
-                    <p className="text-xs text-neutral-500">Automatically play songs with matching vibes when the queue ends.</p>
-                  </div>
-                  <Switch 
-                    id="smart-mood" 
-                    checked={smartMood} 
-                    onCheckedChange={setSmartMood}
-                  />
-                </div>
-                
-                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-                   <p className="text-xs text-neutral-400 leading-relaxed italic">
-                     When you listen to a genre like <span className="text-primary font-bold">Lofi</span>, our neural engine will instantly bridge the next track to match that specific frequency, ensuring your mood remains uninterrupted.
-                   </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
         <TabsContent value="mixer" className="animate-in fade-in slide-in-from-bottom-4 max-w-2xl mx-auto text-center space-y-8">
            <div className="space-y-4">
@@ -202,6 +117,38 @@ export default function IntelligencePage() {
                CREATE MIX
              </Button>
            </div>
+        </TabsContent>
+
+        <TabsContent value="sync" className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl max-w-3xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-3xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
+                <Radio className="h-6 w-6 text-primary" />
+                Smart Mood Sync
+              </CardTitle>
+              <CardDescription>Definitive vibe continuity engine</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="space-y-1">
+                  <Label htmlFor="smart-mood" className="text-xl font-bold italic tracking-tighter uppercase">Enable Sync</Label>
+                  <p className="text-sm text-neutral-500">Automatically discover and play matching frequencies (Lofi, Bhojpuri, etc.) when the current track ends.</p>
+                </div>
+                <Switch 
+                  id="smart-mood" 
+                  checked={smartMood} 
+                  onCheckedChange={setSmartMood}
+                />
+              </div>
+              
+              <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-4">
+                 <h4 className="font-bold text-primary italic uppercase tracking-tight">Active Frequency Analysis</h4>
+                 <p className="text-xs text-neutral-400 leading-relaxed italic">
+                   Our neural engine monitors your current resonance. If you are listening to <span className="text-primary font-bold">Lofi</span>, the engine will prioritize Lofi for the next discovery. If you shift to <span className="text-primary font-bold">Bhojpuri</span>, it bridges the next song to match that energy instantly.
+                 </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="journey" className="animate-in fade-in slide-in-from-bottom-4 max-w-2xl mx-auto space-y-12">

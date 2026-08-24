@@ -18,9 +18,9 @@ import { Label } from '@/components/ui/label';
 
 export default function IntelligencePage() {
   const { 
-    playedHistory, removeFromHistory, clearHistory, 
-    exclusionRules, addExclusionRule, removeExclusionRule,
-    tasteProfile, setTasteProfile, createPlaylist, likedSongs,
+    playedHistory = [], removeFromHistory, clearHistory, 
+    exclusionRules = [], addExclusionRule, removeExclusionRule,
+    tasteProfile, setTasteProfile, createPlaylist, likedSongs = [],
     smartMood, setSmartMood
   } = useMusic();
   

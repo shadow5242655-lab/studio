@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Mic2, Heart, Radio, Wind, Coffee, Headphones } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -22,7 +22,9 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      setSongs(data);
+      // Deduplicate by ID
+      const unique = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setSongs(unique);
       setLoading(false);
     };
     fetch();
@@ -43,7 +45,7 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex w-max space-x-6 px-6 md:px-12 pb-6">
           {loading ? (
-            Array(6).fill(0).map((_, i) => <div key={i} className="w-[180px] h-[260px] glass-card animate-pulse rounded-2xl" />)
+            Array(8).fill(0).map((_, i) => <div key={i} className="w-[180px] h-[260px] bg-neutral-900 animate-pulse rounded-2xl" />)
           ) : (
             songs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={songs} /></div>)
           )}
@@ -56,8 +58,8 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
 
 export default function Home() {
   return (
-    <div className="pb-40 space-y-16 pt-8 animate-in fade-in duration-1000">
-      <header className="px-6 md:px-12 py-12 relative overflow-hidden">
+    <div className="pb-40 space-y-20 pt-8 animate-in fade-in duration-1000">
+      <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[70vh] flex items-center">
         <div className="absolute inset-0 z-0 opacity-40">
            <img 
             src="https://picsum.photos/seed/music-resonance/1600/900" 
@@ -68,7 +70,7 @@ export default function Home() {
            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
         </div>
         
-        <div className="relative z-10 space-y-8 max-w-3xl pt-20">
+        <div className="relative z-10 space-y-8 max-w-4xl pt-20">
           <div className="flex items-center gap-3">
             <div className="h-1 w-12 bg-primary" />
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Verified Frequency</span>
@@ -79,12 +81,12 @@ export default function Home() {
           </h1>
           
           <p className="text-xl md:text-2xl text-neutral-300 font-medium tracking-tight max-w-xl">
-            High-fidelity resonance for the modern listener.
+            High-fidelity resonance for the modern listener. Experience the definitive soundscape.
           </p>
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Link href="/search">
-              <Button size="lg" className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap">
+              <Button size="lg" className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20">
                 <Play className="h-6 w-6 fill-current" />
                 EXPLORE
               </Button>
@@ -99,11 +101,21 @@ export default function Home() {
         </div>
       </header>
 
-      <MusicSection title="TRENDING LOVE SONGS" initialQuery="Romantic Hits" icon={TrendingUp} />
-      <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi" icon={Zap} />
-      <MusicSection title="Trending Pulse" icon={TrendingUp} />
-      <MusicSection title="Studio Originals" initialQuery="New Release" icon={Disc} />
-      <MusicSection title="Acoustic Resonance" initialQuery="Unplugged" icon={Music2} />
+      <div className="space-y-24">
+        <MusicSection title="Trending Pulse" initialQuery="Top Trending" icon={TrendingUp} />
+        <MusicSection title="PUNJABI BEATS" initialQuery="Punjabi Hits" icon={Zap} />
+        <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Chill" icon={Wind} />
+        <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Hits" icon={Flame} />
+        <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Hits" icon={Radio} />
+        <MusicSection title="HIP HOP KINGS" initialQuery="Indian Hip Hop" icon={Headphones} />
+        <MusicSection title="Acoustic Resonance" initialQuery="Unplugged" icon={Music2} />
+        <MusicSection title="BOLLYWOOD CLASSICS" initialQuery="90s Bollywood" icon={Disc} />
+        <MusicSection title="DEVOTIONAL SOUNDS" initialQuery="Bhakti Songs" icon={Heart} />
+        <MusicSection title="INDIE VIBRATIONS" initialQuery="Indian Indie" icon={Wind} />
+        <MusicSection title="GAZAL NIGHTS" initialQuery="Pankaj Udhas Jagjit Singh" icon={Coffee} />
+        <MusicSection title="PARTY BANGERS" initialQuery="Party Mix 2024" icon={Flame} />
+        <MusicSection title="CHILL WAVE" initialQuery="Atmospheric Chill" icon={Wind} />
+      </div>
     </div>
   );
 }

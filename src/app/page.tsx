@@ -96,30 +96,30 @@ export default function Home() {
 
   return (
     <div className="pb-32">
-      <div className="relative h-[300px] md:h-[400px] w-full overflow-hidden bg-neutral-900">
-        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent z-10" />
+      <div className="relative h-[350px] md:h-[450px] w-full overflow-hidden bg-neutral-900">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-transparent z-10" />
         <img 
           src="https://picsum.photos/seed/ayuhero/1600/800" 
           alt="Banner" 
-          className="w-full h-full object-cover opacity-50"
+          className="w-full h-full object-cover opacity-60"
           data-ai-hint="music concert"
         />
-        <div className="absolute bottom-0 left-0 p-8 md:p-12 z-20 space-y-4 max-w-2xl">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase italic">
+        <div className="absolute bottom-0 left-0 p-6 md:p-12 z-20 space-y-4 max-w-2xl w-full">
+          <h1 className="text-4xl md:text-7xl font-black tracking-tight text-white uppercase italic leading-none">
             AYUMUSIC
           </h1>
-          <p className="text-neutral-300 text-sm md:text-lg line-clamp-2">
+          <p className="text-neutral-300 text-sm md:text-lg max-w-lg leading-relaxed">
             High-fidelity streaming for the uncompromising listener. Discover your sound, track your stats, and build your legacy.
           </p>
-          <div className="flex gap-4 pt-2">
-            <Button size="lg" className="rounded-full px-8 font-bold gap-2" onClick={() => trending.length > 0 && playTrack(trending[0], trending)}>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button size="lg" className="rounded-full px-6 md:px-8 font-bold gap-2 h-12 md:h-14" onClick={() => trending.length > 0 && playTrack(trending[0], trending)}>
               <Play className="h-5 w-5 fill-current" />
               Listen Now
             </Button>
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-2">
+                <Button size="lg" variant="outline" className="rounded-full px-6 md:px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-2 h-12 md:h-14">
                   <Info className="h-4 w-4" />
                   Stats
                 </Button>
@@ -145,13 +145,13 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="p-8 space-y-16">
+      <div className="p-6 md:p-8 space-y-16">
         {recommendations.length > 0 && (
           <section>
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-2xl font-bold tracking-tight text-white italic">Personalized for You</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
               {recommendations.map((song) => (
                 <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
               ))}
@@ -167,7 +167,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold tracking-tight">Global Charts</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
             {loading ? (
               Array(5).fill(0).map((_, i) => (
                 <div key={i} className="space-y-3">

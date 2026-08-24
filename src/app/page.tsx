@@ -40,13 +40,15 @@ export default function Home() {
     if (likedSongs.length === 0) return;
     const seed = likedSongs[0].artists.primary[0].name;
     const data = await searchSongs(seed);
-    setRecommendations(data.slice(0, 5));
+    const uniqueRecs = Array.from(new Map(data.map(item => [item.id, item])).values());
+    setRecommendations(uniqueRecs.slice(0, 5));
   }, [likedSongs]);
 
   useEffect(() => {
     async function init() {
       const data = await fetchTrending(1);
-      setTrending(data);
+      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setTrending(uniqueData);
       setLoading(false);
       fetchRecommendations();
     }
@@ -59,7 +61,11 @@ export default function Home() {
     const nextPage = page + 1;
     const newData = await fetchTrending(nextPage);
     if (newData.length > 0) {
-      setTrending(prev => [...prev, ...newData]);
+      setTrending(prev => {
+        const existingIds = new Set(prev.map(s => s.id));
+        const uniqueNewData = newData.filter(s => !existingIds.has(s.id));
+        return [...prev, ...uniqueNewData];
+      });
       setPage(nextPage);
     }
     setLoadingMore(false);
@@ -154,7 +160,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {recommendations.map((song) => (
-                <SongCard key={song.id} song={song} playlist={recommendations} />
+                <SongCard key={`rec-${song.id}`} song={song} playlist={recommendations} />
               ))}
             </div>
           </section>
@@ -178,7 +184,7 @@ export default function Home() {
               ))
             ) : (
               trending.map((song) => (
-                <SongCard key={song.id} song={song} playlist={trending} />
+                <SongCard key={`trending-${song.id}`} song={song} playlist={trending} />
               ))
             )}
           </div>

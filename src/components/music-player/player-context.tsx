@@ -33,6 +33,8 @@ interface MusicStateContextType {
   activeDays: string[];
   exclusionRules: ExclusionRule[];
   smartMood: boolean;
+  isShuffle: boolean;
+  repeatMode: 'off' | 'one' | 'all';
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
   totalMinutes: number;
@@ -54,6 +56,8 @@ interface MusicStateContextType {
   addExclusionRule: (type: 'artist' | 'genre' | 'song', value: string) => void;
   removeExclusionRule: (id: string) => void;
   setSmartMood: (enabled: boolean) => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
   songPopularity: Record<string, number>;
   recordSearchSelection: (song: Song) => void;
 }
@@ -81,7 +85,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
   const [activeDays, setActiveDays] = useState<string[]>([]);
   const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
-  const [smartMood, setSmartMoodState] = useState(true); 
+  const [smartMood, setSmartMoodState] = useState(true);
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
   
@@ -123,7 +129,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // --- 4. Utility Functions ---
+  // --- 4. Hoisted Core Logic ---
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     setActiveDays(prev => {
@@ -160,7 +166,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // --- 5. Core Playback Logic ---
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     recordActiveDay();
@@ -217,13 +222,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       playRandomTrack();
       return;
     }
+
+    if (repeatMode === 'one') {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+      }
+      return;
+    }
+
     const idx = queue.findIndex(s => s.id === currentTrack.id);
     if (idx !== -1 && idx < queue.length - 1) {
       playTrack(queue[idx + 1]);
+    } else if (repeatMode === 'all' && queue.length > 0) {
+      playTrack(queue[0]);
     } else {
       handleInfiniteDiscovery(currentTrack);
     }
-  }, [currentTrack, queue, playTrack, handleInfiniteDiscovery, playRandomTrack]);
+  }, [currentTrack, queue, playTrack, handleInfiniteDiscovery, playRandomTrack, repeatMode]);
 
   const prevTrack = useCallback(() => {
     if (!currentTrack || queue.length === 0) return;
@@ -235,7 +251,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, queue, playTrack]);
 
-  // --- 6. Controls ---
+  // --- 5. Controls ---
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -338,6 +354,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('ayumusics_smartmood', JSON.stringify(enabled));
   }, []);
 
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle(prev => !prev);
+  }, []);
+
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode(prev => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
+  }, []);
+
   const recordSearchSelection = useCallback((song: Song) => {
     setSongPopularity(prev => {
       const next = { ...prev, [song.id]: (prev[song.id] || 0) + 1 };
@@ -346,15 +374,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // --- 7. Optimized State Updates ---
+  // --- 6. Optimized Progress Tracking ---
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       const currentTime = audioRef.current.currentTime;
       const now = performance.now();
+      
       if (now - lastProgressUpdateRef.current > 100) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
       }
+      
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
@@ -373,7 +403,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying, totalSeconds, recordActiveDay]);
 
-  // --- 8. Lifecycle (Event listeners last to ensure functions are defined) ---
+  // --- 7. Lifecycle Hooks ---
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
     else {
@@ -389,6 +419,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
     
+    // Crucial: define handlers inside useEffect or as stable refs to avoid TDE
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => nextTrack(); 
     const onPlay = () => setIsPlaying(true);
@@ -409,11 +440,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
-    playedHistory, activeDays, exclusionRules, smartMood,
+    playedHistory, activeDays, exclusionRules, smartMood, isShuffle, repeatMode,
     lyrics, loadingLyrics, songPopularity, totalMinutes: Math.floor(totalSeconds / 60),
     setIsPlayerOpen, setIsLyricsOpen, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
-    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, activeDays, exclusionRules, smartMood, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, recordSearchSelection]);
+    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, toggleShuffle, toggleRepeat, recordSearchSelection
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, activeDays, exclusionRules, smartMood, isShuffle, repeatMode, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, toggleShuffle, toggleRepeat, recordSearchSelection]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

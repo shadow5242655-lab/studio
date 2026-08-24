@@ -1,16 +1,24 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Music2, Mic2, Download } from 'lucide-react';
+import { 
+  Play, Pause, SkipBack, SkipForward, Volume2, 
+  Music2, Mic2, Download, Shuffle, Repeat, Repeat1 
+} from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { getBestImage, formatDuration, getBestDownload } from '@/lib/music-api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function NowPlayingBar() {
-  const { currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, setIsPlayerOpen, setIsLyricsOpen } = useMusic();
+  const { 
+    currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
+    setIsPlayerOpen, setIsLyricsOpen, isShuffle, toggleShuffle, 
+    repeatMode, toggleRepeat 
+  } = useMusic();
   const { progress, duration, volume, setVolume, seek } = useMusicProgress();
   const router = useRouter();
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
@@ -50,8 +58,9 @@ export function NowPlayingBar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/10 px-6 flex items-center justify-between z-50">
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/5">
+    <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/10 px-6 flex items-center justify-between z-50 animate-in slide-in-from-bottom duration-500">
+      {/* Absolute Progress Slider */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] group">
         <Slider
           value={[progress]}
           max={duration || 100}
@@ -79,7 +88,7 @@ export function NowPlayingBar() {
           )}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter">{currentTrack.name}</span>
+          <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter group-hover:text-primary transition-colors">{currentTrack.name}</span>
           <span className="text-[10px] text-primary/70 font-bold truncate uppercase tracking-widest">
             {currentTrack.artists.primary.map((artist, index) => (
               <span key={artist.id || index}>
@@ -98,46 +107,71 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Main Playback Controls */}
       <div className="flex flex-col items-center gap-1 flex-1">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-neutral-500 hover:text-white lag-free-tap" 
+            className={cn("text-neutral-500 hover:text-white lag-free-tap", isShuffle && "text-primary")} 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(toggleShuffle)}
+            onPointerCancel={handlePointerCancel}
+          >
+            <Shuffle className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:scale-110 lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
           >
             <SkipBack className="h-6 w-6 fill-current" />
           </Button>
+
           <Button 
-            className="bg-white text-black rounded-full h-12 w-12 p-0 hover:scale-110 active:scale-95 transition-transform lag-free-tap shadow-lg"
+            className="bg-white text-black rounded-full h-12 w-12 p-0 hover:scale-110 active:scale-95 transition-transform lag-free-tap shadow-[0_0_20px_rgba(255,255,255,0.2)]"
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
             {isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="h-7 w-7 fill-current" />}
           </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-neutral-500 hover:text-white lag-free-tap" 
+            className="text-white hover:scale-110 lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}
           >
             <SkipForward className="h-6 w-6 fill-current" />
           </Button>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn("text-neutral-500 hover:text-white lag-free-tap", repeatMode !== 'off' && "text-primary")} 
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(toggleRepeat)}
+            onPointerCancel={handlePointerCancel}
+          >
+            {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+          </Button>
         </div>
-        <div className="flex items-center gap-3 w-full max-w-[200px] justify-center text-[10px] font-bold text-neutral-500 tracking-widest uppercase">
+        
+        <div className="flex items-center gap-3 w-full max-w-[200px] justify-center text-[10px] font-black text-neutral-500 tracking-widest uppercase">
           <span>{formatDuration(progress)}</span>
-          <span>/</span>
+          <span className="opacity-30">/</span>
           <span>{formatDuration(duration)}</span>
         </div>
       </div>
 
-      {/* Volume, Lyrics & Download */}
+      {/* Utilities: Volume, Lyrics & Download */}
       <div className="flex items-center justify-end gap-6 w-[30%]">
         <div className="flex items-center gap-2 hidden md:flex">
           <Volume2 className="h-4 w-4 text-neutral-500" />
@@ -153,7 +187,7 @@ export function NowPlayingBar() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-neutral-500 hover:text-white transition-colors lag-free-tap" 
+            className="text-neutral-500 hover:text-primary transition-colors lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(handleDownload)}
             onPointerCancel={handlePointerCancel}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -60,11 +59,11 @@ const MusicStateContext = createContext<MusicStateContextType | undefined>(undef
 const MusicProgressContext = createContext<MusicProgressContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
-  // State Context Data (Lower frequency updates)
+  // --- STATE CONTEXT DATA (Low Frequency Updates) ---
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPlayerOpenInternal, setIsPlayerOpenInternal] = useState(false);
-  const [isLyricsOpenInternal, setIsLyricsOpenInternal] = useState(false);
+  const [isPlayerOpenState, setIsPlayerOpenState] = useState(false);
+  const [isLyricsOpenState, setIsLyricsOpenState] = useState(false);
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -75,7 +74,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
 
-  // Progress Context Data (High Frequency 60FPS updates)
+  // --- PROGRESS CONTEXT DATA (High Frequency 60FPS updates) ---
   const [volumeState, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -95,7 +94,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const updateDuration = () => setDuration(audio.duration);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const handleEnded = () => nextTrack();
+    
+    const handleEnded = () => {
+      // Auto-play logic
+      if (queue.length > 0) {
+        nextTrack();
+      }
+    };
 
     audio.addEventListener('loadedmetadata', updateDuration);
     audio.addEventListener('play', onPlay);
@@ -108,7 +113,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [queue]); // Re-add listener if queue changes to ensure nextTrack is fresh
 
   // 60FPS Loop for progress updates - Crucial for zero-lag UI
   useEffect(() => {
@@ -117,6 +122,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         const currentTime = audioRef.current.currentTime;
         setProgress(currentTime);
         
+        // Track listening time for insights
         if (time - lastTimeRef.current > 10000) {
           setTotalListeningTime(prev => prev + 10);
           lastTimeRef.current = time;
@@ -153,11 +159,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack]);
 
   const setIsPlayerOpen = useCallback((open: boolean) => {
-    setIsPlayerOpenInternal(open);
+    setIsPlayerOpenState(open);
   }, []);
 
   const setIsLyricsOpen = useCallback((open: boolean) => {
-    setIsLyricsOpenInternal(open);
+    setIsLyricsOpenState(open);
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
@@ -182,8 +188,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
-    setIsPlayerOpenInternal(false);
-    setIsLyricsOpenInternal(false);
+    setIsPlayerOpenState(false);
+    setIsLyricsOpenState(false);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -196,7 +202,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (!currentTrack || queue.length === 0) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
     if (currentIndex !== -1) {
-      playTrack(queue[(currentIndex + 1) % queue.length]);
+      const nextIdx = (currentIndex + 1) % queue.length;
+      playTrack(queue[nextIdx]);
     }
   }, [currentTrack, queue, playTrack]);
 
@@ -204,7 +211,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (!currentTrack || queue.length === 0) return;
     const currentIndex = queue.findIndex(s => s.id === currentTrack.id);
     if (currentIndex !== -1) {
-      playTrack(queue[(currentIndex - 1 + queue.length) % queue.length]);
+      const prevIdx = (currentIndex - 1 + queue.length) % queue.length;
+      playTrack(queue[prevIdx]);
     }
   }, [currentTrack, queue, playTrack]);
 
@@ -250,11 +258,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const clearHistory = useCallback(() => setPlayedHistory([]), []);
 
   const stateValue = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen: isPlayerOpenInternal, isLyricsOpen: isLyricsOpenInternal, queue, likedSongs, playlists, songPopularity, playedHistory,
+    currentTrack, isPlaying, isPlayerOpen: isPlayerOpenState, isLyricsOpen: isLyricsOpenState, queue, likedSongs, playlists, songPopularity, playedHistory,
     lyrics, loadingLyrics, lyricsError, smartMood,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked,
     createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood
-  }), [currentTrack, isPlaying, isPlayerOpenInternal, isLyricsOpenInternal, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood]);
+  }), [currentTrack, isPlaying, isPlayerOpenState, isLyricsOpenState, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume: volumeState, totalListeningTime, isSeeking, seek, commitSeek, setVolume, setIsSeeking

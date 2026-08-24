@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useRef } from 'react';
 import { Play, Music2, Pause } from 'lucide-react';
 import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
@@ -16,11 +16,32 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const { playTrack, currentTrack, isPlaying, togglePlay } = useMusic();
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
+  
+  // High-fidelity touch tracking to prevent accidental scroll triggers
+  const startPos = useRef<{ x: number, y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    
+    // Threshold of 5px to distinguish between a tap and a scroll
+    if (dx < 5 && dy < 5) {
+      playTrack(song, playlist);
+    }
+    startPos.current = null;
+  };
 
   return (
     <div 
       className="group glass-card p-4 rounded-2xl transition-all hover:bg-white/10 cursor-pointer relative lag-free-tap"
-      onPointerDown={() => playTrack(song, playlist)}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      style={{ touchAction: 'manipulation' }}
     >
       <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 flex items-center justify-center">
         {imageSrc ? (

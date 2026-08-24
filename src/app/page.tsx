@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3 } from 'lucide-react';
@@ -23,7 +22,6 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
     const fetch = async () => {
       setLoading(true);
       const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      // Deduplicate by ID
       const unique = Array.from(new Map(data.map(item => [item.id, item])).values());
       setSongs(unique);
       setLoading(false);
@@ -59,6 +57,21 @@ function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }:
 
 export default function Home() {
   const { playRandomTrack } = useMusic();
+  const startPos = useRef<{ x: number, y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    if (dx < 5 && dy < 5) {
+      callback();
+    }
+    startPos.current = null;
+  };
 
   return (
     <div className="pb-40 space-y-20 pt-8 animate-in fade-in duration-1000">
@@ -90,8 +103,10 @@ export default function Home() {
           <div className="flex flex-wrap gap-4 pt-4">
             <Button 
               size="lg" 
-              onPointerDown={playRandomTrack}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp(playRandomTrack)}
               className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20"
+              style={{ touchAction: 'manipulation' }}
             >
               <Play className="h-6 w-6 fill-current" />
               EXPLORE

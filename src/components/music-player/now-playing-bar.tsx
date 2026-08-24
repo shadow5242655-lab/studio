@@ -1,7 +1,6 @@
-
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Music2, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
@@ -12,10 +11,25 @@ import Image from 'next/image';
 export function NowPlayingBar() {
   const { currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, setIsPlayerOpen, setIsLyricsOpen } = useMusic();
   const { progress, duration, volume, setVolume, seek } = useMusicProgress();
+  const startPos = useRef<{ x: number, y: number } | null>(null);
 
   if (!currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    if (dx < 5 && dy < 5) {
+      callback();
+    }
+    startPos.current = null;
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/5 px-6 flex items-center justify-between z-50 backdrop-blur-3xl">
@@ -32,7 +46,9 @@ export function NowPlayingBar() {
       {/* Track Info */}
       <div 
         className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap"
-        onPointerDown={() => setIsPlayerOpen(true)}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp(() => setIsPlayerOpen(true))}
+        style={{ touchAction: 'manipulation' }}
       >
         <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/10 shadow-xl">
           {imageSrc ? (

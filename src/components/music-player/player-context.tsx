@@ -1,8 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Song, getBestDownload, searchSongs, getLyrics, LyricsData } from '@/lib/music-api';
+import { convertToHinglish } from '@/ai/flows/hinglish-lyrics-flow';
 
 export interface Playlist {
   id: string;
@@ -137,17 +137,51 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setLyricsError(null);
       setLoadingLyrics(true);
       const artist = currentTrack.artists.primary[0].name;
+      
       getLyrics(artist, currentTrack.name)
-        .then(data => {
-          setLyrics(data);
+        .then(async (data) => {
+          if (!data) throw new Error('No resonance');
+          
+          // Convert to Hinglish using AI
+          const textToConvert = data.synced ? data.synced.map(l => `[${formatTime(l.time)}] ${l.text}`).join('\n') : data.plain;
+          if (textToConvert) {
+             const result = await convertToHinglish({ text: textToConvert, isSynced: !!data.synced });
+             
+             if (data.synced) {
+               const parsed = parseSyncedHinglish(result.hinglishText);
+               setLyrics({ ...data, synced: parsed });
+             } else {
+               setLyrics({ ...data, plain: result.hinglishText });
+             }
+          } else {
+            setLyrics(data);
+          }
           setLoadingLyrics(false);
         })
         .catch(() => {
-          setLyricsError('Failed to load lyrics');
+          setLyricsError('Lyrics not available for this song');
           setLoadingLyrics(false);
         });
     }
   }, [currentTrack]);
+
+  function formatTime(s: number) {
+    const min = Math.floor(s / 60);
+    const sec = (s % 60).toFixed(2);
+    return `${min.toString().padStart(2, '0')}:${sec.padStart(5, '0')}`;
+  }
+
+  function parseSyncedHinglish(lrc: string) {
+    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+    return lrc.split('\n').map(line => {
+      const match = timeRegex.exec(line);
+      if (match) {
+        const time = parseInt(match[1]) * 60 + parseFloat(match[2] + '.' + match[3]);
+        return { time, text: line.replace(timeRegex, '').trim() };
+      }
+      return null;
+    }).filter(Boolean) as { time: number, text: string }[];
+  }
 
   const setIsPlayerOpen = useCallback((open: boolean) => {
     setIsPlayerOpenState(open);

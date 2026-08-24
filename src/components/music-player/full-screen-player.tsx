@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -62,7 +61,7 @@ export function FullScreenPlayer() {
         <div className="flex items-center gap-1 md:gap-3">
           <Button 
             variant="ghost" 
-            className="text-[10px] font-black italic tracking-[0.2em] text-white/40 hover:text-primary hover:bg-white/5 rounded-full px-4 h-11 gap-2 touch-btn"
+            className="text-[10px] font-black italic tracking-[0.2em] text-white bg-primary/20 hover:bg-primary/40 rounded-full px-6 h-11 gap-2 touch-btn"
             onPointerDown={() => setIsLyricsOpen(true)}
           >
             <Mic2 className="h-4 w-4" />

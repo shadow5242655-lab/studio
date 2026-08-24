@@ -1,8 +1,7 @@
-
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, Maximize2, Heart, Music2, X, Mic2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Music2, X, Mic2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { cn } from '@/lib/utils';
 export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
-    toggleLike, isLiked, setIsPlayerOpen, stopTrack, setIsLyricsOpen 
+    setIsPlayerOpen, stopTrack, setIsLyricsOpen 
   } = useMusic();
 
   const { progress, duration, volume, setVolume, seek, commitSeek, setIsSeeking } = useMusicProgress();
@@ -21,7 +20,6 @@ export function NowPlayingBar() {
   if (!currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
-  const liked = isLiked(currentTrack.id);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-effect border-t border-white/5 px-4 md:px-6 flex items-center justify-between z-50 group">
@@ -96,7 +94,7 @@ export function NowPlayingBar() {
       <div className="flex items-center justify-end gap-2 md:gap-3 w-[20%] md:w-[30%]">
         <Button 
           variant="ghost" 
-          className="text-xs font-black italic tracking-tighter text-muted-foreground hover:text-primary gap-1 px-2 h-8 rounded-full hidden sm:flex touch-btn"
+          className="text-[10px] font-black italic tracking-tighter text-white bg-primary/20 hover:bg-primary/40 gap-1 px-4 h-9 rounded-full hidden sm:flex touch-btn"
           onPointerDown={(e) => {
             e.stopPropagation();
             setIsLyricsOpen(true);
@@ -108,7 +106,7 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-primary sm:hidden touch-btn"
+          className="text-primary hover:bg-primary/10 sm:hidden touch-btn"
           onPointerDown={(e) => {
             e.stopPropagation();
             setIsLyricsOpen(true);

@@ -10,6 +10,19 @@ export interface Playlist {
   createdAt: number;
 }
 
+export interface ExclusionRule {
+  id: string;
+  type: 'artist' | 'genre' | 'song';
+  value: string;
+}
+
+export interface TasteProfile {
+  personaTitle: string;
+  description: string;
+  dominantMood: string;
+  recommendationStyle: string;
+}
+
 interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
@@ -18,6 +31,10 @@ interface MusicStateContextType {
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
+  playedHistory: string[];
+  exclusionRules: ExclusionRule[];
+  tasteProfile: TasteProfile | null;
+  smartMood: boolean;
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
   setIsPlayerOpen: (open: boolean) => void;
@@ -32,6 +49,12 @@ interface MusicStateContextType {
   createPlaylist: (name: string, songs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
   deletePlaylist: (playlistId: string) => void;
+  removeFromHistory: (songId: string) => void;
+  clearHistory: () => void;
+  addExclusionRule: (type: 'artist' | 'genre' | 'song', value: string) => void;
+  removeExclusionRule: (id: string) => void;
+  setTasteProfile: (profile: TasteProfile) => void;
+  setSmartMood: (enabled: boolean) => void;
 }
 
 interface MusicProgressContextType {
@@ -53,6 +76,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [playedHistory, setPlayedHistory] = useState<string[]>([]);
+  const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
+  const [tasteProfile, setTasteProfileState] = useState<TasteProfile | null>(null);
+  const [smartMood, setSmartMoodState] = useState(false);
   
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
@@ -70,6 +97,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     const savedPlaylists = localStorage.getItem('ayumusics_playlists');
     if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
+
+    const savedHistory = localStorage.getItem('ayumusics_history');
+    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
+
+    const savedRules = localStorage.getItem('ayumusics_rules');
+    if (savedRules) setExclusionRules(JSON.parse(savedRules));
+
+    const savedProfile = localStorage.getItem('ayumusics_taste');
+    if (savedProfile) setTasteProfileState(JSON.parse(savedProfile));
   }, []);
 
   const updateProgress = useCallback(() => {
@@ -106,7 +142,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
     };
-  }, [queue]);
+  }, []);
 
   const fetchLyrics = async (song: Song) => {
     setLoadingLyrics(true);
@@ -136,6 +172,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
+    
+    // Add to history
+    setPlayedHistory(prev => {
+      const next = [track.id, ...prev.filter(id => id !== track.id)].slice(0, 50);
+      localStorage.setItem('ayumusics_history', JSON.stringify(next));
+      return next;
+    });
+
     const url = getBestDownload(track);
     if (audioRef.current && url) {
       if (currentTrack?.id !== track.id) {
@@ -211,22 +255,71 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToPlaylist = useCallback((playlistId: string, track: Song) => {
-    setPlaylists(prev => prev.map(p => 
-      p.id === playlistId 
-        ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] }
-        : p
-    ));
+    setPlaylists(prev => {
+      const next = prev.map(p => 
+        p.id === playlistId 
+          ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] }
+          : p
+      );
+      localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const deletePlaylist = useCallback((playlistId: string) => {
-    setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+    setPlaylists(prev => {
+      const next = prev.filter(p => p.id !== playlistId);
+      localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const removeFromHistory = useCallback((songId: string) => {
+    setPlayedHistory(prev => {
+      const next = prev.filter(id => id !== songId);
+      localStorage.setItem('ayumusics_history', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setPlayedHistory([]);
+    localStorage.removeItem('ayumusics_history');
+  }, []);
+
+  const addExclusionRule = useCallback((type: 'artist' | 'genre' | 'song', value: string) => {
+    const newRule: ExclusionRule = { id: Math.random().toString(36).substr(2, 9), type, value };
+    setExclusionRules(prev => {
+      const next = [...prev, newRule];
+      localStorage.setItem('ayumusics_rules', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const removeExclusionRule = useCallback((id: string) => {
+    setExclusionRules(prev => {
+      const next = prev.filter(r => r.id !== id);
+      localStorage.setItem('ayumusics_rules', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const setTasteProfile = useCallback((profile: TasteProfile) => {
+    setTasteProfileState(profile);
+    localStorage.setItem('ayumusics_taste', JSON.stringify(profile));
+  }, []);
+
+  const setSmartMood = useCallback((enabled: boolean) => {
+    setSmartMoodState(enabled);
   }, []);
 
   const stateValue = useMemo(() => ({
     currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
+    playedHistory, exclusionRules, tasteProfile, smartMood,
     lyrics, loadingLyrics,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, lyrics, loadingLyrics, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist]);
+    removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood,
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, exclusionRules, tasteProfile, smartMood, lyrics, loadingLyrics, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

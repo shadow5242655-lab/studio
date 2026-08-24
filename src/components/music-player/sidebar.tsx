@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -20,6 +20,7 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
   const navItems = [
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
+    { name: 'Intelligence', icon: Brain, href: '/intelligence' },
     { name: 'Library', icon: Library, href: '/library' },
     { name: 'Browse Genres', icon: Compass, href: '/genres' },
   ];
@@ -83,7 +84,7 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
             pathname === '/liked' ? "text-white bg-white/10" : "text-muted-foreground hover:text-white hover:bg-white/5"
           )}
         >
-          <div className="bg-gradient-to-br from-primary to-red-400 text-white p-1 rounded-sm">
+          <div className="bg-gradient-to-br from-primary to-red-600 text-white p-1 rounded-sm">
             <Heart className="h-4 w-4 fill-white" />
           </div>
           <span className="flex-1">Liked Songs</span>

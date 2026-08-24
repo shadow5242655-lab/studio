@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Song, getTrending, formatDuration } from '@/lib/music-api';
+import { Song, getTrending, formatDuration, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles, Loader2, Clock, Info } from 'lucide-react';
+import { Play, Sparkles, Loader2, Clock, Info, TrendingUp, Heart } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 import {
   Dialog,
@@ -18,10 +18,11 @@ import {
 
 export default function Home() {
   const [trending, setTrending] = useState<Song[]>([]);
+  const [recommendations, setRecommendations] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const { playTrack, totalListeningTime } = useMusic();
+  const { playTrack, totalListeningTime, playedHistory, likedSongs } = useMusic();
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -31,19 +32,26 @@ export default function Home() {
       const data = await getTrending(pageNum);
       return data;
     } catch (error) {
-      console.error('Failed to fetch songs:', error);
       return [];
     }
   }, []);
+
+  const fetchRecommendations = useCallback(async () => {
+    if (likedSongs.length === 0) return;
+    const seed = likedSongs[0].artists.primary[0].name;
+    const data = await searchSongs(seed);
+    setRecommendations(data.slice(0, 5));
+  }, [likedSongs]);
 
   useEffect(() => {
     async function init() {
       const data = await fetchTrending(1);
       setTrending(data);
       setLoading(false);
+      fetchRecommendations();
     }
     init();
-  }, [fetchTrending]);
+  }, [fetchTrending, fetchRecommendations]);
 
   const handleLoadMore = useCallback(async () => {
     if (loadingMore) return;
@@ -57,10 +65,8 @@ export default function Home() {
     setLoadingMore(false);
   }, [page, loadingMore, fetchTrending]);
 
-  // Setup Intersection Observer for Infinite Scroll
   useEffect(() => {
     if (loading) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore) {
@@ -69,40 +75,21 @@ export default function Home() {
       },
       { threshold: 0.1 }
     );
-
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
-    }
-
+    if (sentinelRef.current) observer.observe(sentinelRef.current);
     observerRef.current = observer;
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
+    return () => observerRef.current?.disconnect();
   }, [loading, loadingMore, handleLoadMore]);
-
-  const handleHeroPlay = () => {
-    if (trending.length > 0) {
-      playTrack(trending[0], trending);
-    }
-  };
 
   const formatTotalTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${remainingSeconds}s`;
-    }
+    if (hours > 0) return `${hours}h ${minutes}m ${remainingSeconds}s`;
     return `${minutes}m ${remainingSeconds}s`;
   };
 
   return (
     <div className="pb-32">
-      {/* Hero Banner */}
       <div className="relative h-[300px] md:h-[400px] w-full overflow-hidden bg-neutral-900">
         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent z-10" />
@@ -115,33 +102,29 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 p-8 md:p-12 z-20 space-y-4 max-w-2xl">
           <div className="flex items-center gap-2 text-primary font-bold tracking-widest text-xs uppercase">
             <Sparkles className="h-4 w-4" />
-            Featured Artist
+            Featured Experience
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase italic">
             AYUMUSIC
           </h1>
           <p className="text-neutral-300 text-sm md:text-lg line-clamp-2">
-            Experience the latest and greatest in high-fidelity music streaming. Explore trending tracks curated just for you.
+            High-fidelity streaming for the uncompromising listener. Discover your sound, track your stats, and build your legacy.
           </p>
           <div className="flex gap-4 pt-2">
-            <Button size="lg" className="rounded-full px-8 font-bold gap-2" onClick={handleHeroPlay}>
+            <Button size="lg" className="rounded-full px-8 font-bold gap-2" onClick={() => trending.length > 0 && playTrack(trending[0], trending)}>
               <Play className="h-5 w-5 fill-current" />
               Listen Now
             </Button>
-            
             <Dialog>
               <DialogTrigger asChild>
                 <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-2">
                   <Info className="h-4 w-4" />
-                  Details
+                  Stats
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-neutral-900 border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-black italic uppercase italic tracking-tighter">Your AYUMUSIC Journey</DialogTitle>
-                  <DialogDescription className="text-neutral-400">
-                    Your personal listening statistics and account insights.
-                  </DialogDescription>
+                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Your Journey</DialogTitle>
                 </DialogHeader>
                 <div className="py-8 space-y-6">
                   <div className="flex items-center gap-4 bg-white/5 p-6 rounded-2xl border border-white/5">
@@ -149,18 +132,9 @@ export default function Home() {
                       <Clock className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Total Listening Time</p>
-                      <p className="text-3xl font-black tracking-tighter text-white uppercase italic">
-                        {formatTotalTime(totalListeningTime)}
-                      </p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Listening Time</p>
+                      <p className="text-3xl font-black tracking-tighter text-white italic">{formatTotalTime(totalListeningTime)}</p>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2 px-2">
-                    <h4 className="text-xs font-bold text-white uppercase tracking-widest">Listening Milestones</h4>
-                    <p className="text-sm text-neutral-400 leading-relaxed">
-                      You've spent a total of <span className="text-primary font-bold">{formatTotalTime(totalListeningTime)}</span> immersing yourself in the world of high-fidelity sound. Keep exploring to unlock more musical horizons.
-                    </p>
                   </div>
                 </div>
               </DialogContent>
@@ -169,39 +143,48 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="p-8 space-y-12">
+      <div className="p-8 space-y-16">
+        {recommendations.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Personalized for You</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {recommendations.map((song) => (
+                <SongCard key={song.id} song={song} playlist={recommendations} />
+              ))}
+            </div>
+          </section>
+        )}
+
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">Trending Now</h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-neutral-800 p-2 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight">Global Charts</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {loading ? (
-              Array(10).fill(0).map((_, i) => (
+              Array(5).fill(0).map((_, i) => (
                 <div key={i} className="space-y-3">
                   <Skeleton className="aspect-square w-full rounded-xl" />
                   <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
                 </div>
               ))
             ) : (
-              trending.map((song, index) => (
-                <SongCard key={`${song.id}-${index}`} song={song} playlist={trending} />
+              trending.map((song) => (
+                <SongCard key={song.id} song={song} playlist={trending} />
               ))
             )}
           </div>
 
-          {/* Infinite Scroll Sentinel */}
-          <div 
-            ref={sentinelRef} 
-            className="h-20 flex items-center justify-center mt-10"
-          >
-            {loadingMore && (
-              <div className="flex items-center gap-3 text-primary font-bold animate-pulse">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Loading more music...</span>
-              </div>
-            )}
+          <div ref={sentinelRef} className="h-20 flex items-center justify-center mt-10">
+            {loadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
           </div>
         </section>
       </div>

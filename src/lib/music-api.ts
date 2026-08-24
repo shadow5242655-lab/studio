@@ -1,7 +1,7 @@
 export interface Song {
   id: string;
   name: string;
-  artists: { primary: { name: string }[] };
+  artists: { primary: { name: string; id?: string }[] };
   image: { link: string; url?: string; quality: string }[];
   downloadUrl: { link: string; url?: string; quality: string }[];
   duration: number;
@@ -10,7 +10,7 @@ export interface Song {
 export interface Album {
   id: string;
   name: string;
-  artists: { primary: { name: string }[] };
+  artists: { primary: { name: string; id?: string }[] };
   image: { link: string; url?: string; quality: string }[];
   year?: string;
 }
@@ -21,6 +21,17 @@ export interface PlaylistResult {
   image: { link: string; url?: string; quality: string }[];
   songCount?: string;
   firstname?: string;
+}
+
+export interface ArtistDetails {
+  id: string;
+  name: string;
+  image: { link: string; url?: string; quality: string }[];
+  followerCount?: string;
+  isVerified?: boolean;
+  bio?: string;
+  topSongs?: Song[];
+  topAlbums?: Album[];
 }
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
@@ -36,24 +47,24 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
   }
 }
 
-export async function searchAlbums(query: string, page: number = 1): Promise<Album[]> {
+export async function getArtistDetails(artistId: string): Promise<ArtistDetails | null> {
   try {
-    const res = await fetch(`${API_BASE}/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=10`);
+    const res = await fetch(`${API_BASE}/artists?id=${artistId}`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    return data.data || null;
   } catch (error) {
-    console.error('Album search failed:', error);
-    return [];
+    console.error('Artist details fetch failed:', error);
+    return null;
   }
 }
 
-export async function searchPlaylists(query: string, page: number = 1): Promise<PlaylistResult[]> {
+export async function getCharts(): Promise<PlaylistResult[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=10`);
+    const res = await fetch(`${API_BASE}/search/playlists?query=Charts&limit=10`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
-    console.error('Playlist search failed:', error);
+    console.error('Charts fetch failed:', error);
     return [];
   }
 }

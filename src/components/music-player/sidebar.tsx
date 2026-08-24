@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2 } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, TrendingUp } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -21,6 +20,7 @@ export function Sidebar() {
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
     { name: 'Library', icon: Library, href: '/library' },
+    { name: 'Browse Genres', icon: Compass, href: '/genres' },
   ];
 
   const handleCreatePlaylist = () => {
@@ -105,12 +105,6 @@ export function Sidebar() {
             </Link>
           ))}
         </div>
-      </div>
-
-      <div className="mt-auto p-6 border-t border-white/5">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-50 hover:opacity-100 transition-opacity cursor-default">
-          AYUMUSIC © 2024
-        </p>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

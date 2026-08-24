@@ -22,6 +22,7 @@ interface MusicContextType {
   playlists: Playlist[];
   totalListeningTime: number;
   songPopularity: Record<string, number>;
+  playedHistory: string[];
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   togglePlay: () => void;
@@ -52,45 +53,35 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [totalListeningTime, setTotalListeningTime] = useState(0);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
+  const [playedHistory, setPlayedHistory] = useState<string[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const savedLikes = localStorage.getItem('ayumusic_likes');
     if (savedLikes) {
-      try {
-        setLikedSongs(JSON.parse(savedLikes));
-      } catch (e) {
-        console.error("Failed to parse liked songs", e);
-      }
+      try { setLikedSongs(JSON.parse(savedLikes)); } catch (e) {}
     }
 
     const savedPlaylists = localStorage.getItem('ayumusic_playlists');
     if (savedPlaylists) {
-      try {
-        setPlaylists(JSON.parse(savedPlaylists));
-      } catch (e) {
-        console.error("Failed to parse playlists", e);
-      }
+      try { setPlaylists(JSON.parse(savedPlaylists)); } catch (e) {}
     }
 
     const savedVol = localStorage.getItem('ayumusic_volume');
-    if (savedVol) {
-      setVolumeState(parseFloat(savedVol));
-    }
+    if (savedVol) setVolumeState(parseFloat(savedVol));
 
     const savedTime = localStorage.getItem('ayumusic_total_time');
-    if (savedTime) {
-      setTotalListeningTime(parseInt(savedTime, 10));
-    }
+    if (savedTime) setTotalListeningTime(parseInt(savedTime, 10));
 
     const savedPopularity = localStorage.getItem('ayumusic_popularity');
     if (savedPopularity) {
-      try {
-        setSongPopularity(JSON.parse(savedPopularity));
-      } catch (e) {
-        console.error("Failed to parse popularity map", e);
-      }
+      try { setSongPopularity(JSON.parse(savedPopularity)); } catch (e) {}
+    }
+
+    const savedHistory = localStorage.getItem('ayumusic_history');
+    if (savedHistory) {
+      try { setPlayedHistory(JSON.parse(savedHistory)); } catch (e) {}
     }
   }, []);
 
@@ -103,16 +94,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playlists]);
 
   useEffect(() => {
-    localStorage.setItem('ayumusic_volume', volume.toString());
-  }, [volume]);
-
-  useEffect(() => {
     localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
   }, [totalListeningTime]);
 
   useEffect(() => {
     localStorage.setItem('ayumusic_popularity', JSON.stringify(songPopularity));
   }, [songPopularity]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_history', JSON.stringify(playedHistory));
+  }, [playedHistory]);
 
   // Track total time played
   useEffect(() => {
@@ -156,6 +147,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = (track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
+    setPlayedHistory(prev => {
+      const filtered = prev.filter(id => id !== track.id);
+      return [track.id, ...filtered].slice(0, 50);
+    });
+
     const url = getBestDownload(track);
     if (audioRef.current) {
       if (currentTrack?.id !== track.id) {
@@ -261,7 +257,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory,
       setIsPlayerOpen, playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
       createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection
     }}>

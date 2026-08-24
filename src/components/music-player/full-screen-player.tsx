@@ -62,26 +62,26 @@ export function FullScreenPlayer() {
         <div className="flex items-center gap-1 md:gap-3">
           <Button 
             variant="ghost" 
-            size="icon" 
-            className="text-white/40 hover:text-primary rounded-full h-12 w-12 touch-btn"
+            className="text-[10px] font-black italic tracking-[0.2em] text-white/40 hover:text-primary hover:bg-white/5 rounded-full px-4 h-11 gap-2 touch-btn"
             onPointerDown={() => setIsLyricsOpen(true)}
           >
-            <Mic2 className="h-6 w-6" />
+            <Mic2 className="h-4 w-4" />
+            LYRICS
           </Button>
           
           <Button 
             variant="ghost" 
             size="icon" 
-            className={cn("h-12 w-12 rounded-full transition-all touch-btn", liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white")}
+            className={cn("h-11 w-11 rounded-full transition-all touch-btn", liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white")}
             onPointerDown={() => toggleLike(currentTrack)}
           >
-            <Heart className={cn("h-6 w-6", liked && "fill-current")} />
+            <Heart className={cn("h-5 w-5", liked && "fill-current")} />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white/40 hover:text-white rounded-full h-12 w-12 touch-btn">
-                <MoreHorizontal className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="text-white/40 hover:text-white rounded-full h-11 w-11 touch-btn">
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-neutral-900 border-white/10 text-white w-64 backdrop-blur-xl">
@@ -100,10 +100,10 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:bg-white/10 rounded-full h-12 w-12 touch-btn ml-2"
+            className="text-white hover:bg-white/10 rounded-full h-11 w-11 touch-btn ml-1"
             onPointerDown={() => setIsPlayerOpen(false)}
           >
-            <X className="h-8 w-8" />
+            <X className="h-7 w-7" />
           </Button>
         </div>
       </header>

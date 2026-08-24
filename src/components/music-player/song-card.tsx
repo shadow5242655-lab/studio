@@ -1,12 +1,11 @@
 'use client';
 
-import React, { memo, useMemo } from 'react';
-import { Play, Music2, Pause, Star } from 'lucide-react';
+import React, { memo } from 'react';
+import { Play, Music2, Pause } from 'lucide-react';
 import { Song, getBestImage, getArtistNames } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 
 interface SongCardProps {
   song: Song;
@@ -17,13 +16,6 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const { playTrack, currentTrack, isPlaying, togglePlay } = useMusic();
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
-
-  const rankInfo = useMemo(() => {
-    const name = song.name.toLowerCase();
-    if (name.includes('cover') || name.includes('reprise')) return { label: 'COVER', variant: 'outline' as const };
-    if (name.includes('remix') || name.includes('edit')) return { label: 'VERSION', variant: 'secondary' as const };
-    return { label: 'ORIGINAL', variant: 'default' as const };
-  }, [song.name]);
 
   return (
     <div 
@@ -43,12 +35,6 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           <Music2 className="h-12 w-12 text-neutral-800" />
         )}
         
-        <div className="absolute top-2 left-2 flex gap-1">
-          <Badge variant={rankInfo.variant} className="text-[8px] font-black tracking-tighter px-1.5 py-0">
-            {rankInfo.label}
-          </Badge>
-        </div>
-        
         <div 
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -67,7 +53,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
       <div className="space-y-1">
         <h3 className={cn(
           "font-bold text-sm truncate uppercase tracking-tight italic",
-          isActive ? "text-primary neon-glow" : "text-white"
+          isActive ? "text-primary" : "text-white"
         )}>
           {song.name}
         </h3>

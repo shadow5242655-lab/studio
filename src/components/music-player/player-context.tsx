@@ -10,13 +10,6 @@ export interface Playlist {
   createdAt: number;
 }
 
-export interface UserStats {
-  minutesListened: number;
-  tracksPlayed: number;
-  activeDays: number;
-  lastActive: string;
-}
-
 interface MusicStateContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
@@ -25,9 +18,6 @@ interface MusicStateContextType {
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
-  userStats: UserStats;
-  exclusionRules: any[];
-  tasteProfile: any | null;
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
   setIsPlayerOpen: (open: boolean) => void;
@@ -42,9 +32,6 @@ interface MusicStateContextType {
   createPlaylist: (name: string, songs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
   deletePlaylist: (playlistId: string) => void;
-  addExclusionRule: (type: string, value: string) => void;
-  removeExclusionRule: (id: string) => void;
-  setTasteProfile: (profile: any) => void;
 }
 
 interface MusicProgressContextType {
@@ -66,15 +53,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [exclusionRules, setExclusionRules] = useState<any[]>([]);
-  const [tasteProfile, setTasteProfileState] = useState<any | null>(null);
-  const [userStats, setUserStats] = useState<UserStats>({
-    minutesListened: 0,
-    tracksPlayed: 0,
-    activeDays: 0,
-    lastActive: ''
-  });
-
+  
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   
@@ -85,11 +64,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
 
-  // Load persistence
   useEffect(() => {
-    const savedStats = localStorage.getItem('ayumusics_stats');
-    if (savedStats) setUserStats(JSON.parse(savedStats));
-
     const savedLiked = localStorage.getItem('ayumusics_liked');
     if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
 
@@ -97,12 +72,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
   }, []);
 
-  // Update Stats persistence
-  useEffect(() => {
-    localStorage.setItem('ayumusics_stats', JSON.stringify(userStats));
-  }, [userStats]);
-
-  // Handle high-frequency progress with requestAnimationFrame
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       setProgress(audioRef.current.currentTime);
@@ -121,16 +90,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isPlaying, updateProgress]);
 
-  // Audio Event Listeners
   useEffect(() => {
     if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
     
     const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => {
-      setUserStats(prev => ({ ...prev, tracksPlayed: prev.tracksPlayed + 1 }));
-      nextTrack();
-    };
+    const onEnded = () => nextTrack();
 
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
     audio.addEventListener('ended', onEnded);
@@ -142,21 +107,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('ended', onEnded);
     };
   }, [queue]);
-
-  // Stats incrementer
-  useEffect(() => {
-    let interval: any;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setUserStats(prev => ({
-          ...prev,
-          minutesListened: prev.minutesListened + (1/60),
-          lastActive: new Date().toISOString().split('T')[0]
-        }));
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
 
   const fetchLyrics = async (song: Song) => {
     setLoadingLyrics(true);
@@ -192,7 +142,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         audioRef.current.src = url;
         setCurrentTrack(track);
         fetchLyrics(track);
-        setUserStats(prev => ({ ...prev, tracksPlayed: prev.tracksPlayed + 1 }));
       }
       audioRef.current.play().catch(console.error);
     }
@@ -273,20 +222,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlaylists(prev => prev.filter(p => p.id !== playlistId));
   }, []);
 
-  const addExclusionRule = (type: string, value: string) => {
-    setExclusionRules(prev => [...prev, { id: Math.random().toString(), type, value }]);
-  };
-
-  const removeExclusionRule = (id: string) => {
-    setExclusionRules(prev => prev.filter(r => r.id !== id));
-  };
-
   const stateValue = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, userStats,
-    exclusionRules, tasteProfile, lyrics, loadingLyrics,
+    currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
+    lyrics, loadingLyrics,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist,
-    addExclusionRule, removeExclusionRule, setTasteProfile: setTasteProfileState
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, userStats, exclusionRules, tasteProfile, lyrics, loadingLyrics, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist]);
+  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, lyrics, loadingLyrics, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, seek, setVolume

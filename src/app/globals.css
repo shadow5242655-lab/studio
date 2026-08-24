@@ -37,9 +37,20 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    /* Eliminate 300ms tap delay for definitive smoothness */
+    /* Eliminate tap delay */
     touch-action: manipulation;
   }
+}
+
+/* 60FPS Performance Utility */
+.touch-btn {
+  touch-action: manipulation;
+  will-change: transform;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.touch-btn:active {
+  transform: scale(0.9) !important;
 }
 
 /* Custom Scrollbar - Minimal & Dark */
@@ -90,8 +101,4 @@
 
 .touch-feedback {
   @apply active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer;
-}
-
-.btn-hover-effect {
-  @apply hover:scale-105 active:scale-90 transition-transform duration-200;
 }

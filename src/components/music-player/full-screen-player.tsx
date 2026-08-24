@@ -16,7 +16,7 @@ export function FullScreenPlayer() {
     togglePlay, nextTrack, prevTrack, toggleLike, isLiked, playlists, addToPlaylist 
   } = useMusic();
 
-  const { progress, duration, seek } = useMusicProgress();
+  const { progress, duration, seek, commitSeek, setIsSeeking } = useMusicProgress();
 
   if (!isPlayerOpen || !currentTrack) return null;
 
@@ -61,15 +61,15 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className={cn("h-12 w-12 rounded-full transition-all touch-feedback", liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white")}
-            onClick={() => toggleLike(currentTrack)}
+            className={cn("h-12 w-12 rounded-full transition-all touch-btn", liked ? "text-primary bg-white/5" : "text-white/40 hover:text-white")}
+            onPointerDown={() => toggleLike(currentTrack)}
           >
             <Heart className={cn("h-6 w-6", liked && "fill-current")} />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white/40 hover:text-white rounded-full h-12 w-12 touch-feedback">
+              <Button variant="ghost" size="icon" className="text-white/40 hover:text-white rounded-full h-12 w-12 touch-btn">
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
@@ -89,8 +89,8 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:bg-white/10 rounded-full h-12 w-12 touch-feedback ml-2"
-            onClick={() => setIsPlayerOpen(false)}
+            className="text-white hover:bg-white/10 rounded-full h-12 w-12 touch-btn ml-2"
+            onPointerDown={() => setIsPlayerOpen(false)}
           >
             <X className="h-8 w-8" />
           </Button>
@@ -115,7 +115,15 @@ export function FullScreenPlayer() {
 
         <div className="w-full max-w-2xl mx-auto px-4 space-y-6 shrink-0 pb-12">
           <div className="space-y-2">
-            <Slider value={[progress]} max={duration || 100} step={0.1} onValueChange={(vals) => seek(vals[0])} className="py-4" />
+            <Slider 
+              value={[progress]} 
+              max={duration || 100} 
+              step={0.1} 
+              onPointerDown={() => setIsSeeking(true)}
+              onValueChange={(vals) => seek(vals[0])}
+              onValueCommit={(vals) => commitSeek(vals[0])}
+              className="py-4" 
+            />
             <div className="flex items-center justify-between text-[10px] font-black tracking-[0.2em] text-neutral-500 italic">
               <span>{formatDuration(progress)}</span><span>{formatDuration(duration)}</span>
             </div>
@@ -123,13 +131,16 @@ export function FullScreenPlayer() {
           <div className="flex items-center justify-between px-2">
             <div className="w-10" />
             <div className="flex items-center gap-6 md:gap-12">
-              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-feedback hover:scale-110 active:scale-90" onClick={prevTrack}><SkipBack className="h-8 w-8 fill-white" /></Button>
-              <Button className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 touch-feedback shadow-2xl border-4 border-white/10 hover:scale-105 active:scale-95" onClick={togglePlay}>
+              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn hover:scale-110 active:scale-90" onPointerDown={prevTrack}><SkipBack className="h-8 w-8 fill-white" /></Button>
+              <Button 
+                className="bg-primary text-white rounded-full h-20 w-20 md:h-24 md:w-24 touch-btn shadow-2xl border-4 border-white/10 hover:scale-105 active:scale-95" 
+                onPointerDown={togglePlay}
+              >
                 {isPlaying ? <Pause className="h-8 w-8 md:h-10 md:w-10 fill-white" /> : <Play className="h-8 w-8 md:h-10 md:w-10 fill-white ml-1" />}
               </Button>
-              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-feedback hover:scale-110 active:scale-90" onClick={nextTrack}><SkipForward className="h-8 w-8 fill-white" /></Button>
+              <Button variant="ghost" size="icon" className="text-white h-12 w-12 touch-btn hover:scale-110 active:scale-90" onPointerDown={nextTrack}><SkipForward className="h-8 w-8 fill-white" /></Button>
             </div>
-            <Button variant="ghost" size="icon" className="text-white/20 h-10 w-10 touch-feedback"><Repeat className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="text-white/20 h-10 w-10 touch-btn"><Repeat className="h-5 w-5" /></Button>
           </div>
         </div>
       </div>

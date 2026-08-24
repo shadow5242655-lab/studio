@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -55,8 +54,11 @@ interface MusicProgressContextType {
   duration: number;
   volume: number;
   totalListeningTime: number;
+  isSeeking: boolean;
   seek: (time: number) => void;
+  commitSeek: (time: number) => void;
   setVolume: (vol: number) => void;
+  setIsSeeking: (seeking: boolean) => void;
 }
 
 const MusicStateContext = createContext<MusicStateContextType | undefined>(undefined);
@@ -69,6 +71,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -80,6 +83,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [smartMood, setSmartMoodState] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const rafRef = useRef<number | null>(null);
   const lastSavedTotalTimeRef = useRef(0);
 
   useEffect(() => {
@@ -88,21 +92,38 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
     const audio = audioRef.current;
     
-    const updateProgress = () => setProgress(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration);
-    
-    audio.addEventListener('timeupdate', updateProgress);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
     audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('play', () => setIsPlaying(true));
-      audio.removeEventListener('pause', () => setIsPlaying(false));
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
     };
   }, []);
+
+  // 60FPS Progress Update Loop
+  useEffect(() => {
+    const updateProgress = () => {
+      if (audioRef.current && isPlaying && !isSeeking) {
+        setProgress(audioRef.current.currentTime);
+        rafRef.current = requestAnimationFrame(updateProgress);
+      }
+    };
+
+    if (isPlaying && !isSeeking) {
+      rafRef.current = requestAnimationFrame(updateProgress);
+    }
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isPlaying, isSeeking]);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -145,7 +166,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Only save time every 10 seconds to reduce mobile lag
     if (Math.abs(totalListeningTime - lastSavedTotalTimeRef.current) >= 10) {
       localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
       lastSavedTotalTimeRef.current = totalListeningTime;
@@ -233,9 +253,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack, queue, playTrack]);
 
   const seek = useCallback((time: number) => {
+    setProgress(time);
+  }, []);
+
+  const commitSeek = useCallback((time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       setProgress(time);
+      setIsSeeking(false);
     }
   }, []);
 
@@ -269,8 +294,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }), [currentTrack, isPlaying, isPlayerOpenState, queue, likedSongs, playlists, songPopularity, playedHistory, exclusionRules, tasteProfile, smartMood, setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile, setSmartMood]);
 
   const progressValue = useMemo(() => ({
-    progress, duration, volume, totalListeningTime, seek, setVolume
-  }), [progress, duration, volume, totalListeningTime, seek, setVolume]);
+    progress, duration, volume, totalListeningTime, isSeeking, seek, commitSeek, setVolume, setIsSeeking
+  }), [progress, duration, volume, totalListeningTime, isSeeking, seek, commitSeek, setVolume, setIsSeeking]);
 
   return (
     <MusicStateContext.Provider value={stateValue}>

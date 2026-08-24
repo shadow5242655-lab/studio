@@ -15,7 +15,7 @@ export function NowPlayingBar() {
     toggleLike, isLiked, setIsPlayerOpen, stopTrack 
   } = useMusic();
 
-  const { progress, duration, volume, setVolume, seek } = useMusicProgress();
+  const { progress, duration, volume, setVolume, seek, commitSeek, setIsSeeking } = useMusicProgress();
 
   if (!currentTrack) return null;
 
@@ -34,8 +34,8 @@ export function NowPlayingBar() {
 
       {/* Track Info */}
       <div 
-        className="flex items-center gap-3 md:gap-4 w-[70%] md:w-[30%] min-w-0 cursor-pointer touch-feedback"
-        onClick={() => setIsPlayerOpen(true)}
+        className="flex items-center gap-3 md:gap-4 w-[70%] md:w-[30%] min-w-0 cursor-pointer touch-feedback touch-btn"
+        onPointerUp={() => setIsPlayerOpen(true)}
       >
         <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 shrink-0 border border-white/5">
           {imageSrc ? (
@@ -58,10 +58,10 @@ export function NowPlayingBar() {
           variant="ghost" 
           size="icon" 
           className={cn(
-            "shrink-0 transition-colors hidden sm:flex touch-feedback",
+            "shrink-0 transition-colors hidden sm:flex touch-btn",
             liked ? "text-primary" : "text-muted-foreground hover:text-white"
           )}
-          onClick={(e) => {
+          onPointerDown={(e) => {
             e.stopPropagation();
             toggleLike(currentTrack);
           }}
@@ -73,22 +73,22 @@ export function NowPlayingBar() {
       {/* Main Controls */}
       <div className="flex flex-col items-center gap-2 max-w-[30%] md:w-full md:px-4 shrink-0">
         <div className="flex items-center gap-4 md:gap-8">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-feedback">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-btn">
             <Shuffle className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-white touch-feedback hidden sm:flex" onClick={prevTrack}>
+          <Button variant="ghost" size="icon" className="text-white touch-btn hidden sm:flex" onPointerDown={prevTrack}>
             <SkipBack className="h-6 w-6 fill-white" />
           </Button>
           <Button 
-            className="bg-white text-black rounded-full h-11 w-11 md:h-14 md:w-14 touch-feedback p-0 shadow-xl"
-            onClick={togglePlay}
+            className="bg-white text-black rounded-full h-11 w-11 md:h-14 md:w-14 touch-btn p-0 shadow-xl"
+            onPointerDown={togglePlay}
           >
             {isPlaying ? <Pause className="h-6 w-6 md:h-7 md:w-7 fill-black" /> : <Play className="h-6 w-6 md:h-7 md:w-7 fill-black ml-1" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-white touch-feedback" onClick={nextTrack}>
+          <Button variant="ghost" size="icon" className="text-white touch-btn" onPointerDown={nextTrack}>
             <SkipForward className="h-6 w-6 fill-white" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-feedback">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90 hidden md:flex touch-btn">
             <Repeat className="h-4 w-4" />
           </Button>
         </div>
@@ -100,7 +100,9 @@ export function NowPlayingBar() {
             value={[progress]}
             max={duration || 100}
             step={0.1}
+            onPointerDown={() => setIsSeeking(true)}
             onValueChange={(vals) => seek(vals[0])}
+            onValueCommit={(vals) => commitSeek(vals[0])}
             className="flex-1 cursor-pointer py-4"
           />
           <span className="text-[10px] text-muted-foreground w-10 font-mono font-bold">
@@ -111,7 +113,7 @@ export function NowPlayingBar() {
 
       {/* Extra Controls */}
       <div className="hidden md:flex items-center justify-end gap-3 w-[30%]">
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white touch-feedback">
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white touch-btn">
           <ListMusic className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-3 w-32 group ml-2">
@@ -127,16 +129,16 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-white touch-feedback"
-          onClick={() => setIsPlayerOpen(true)}
+          className="text-muted-foreground hover:text-white touch-btn"
+          onPointerUp={() => setIsPlayerOpen(true)}
         >
           <Maximize2 className="h-4 w-4" />
         </Button>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-muted-foreground hover:text-primary touch-feedback ml-2"
-          onClick={(e) => {
+          className="text-muted-foreground hover:text-primary touch-btn ml-2"
+          onPointerDown={(e) => {
             e.stopPropagation();
             stopTrack();
           }}

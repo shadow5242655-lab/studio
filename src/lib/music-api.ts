@@ -47,6 +47,28 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
   }
 }
 
+export async function searchAlbums(query: string, page: number = 1): Promise<Album[]> {
+  try {
+    const res = await fetch(`${API_BASE}/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const data = await res.json();
+    return data.data?.results || data.data || [];
+  } catch (error) {
+    console.error('Album search failed:', error);
+    return [];
+  }
+}
+
+export async function searchPlaylists(query: string, page: number = 1): Promise<PlaylistResult[]> {
+  try {
+    const res = await fetch(`${API_BASE}/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const data = await res.json();
+    return data.data?.results || data.data || [];
+  } catch (error) {
+    console.error('Playlist search failed:', error);
+    return [];
+  }
+}
+
 export async function getArtistDetails(artistId: string): Promise<ArtistDetails | null> {
   try {
     const res = await fetch(`${API_BASE}/artists?id=${artistId}`);

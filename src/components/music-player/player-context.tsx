@@ -25,6 +25,7 @@ interface MusicContextType {
   playedHistory: string[];
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
+  stopTrack: () => void;
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
@@ -105,7 +106,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('ayumusic_history', JSON.stringify(playedHistory));
   }, [playedHistory]);
 
-  // Track total time played
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && currentTrack) {
@@ -161,6 +161,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.play().catch(console.error);
       setIsPlaying(true);
     }
+  };
+
+  const stopTrack = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(0);
+    setIsPlayerOpen(false);
   };
 
   const togglePlay = () => {
@@ -258,7 +270,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   return (
     <MusicContext.Provider value={{
       currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory,
-      setIsPlayerOpen, playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
+      setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
       createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection
     }}>
       {children}

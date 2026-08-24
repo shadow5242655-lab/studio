@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, Mic2, ListMusic, Maximize2, Heart, Music2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Volume2, Mic2, ListMusic, Maximize2, Heart, Music2, X } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, togglePlay, nextTrack, prevTrack, 
     progress, duration, seek, volume, setVolume, toggleLike, isLiked,
-    setIsPlayerOpen 
+    setIsPlayerOpen, stopTrack 
   } = useMusic();
 
   if (!currentTrack) return null;
@@ -118,7 +118,7 @@ export function NowPlayingBar() {
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white transition-all scale-90">
           <ListMusic className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2 w-32 group ml-2">
+        <div className="flex items-center gap-2 w-28 group ml-2">
           <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-white shrink-0" />
           <Slider
             value={[volume * 100]}
@@ -135,6 +135,17 @@ export function NowPlayingBar() {
           onClick={() => setIsPlayerOpen(true)}
         >
           <Maximize2 className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-muted-foreground hover:text-primary transition-all scale-90 ml-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            stopTrack();
+          }}
+        >
+          <X className="h-5 w-5" />
         </Button>
       </div>
     </div>

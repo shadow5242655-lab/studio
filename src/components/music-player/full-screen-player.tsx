@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, Share2, MoreHorizontal, ListMusic, Download, PlusCircle } from 'lucide-react';
+import { ChevronDown, Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, Heart, Music2, Share2, MoreHorizontal, ListMusic, Download, PlusCircle, X } from 'lucide-react';
 import { useMusic } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, progress, duration, 
-    seek, toggleLike, isLiked, playlists, addToPlaylist 
+    seek, toggleLike, isLiked, playlists, addToPlaylist, stopTrack 
   } = useMusic();
 
   if (!isPlayerOpen || !currentTrack) return null;
@@ -41,14 +41,24 @@ export function FullScreenPlayer() {
       
       {/* Header */}
       <header className="relative flex items-center justify-between p-6 z-10">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-white/10"
-          onClick={() => setIsPlayerOpen(false)}
-        >
-          <ChevronDown className="h-8 w-8" />
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10"
+            onClick={() => setIsPlayerOpen(false)}
+          >
+            <ChevronDown className="h-8 w-8" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-primary hover:bg-primary/10"
+            onClick={stopTrack}
+          >
+            <X className="h-8 w-8" />
+          </Button>
+        </div>
         <div className="flex flex-col items-center">
           <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60">Playing on AYUMUSIC</span>
           <span className="text-sm font-bold text-white truncate max-w-[200px]">Premium Sound</span>
@@ -197,9 +207,9 @@ export function FullScreenPlayer() {
           </div>
 
           <div className="flex items-center justify-center gap-6 pt-4">
-            <Button variant="ghost" className="text-white/40 hover:text-white text-xs gap-2">
-              <Share2 className="h-4 w-4" />
-              Share
+            <Button variant="ghost" className="text-white/40 hover:text-white text-xs gap-2" onClick={stopTrack}>
+              <X className="h-4 w-4 mr-2 text-primary" />
+              Stop Playing
             </Button>
             <div className="h-1 w-1 bg-white/20 rounded-full" />
             <Button variant="ghost" className="text-white/40 hover:text-white text-xs gap-2">

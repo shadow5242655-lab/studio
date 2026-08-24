@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Mic2, Heart, Radio, Wind, Coffee, Headphones } from 'lucide-react';
+import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -96,9 +96,9 @@ export default function Home() {
               <Play className="h-6 w-6 fill-current" />
               EXPLORE
             </Button>
-            <Link href="/intelligence">
+            <Link href="/insights">
               <Button size="lg" variant="outline" className="h-16 px-10 rounded-full font-black text-lg gap-3 border-white/20 text-white hover:bg-white/5 lag-free-tap">
-                <Info className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 INSIGHTS
               </Button>
             </Link>

@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain, BarChart3 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -22,6 +22,7 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Search', icon: Search, href: '/search' },
     { name: 'Library', icon: Library, href: '/library' },
+    { name: 'Insights', icon: BarChart3, href: '/insights' },
     { name: 'Browse Genres', icon: Compass, href: '/genres' },
     { name: 'Intelligence', icon: Brain, href: '/intelligence' },
   ];
@@ -166,7 +167,7 @@ export function Header() {
           <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </Link>
         
-        <form onSubmit={handleSearch} className="relative w-full max-w-md hidden md:block">
+        <form onSubmit={handleSearch} className="relative w-full max-md hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
           <Input
             placeholder="Search for songs, artists..."

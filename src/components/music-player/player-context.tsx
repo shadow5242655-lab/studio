@@ -60,7 +60,7 @@ const MusicStateContext = createContext<MusicStateContextType | undefined>(undef
 const MusicProgressContext = createContext<MusicProgressContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
-  // State Context Data
+  // State Context Data (Lower frequency updates)
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayerOpenInternal, setIsPlayerOpenInternal] = useState(false);
@@ -75,7 +75,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
 
-  // Progress Context Data (High Frequency)
+  // Progress Context Data (High Frequency 60FPS updates)
   const [volumeState, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -110,14 +110,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 60FPS Loop for progress updates - Prevents lag by staying in the animation frame
+  // 60FPS Loop for progress updates - Crucial for zero-lag UI
   useEffect(() => {
     const updateProgress = (time: number) => {
       if (audioRef.current && isPlaying && !isSeeking) {
         const currentTime = audioRef.current.currentTime;
         setProgress(currentTime);
         
-        // Track listening time in 10s intervals
         if (time - lastTimeRef.current > 10000) {
           setTotalListeningTime(prev => prev + 10);
           lastTimeRef.current = time;
@@ -135,7 +134,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isPlaying, isSeeking]);
 
-  // Sync Lyrics Logic
   useEffect(() => {
     if (currentTrack) {
       setLyrics(null);

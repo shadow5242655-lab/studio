@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -18,7 +19,7 @@ export function Sidebar() {
   return (
     <div className="w-64 bg-black flex flex-col gap-2 p-2 h-full border-r border-white/5">
       <div className="p-4 mb-2">
-        <Link href="/" className="flex items-center gap-2 text-[#1ed760]">
+        <Link href="/" className="flex items-center gap-2 text-primary">
           <Music2 className="h-8 w-8" />
           <span className="font-bold text-xl tracking-tight text-white uppercase">AYUMUSIC</span>
         </Link>
@@ -48,7 +49,7 @@ export function Sidebar() {
           Create Playlist
         </button>
         <button className="flex items-center gap-4 px-4 py-3 rounded-md text-sm font-bold text-muted-foreground hover:text-white transition-all">
-          <div className="bg-gradient-to-br from-indigo-700 to-blue-300 text-white p-1 rounded-sm">
+          <div className="bg-gradient-to-br from-red-700 to-red-400 text-white p-1 rounded-sm">
             <Heart className="h-4 w-4 fill-white" />
           </div>
           Liked Songs

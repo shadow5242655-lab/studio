@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -29,21 +30,22 @@ export function SongCard({ song, playlist }: SongCardProps) {
             alt={song.name}
             fill
             className="object-cover transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <Music2 className="h-12 w-12 text-neutral-600" />
         )}
         <div className={cn(
-          "absolute bottom-2 right-2 p-3 bg-[#1ed760] rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0",
+          "absolute bottom-2 right-2 p-3 bg-primary rounded-full shadow-xl opacity-0 translate-y-2 transition-all group-hover:opacity-100 group-hover:translate-y-0",
           isActive && isPlaying && "opacity-100 translate-y-0"
         )}>
-          <Play className="h-5 w-5 fill-black text-black" />
+          <Play className="h-5 w-5 fill-white text-white" />
         </div>
       </div>
       <div className="flex flex-col gap-1">
         <h3 className={cn(
           "font-bold text-sm truncate",
-          isActive ? "text-[#1ed760]" : "text-white"
+          isActive ? "text-primary" : "text-white"
         )}>
           {song.name}
         </h3>

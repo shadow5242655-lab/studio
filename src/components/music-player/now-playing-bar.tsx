@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -42,7 +43,7 @@ export function NowPlayingBar() {
             {getArtistNames(currentTrack)}
           </span>
         </div>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-[#1ed760] transition-colors">
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-colors">
           <Heart className="h-4 w-4" />
         </Button>
       </div>
@@ -78,7 +79,7 @@ export function NowPlayingBar() {
             max={duration || 100}
             step={1}
             onValueChange={(vals) => seek(vals[0])}
-            className="flex-1 accent-[#1ed760]"
+            className="flex-1"
           />
           <span className="text-[10px] text-muted-foreground w-8 font-mono">
             {formatDuration(duration)}

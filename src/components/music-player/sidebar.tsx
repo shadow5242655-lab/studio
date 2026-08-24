@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -22,6 +22,7 @@ export function SidebarContent({ onNavItemClick }: { onNavItemClick?: () => void
     { name: 'Search', icon: Search, href: '/search' },
     { name: 'Library', icon: Library, href: '/library' },
     { name: 'Browse Genres', icon: Compass, href: '/genres' },
+    { name: 'Intelligence', icon: Brain, href: '/intelligence' },
   ];
 
   const handleCreatePlaylist = () => {

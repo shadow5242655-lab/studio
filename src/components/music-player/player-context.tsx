@@ -10,6 +10,12 @@ export interface Playlist {
   createdAt: number;
 }
 
+export interface ExclusionRule {
+  id: string;
+  type: 'artist' | 'genre' | 'song';
+  value: string;
+}
+
 interface MusicContextType {
   currentTrack: Song | null;
   isPlaying: boolean;
@@ -23,6 +29,8 @@ interface MusicContextType {
   totalListeningTime: number;
   songPopularity: Record<string, number>;
   playedHistory: string[];
+  exclusionRules: ExclusionRule[];
+  tasteProfile: any;
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   stopTrack: () => void;
@@ -33,11 +41,16 @@ interface MusicContextType {
   setVolume: (vol: number) => void;
   toggleLike: (track: Song) => void;
   isLiked: (trackId: string) => boolean;
-  createPlaylist: (name: string) => void;
+  createPlaylist: (name: string, initialSongs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
   removeFromPlaylist: (playlistId: string, trackId: string) => void;
   deletePlaylist: (playlistId: string) => void;
   recordSearchSelection: (song: Song) => void;
+  removeFromHistory: (songId: string) => void;
+  clearHistory: () => void;
+  addExclusionRule: (type: 'artist' | 'genre' | 'song', value: string) => void;
+  removeExclusionRule: (ruleId: string) => void;
+  setTasteProfile: (profile: any) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -55,6 +68,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [totalListeningTime, setTotalListeningTime] = useState(0);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [playedHistory, setPlayedHistory] = useState<string[]>([]);
+  const [exclusionRules, setExclusionRules] = useState<ExclusionRule[]>([]);
+  const [tasteProfile, setTasteProfileState] = useState<any>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -84,6 +99,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedHistory) {
       try { setPlayedHistory(JSON.parse(savedHistory)); } catch (e) {}
     }
+
+    const savedExclusions = localStorage.getItem('ayumusic_exclusions');
+    if (savedExclusions) {
+      try { setExclusionRules(JSON.parse(savedExclusions)); } catch (e) {}
+    }
+
+    const savedTaste = localStorage.getItem('ayumusic_taste');
+    if (savedTaste) {
+      try { setTasteProfileState(JSON.parse(savedTaste)); } catch (e) {}
+    }
   }, []);
 
   useEffect(() => {
@@ -105,6 +130,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ayumusic_history', JSON.stringify(playedHistory));
   }, [playedHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_exclusions', JSON.stringify(exclusionRules));
+  }, [exclusionRules]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_taste', JSON.stringify(tasteProfile));
+  }, [tasteProfile]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -227,11 +260,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     return !!likedSongs.find(s => s.id === trackId);
   };
 
-  const createPlaylist = (name: string) => {
+  const createPlaylist = (name: string, initialSongs: Song[] = []) => {
     const newPlaylist: Playlist = {
       id: Math.random().toString(36).substr(2, 9),
       name,
-      songs: [],
+      songs: initialSongs,
       createdAt: Date.now(),
     };
     setPlaylists(prev => [newPlaylist, ...prev]);
@@ -267,11 +300,36 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const removeFromHistory = (songId: string) => {
+    setPlayedHistory(prev => prev.filter(id => id !== songId));
+  };
+
+  const clearHistory = () => {
+    setPlayedHistory([]);
+  };
+
+  const addExclusionRule = (type: 'artist' | 'genre' | 'song', value: string) => {
+    const newRule: ExclusionRule = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      value
+    };
+    setExclusionRules(prev => [...prev, newRule]);
+  };
+
+  const removeExclusionRule = (ruleId: string) => {
+    setExclusionRules(prev => prev.filter(r => r.id !== ruleId));
+  };
+
+  const setTasteProfile = (profile: any) => {
+    setTasteProfileState(profile);
+  };
+
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime, songPopularity, playedHistory, exclusionRules, tasteProfile,
       setIsPlayerOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
-      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection
+      createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setTasteProfile
     }}>
       {children}
     </MusicContext.Provider>

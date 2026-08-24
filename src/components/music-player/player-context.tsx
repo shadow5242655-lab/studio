@@ -61,8 +61,8 @@ const MusicProgressContext = createContext<MusicProgressContextType | undefined>
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPlayerOpen, setIsPlayerOpenState] = useState(false);
-  const [isLyricsOpen, setIsLyricsOpen] = useState(false);
+  const [isPlayerOpenInternal, setIsPlayerOpenInternal] = useState(false);
+  const [isLyricsOpen, setIsLyricsOpenInternal] = useState(false);
   const [volume, setVolumeState] = useState(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -104,19 +104,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 60FPS Performance Optimized Sync Loop
+  // 60FPS Loop for progress updates
   useEffect(() => {
     const updateProgress = (time: number) => {
       if (audioRef.current && isPlaying && !isSeeking) {
-        // High-fidelity progress update
         setProgress(audioRef.current.currentTime);
-
-        // Throttle listening time recording (every 10 seconds)
         if (time - lastTimeRef.current > 10000) {
           setTotalListeningTime(prev => prev + 10);
           lastTimeRef.current = time;
         }
-
         rafRef.current = requestAnimationFrame(updateProgress);
       }
     };
@@ -137,17 +133,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     return () => audioRef.current?.removeEventListener('ended', handleEnded);
   }, [queue, currentTrack]);
 
-  // Async Lyrics Fetcher
   useEffect(() => {
     if (currentTrack) {
       setLyrics(null);
       setLyricsError(null);
       setLoadingLyrics(true);
       const artist = currentTrack.artists.primary[0]?.name || 'Unknown';
-      
       getLyrics(artist, currentTrack.name)
         .then((data) => {
-          if (!data) throw new Error('No lyrics found');
           setLyrics(data);
           setLoadingLyrics(false);
         })
@@ -159,7 +152,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack]);
 
   const setIsPlayerOpen = useCallback((open: boolean) => {
-    setIsPlayerOpenState(open);
+    setIsPlayerOpenInternal(open);
+  }, []);
+
+  const setIsLyricsOpen = useCallback((open: boolean) => {
+    setIsLyricsOpenInternal(open);
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
@@ -184,7 +181,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
-    setIsPlayerOpenState(false);
+    setIsPlayerOpenInternal(false);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -205,9 +202,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     playTrack(queue[(currentIndex - 1 + queue.length) % queue.length]);
   }, [currentTrack, queue, playTrack]);
 
-  const seek = useCallback((time: number) => {
-    setProgress(time);
-  }, []);
+  const seek = useCallback((time: number) => setProgress(time), []);
 
   const commitSeek = useCallback((time: number) => {
     if (audioRef.current) {
@@ -217,31 +212,43 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
+  const setVolume = useCallback((vol: number) => {
+    setVolumeState(vol);
+    if (audioRef.current) audioRef.current.volume = vol;
+  }, []);
+
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => prev.find(s => s.id === track.id) ? prev.filter(s => s.id !== track.id) : [track, ...prev]);
   }, []);
+
   const isLiked = useCallback((trackId: string) => !!likedSongs.find(s => s.id === trackId), [likedSongs]);
+
   const createPlaylist = useCallback((name: string, initialSongs: Song[] = []) => {
     setPlaylists(prev => [{ id: Math.random().toString(36).substr(2, 9), name, songs: initialSongs, createdAt: Date.now() }, ...prev]);
   }, []);
+
   const addToPlaylist = useCallback((id: string, track: Song) => {
     setPlaylists(prev => prev.map(p => p.id === id ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] } : p));
   }, []);
+
   const removeFromPlaylist = useCallback((id: string, tid: string) => {
     setPlaylists(prev => prev.map(p => p.id === id ? { ...p, songs: p.songs.filter(s => s.id !== tid) } : p));
   }, []);
+
   const deletePlaylist = useCallback((id: string) => setPlaylists(prev => prev.filter(p => p.id !== id)), []);
+  
   const recordSearchSelection = useCallback((song: Song) => setSongPopularity(prev => ({ ...prev, [song.id]: (prev[song.id] || 0) + 1 })), []);
+  
   const removeFromHistory = useCallback((id: string) => setPlayedHistory(prev => prev.filter(hid => hid !== id)), []);
+  
   const clearHistory = useCallback(() => setPlayedHistory([]), []);
 
   const stateValue = useMemo(() => ({
-    currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, songPopularity, playedHistory,
+    currentTrack, isPlaying, isPlayerOpen: isPlayerOpenInternal, isLyricsOpen, queue, likedSongs, playlists, songPopularity, playedHistory,
     lyrics, loadingLyrics, lyricsError, smartMood,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked,
     createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood
-  }), [currentTrack, isPlaying, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood]);
+  }), [currentTrack, isPlaying, isPlayerOpenInternal, isLyricsOpen, queue, likedSongs, playlists, songPopularity, playedHistory, lyrics, loadingLyrics, lyricsError, smartMood, setIsPlayerOpen, setIsLyricsOpen, playTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist, recordSearchSelection, removeFromHistory, clearHistory, setSmartMood]);
 
   const progressValue = useMemo(() => ({
     progress, duration, volume, totalListeningTime, isSeeking, seek, commitSeek, setVolume, setIsSeeking

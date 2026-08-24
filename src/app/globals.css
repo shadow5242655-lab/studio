@@ -31,13 +31,14 @@
   * {
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary selection:text-white;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    touch-action: manipulation;
+    overflow-x: hidden;
   }
 }
 
@@ -49,26 +50,7 @@
 }
 
 .touch-btn:active {
-  transform: scale(0.9) !important;
-}
-
-/* Custom Scrollbar - Minimal & Dark */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  transform: scale(0.92) !important;
 }
 
 .spotify-gradient {
@@ -97,4 +79,5 @@
 .touch-feedback {
   @apply active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer;
   touch-action: manipulation;
+  will-change: transform;
 }

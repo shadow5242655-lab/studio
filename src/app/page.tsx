@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -6,17 +5,19 @@ import { Song, getTrending } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles } from 'lucide-react';
+import { Play, Sparkles, Plus, Loader2 } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 
 export default function Home() {
   const [trending, setTrending] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
   const { playTrack } = useMusic();
 
   useEffect(() => {
     async function init() {
-      const data = await getTrending();
+      const data = await getTrending(1);
       setTrending(data);
       setLoading(false);
     }
@@ -27,6 +28,18 @@ export default function Home() {
     if (trending.length > 0) {
       playTrack(trending[0], trending);
     }
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const newData = await getTrending(nextPage);
+    if (newData.length > 0) {
+      setTrending(prev => [...prev, ...newData]);
+      setPage(nextPage);
+    }
+    setLoadingMore(false);
   };
 
   return (
@@ -46,8 +59,8 @@ export default function Home() {
             <Sparkles className="h-4 w-4" />
             Featured Artist
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase">
-            The Beats of AYUMUSIC
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase italic">
+            AYUMUSIC
           </h1>
           <p className="text-neutral-300 text-sm md:text-lg line-clamp-2">
             Experience the latest and greatest in high-fidelity music streaming. Explore trending tracks curated just for you.
@@ -68,14 +81,11 @@ export default function Home() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold tracking-tight">Trending Now</h2>
-            <Button variant="link" className="text-muted-foreground hover:text-primary font-bold text-xs uppercase tracking-wider">
-              See All
-            </Button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {loading ? (
-              Array(5).fill(0).map((_, i) => (
+              Array(10).fill(0).map((_, i) => (
                 <div key={i} className="space-y-3">
                   <Skeleton className="aspect-square w-full rounded-xl" />
                   <Skeleton className="h-4 w-3/4" />
@@ -83,23 +93,39 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              trending.map((song) => (
-                <SongCard key={song.id} song={song} playlist={trending} />
+              trending.map((song, index) => (
+                <SongCard key={`${song.id}-${index}`} song={song} playlist={trending} />
               ))
             )}
           </div>
+
+          {!loading && (
+            <div className="mt-12 flex justify-center">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="rounded-full border-primary/20 hover:bg-primary/10 px-10 gap-2 font-bold transition-all"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Plus className="h-5 w-5" />
+                )}
+                {loadingMore ? 'Loading More...' : 'Show More Music'}
+              </Button>
+            </div>
+          )}
         </section>
 
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold tracking-tight">Recommended For You</h2>
-            <Button variant="link" className="text-muted-foreground hover:text-primary font-bold text-xs uppercase tracking-wider">
-              See All
-            </Button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {!loading && trending.slice().reverse().slice(0, 5).map((song) => (
-              <SongCard key={song.id} song={song} playlist={trending} />
+            {!loading && trending.slice(0, 5).reverse().map((song, index) => (
+              <SongCard key={`rec-${song.id}-${index}`} song={song} playlist={trending} />
             ))}
           </div>
         </section>

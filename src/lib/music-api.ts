@@ -1,4 +1,3 @@
-
 export interface Song {
   id: string;
   name: string;
@@ -10,9 +9,9 @@ export interface Song {
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
 
-export async function searchSongs(query: string): Promise<Song[]> {
+export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
     // The API usually returns results in data.data.results
     return data.data?.results || data.data || [];
@@ -22,10 +21,10 @@ export async function searchSongs(query: string): Promise<Song[]> {
   }
 }
 
-export async function getTrending(): Promise<Song[]> {
+export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
     // Attempt to get trending songs, fallback to a popular search if query 'trending' fails
-    const res = await fetch(`${API_BASE}/search/songs?query=Top%20Hits`);
+    const res = await fetch(`${API_BASE}/search/songs?query=Top%20Hits&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {

@@ -173,7 +173,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (fromQueue) setQueue(fromQueue);
     
-    // Add to history
     setPlayedHistory(prev => {
       const next = [track.id, ...prev.filter(id => id !== track.id)].slice(0, 50);
       localStorage.setItem('ayumusics_history', JSON.stringify(next));

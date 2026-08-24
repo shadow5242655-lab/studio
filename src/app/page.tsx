@@ -1,19 +1,27 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Song, getTrending } from '@/lib/music-api';
+import { Song, getTrending, formatDuration } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles, Loader2 } from 'lucide-react';
+import { Play, Sparkles, Loader2, Clock, Info } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const [trending, setTrending] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const { playTrack } = useMusic();
+  const { playTrack, totalListeningTime } = useMusic();
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -81,6 +89,17 @@ export default function Home() {
     }
   };
 
+  const formatTotalTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    }
+    return `${minutes}m ${remainingSeconds}s`;
+  };
+
   return (
     <div className="pb-32">
       {/* Hero Banner */}
@@ -109,9 +128,43 @@ export default function Home() {
               <Play className="h-5 w-5 fill-current" />
               Listen Now
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10">
-              Details
-            </Button>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-white/20 text-white hover:bg-white/10 gap-2">
+                  <Info className="h-4 w-4" />
+                  Details
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-neutral-900 border-white/10 text-white sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black italic uppercase italic tracking-tighter">Your AYUMUSIC Journey</DialogTitle>
+                  <DialogDescription className="text-neutral-400">
+                    Your personal listening statistics and account insights.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-8 space-y-6">
+                  <div className="flex items-center gap-4 bg-white/5 p-6 rounded-2xl border border-white/5">
+                    <div className="bg-primary/20 p-4 rounded-full">
+                      <Clock className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Total Listening Time</p>
+                      <p className="text-3xl font-black tracking-tighter text-white uppercase italic">
+                        {formatTotalTime(totalListeningTime)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 px-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-widest">Listening Milestones</h4>
+                    <p className="text-sm text-neutral-400 leading-relaxed">
+                      You've spent a total of <span className="text-primary font-bold">{formatTotalTime(totalListeningTime)}</span> immersing yourself in the world of high-fidelity sound. Keep exploring to unlock more musical horizons.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

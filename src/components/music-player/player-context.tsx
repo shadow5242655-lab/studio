@@ -20,6 +20,7 @@ interface MusicContextType {
   queue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
+  totalListeningTime: number;
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   togglePlay: () => void;
@@ -47,6 +48,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [totalListeningTime, setTotalListeningTime] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -73,6 +75,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedVol) {
       setVolumeState(parseFloat(savedVol));
     }
+
+    const savedTime = localStorage.getItem('ayumusic_total_time');
+    if (savedTime) {
+      setTotalListeningTime(parseInt(savedTime, 10));
+    }
   }, []);
 
   useEffect(() => {
@@ -86,6 +93,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ayumusic_volume', volume.toString());
   }, [volume]);
+
+  useEffect(() => {
+    localStorage.setItem('ayumusic_total_time', totalListeningTime.toString());
+  }, [totalListeningTime]);
+
+  // Track total time played
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying && currentTrack) {
+      interval = setInterval(() => {
+        setTotalListeningTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, currentTrack]);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -216,7 +238,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <MusicContext.Provider value={{
-      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists,
+      currentTrack, isPlaying, isPlayerOpen, volume, progress, duration, queue, likedSongs, playlists, totalListeningTime,
       setIsPlayerOpen, playTrack, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleLike, isLiked,
       createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist
     }}>

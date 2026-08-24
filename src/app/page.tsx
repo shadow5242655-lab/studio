@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Song, getTrending, searchSongs } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Button } from '@/components/ui/button';
-import { Play, Info, TrendingUp, ChevronRight, Loader2, Music2 } from 'lucide-react';
+import { Play, Info, TrendingUp, ChevronRight, Loader2, Music2, Heart, Zap, Disc, Mic2, Flame } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
@@ -19,54 +19,36 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 function MusicSection({ title, initialQuery, icon: Icon }: { title: string; initialQuery?: string; icon: any }) {
   const [songs, setSongs] = useState<Song[]>([]);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const { playTrack } = useMusic();
 
-  const fetchSongs = useCallback(async (pageNum: number) => {
+  const fetchSongs = useCallback(async () => {
     try {
+      // Fetch a larger batch (30 songs) to provide a deep scroll experience as requested
       const data = initialQuery 
-        ? await searchSongs(initialQuery, pageNum)
-        : await getTrending(pageNum);
+        ? await searchSongs(initialQuery, 1)
+        : await getTrending(1);
       
-      if (data.length < 5) setHasMore(false);
-      return data;
+      // Attempt to get a bit more data for better scrolling
+      const data2 = initialQuery 
+        ? await searchSongs(initialQuery, 2)
+        : await getTrending(2);
+      
+      const combined = [...data, ...data2];
+      const uniqueData = Array.from(new Map(combined.map(item => [item.id, item])).values());
+      return uniqueData;
     } catch (error) {
-      setHasMore(false);
       return [];
     }
   }, [initialQuery]);
 
   useEffect(() => {
     async function init() {
-      const data = await fetchSongs(1);
-      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
-      setSongs(uniqueData);
+      const data = await fetchSongs();
+      setSongs(data);
       setLoading(false);
     }
     init();
   }, [fetchSongs]);
-
-  const handleLoadMore = async () => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    const newData = await fetchSongs(nextPage);
-    
-    if (newData.length > 0) {
-      setSongs(prev => {
-        const existingIds = new Set(prev.map(s => s.id));
-        const uniqueNewData = newData.filter(s => !existingIds.has(s.id));
-        return [...prev, ...uniqueNewData];
-      });
-      setPage(nextPage);
-    } else {
-      setHasMore(false);
-    }
-    setLoadingMore(false);
-  };
 
   return (
     <section className="space-y-6">
@@ -82,7 +64,7 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex w-max space-x-6 px-6 md:px-12 pb-6">
           {loading ? (
-            Array(5).fill(0).map((_, i) => (
+            Array(8).fill(0).map((_, i) => (
               <div key={`skeleton-${title}-${i}`} className="w-[200px] h-[280px] bg-neutral-900 animate-pulse rounded-2xl" />
             ))
           ) : (
@@ -92,25 +74,6 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
                   <SongCard song={song} playlist={songs} />
                 </div>
               ))}
-              {hasMore && (
-                <div className="flex items-center justify-center pr-6">
-                  <Button 
-                    variant="ghost" 
-                    className="h-[280px] w-32 rounded-2xl border border-white/5 bg-neutral-900/30 hover:bg-neutral-800 transition-all flex flex-col gap-4 font-black uppercase italic tracking-tighter"
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? (
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    ) : (
-                      <>
-                        <ChevronRight className="h-8 w-8 text-primary" />
-                        Load More
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -121,7 +84,7 @@ function MusicSection({ title, initialQuery, icon: Icon }: { title: string; init
 }
 
 export default function Home() {
-  const { playTrack, totalListeningTime } = useMusic();
+  const { totalListeningTime } = useMusic();
   const heroImage = PlaceHolderImages.find(img => img.id === 'music-hero');
 
   const formatTotalTime = (seconds: number) => {
@@ -163,10 +126,9 @@ export default function Home() {
             <Button 
               size="lg" 
               className="rounded-full px-8 md:px-16 font-black gap-3 h-14 md:h-16 text-lg md:text-xl hover:scale-105 transition-transform bg-primary text-white shadow-[0_0_30px_rgba(255,0,0,0.3)]" 
-              onClick={() => {}}
             >
               <Play className="h-6 w-6 md:h-7 md:w-7 fill-current" />
-              PLAY NOW
+              EXPLORE
             </Button>
             
             <Dialog>
@@ -196,8 +158,14 @@ export default function Home() {
       </div>
 
       <div className="py-16 md:py-24 space-y-16 md:space-y-24">
+        {/* All Major Sections */}
         <MusicSection title="Trending Hits" icon={TrendingUp} />
-        <MusicSection title="Pop Frequency" initialQuery="Pop" icon={Play} />
+        <MusicSection title="Punjabi Beats" initialQuery="Punjabi" icon={Zap} />
+        <MusicSection title="Bhojpuri Soul" initialQuery="Bhojpuri" icon={Flame} />
+        <MusicSection title="Romantic Frequencies" initialQuery="Romantic" icon={Heart} />
+        <MusicSection title="Hip Hop Voltage" initialQuery="Hip Hop" icon={Mic2} />
+        <MusicSection title="EDM Spectrum" initialQuery="EDM" icon={Disc} />
+        <MusicSection title="Sad Melodies" initialQuery="Sad" icon={Zap} />
         <MusicSection title="Lofi Sanctuary" initialQuery="Lofi" icon={Music2} />
       </div>
     </div>

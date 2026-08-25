@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
+import React, { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
 import { Song, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles } from 'lucide-react';
@@ -12,23 +12,53 @@ import { useMusic } from '@/components/music-player/player-context';
 const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const { songPopularity } = useMusic();
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (externalSongs) {
+  const fetchSongs = useCallback(async (p: number) => {
+    if (externalSongs && p === 1) {
       setSongs(externalSongs);
       setLoading(false);
       return;
     }
-    const fetch = async () => {
-      setLoading(true);
-      const data = initialQuery ? await searchSongs(initialQuery) : await getTrending();
-      let unique = Array.from(new Map(data.map(item => [item.id, item])).values());
-      setSongs(unique);
+    if (!initialQuery && !externalSongs && p === 1) {
+      const trending = await getTrending(p);
+      setSongs(trending);
       setLoading(false);
-    };
-    fetch();
+      return;
+    }
+    if (initialQuery) {
+      const data = await searchSongs(initialQuery, p);
+      setSongs(prev => {
+        const next = [...prev, ...data];
+        // Unique filter by ID
+        return Array.from(new Map(next.map(item => [item.id, item])).values());
+      });
+      setLoading(false);
+    }
   }, [initialQuery, externalSongs]);
+
+  useEffect(() => {
+    fetchSongs(page);
+  }, [page, fetchSongs]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading) {
+          setPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loading]);
 
   const rankedSongs = useMemo(() => {
     return applySmartRank3(songs, songPopularity);
@@ -48,11 +78,15 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
       </div>
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex w-max space-x-6 px-6 md:px-12 pb-6">
-          {loading ? (
-            Array(8).fill(0).map((_, i) => <div key={i} className="w-[180px] h-[260px] bg-neutral-900 animate-pulse rounded-2xl" />)
-          ) : (
-            rankedSongs.map((song) => <div key={song.id} className="w-[200px]"><SongCard song={song} playlist={rankedSongs} /></div>)
-          )}
+          {rankedSongs.map((song) => (
+            <div key={song.id} className="w-[200px]">
+              <SongCard song={song} playlist={rankedSongs} />
+            </div>
+          ))}
+          {loading && Array(4).fill(0).map((_, i) => (
+            <div key={`skeleton-${i}`} className="w-[180px] h-[260px] bg-neutral-900 animate-pulse rounded-2xl" />
+          ))}
+          <div ref={observerTarget} className="w-20 shrink-0" />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -133,7 +167,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Massive Scrollable Catalog */}
       <div className="space-y-24">
         <MusicSection title="Trending Pulse" initialQuery="Atif Aslam Hits Tera Hone Laga Hoon" icon={Star} />
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits 2024" icon={Zap} />

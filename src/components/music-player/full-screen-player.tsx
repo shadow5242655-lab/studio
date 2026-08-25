@@ -131,7 +131,7 @@ export function FullScreenPlayer() {
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-10 z-10">
-        <div className="relative aspect-square w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
+        <div className="relative aspect-square w-full max-sm rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
           {imageSrc ? (
             <Image 
               src={imageSrc} 

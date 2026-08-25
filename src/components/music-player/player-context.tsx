@@ -116,7 +116,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
   useEffect(() => { queueRef.current = queue; }, [queue]);
-  useEffect(() => { repeatModeRef.current = repeatMode; repeatModeRef.current = repeatMode; }, [repeatMode]);
+  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { volumeRef.current = volume; }, [volume]);
 
@@ -205,7 +205,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     try {
       const results = await searchSongs(artistName);
       const filtered = results.filter(s => s.id !== baseTrack.id);
-      // Use ref for popularity to avoid infinite cycle
       const ranked = applySmartRank3(filtered, {});
       if (ranked.length > 0) playTrack(ranked[0]);
       else await playRandomTrack();
@@ -417,8 +416,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           const currentTotal = Math.floor(totalSecondsAccumulatorRef.current);
-          
-          // Use totalSecondsRef.current instead of state for stable loop
           if (currentTotal !== totalSecondsRef.current && currentTotal % 5 === 0) {
             totalSecondsRef.current = currentTotal;
             setTotalSeconds(currentTotal);

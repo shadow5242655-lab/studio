@@ -537,18 +537,32 @@ export default function Home() {
 
         {/* Horizontal Infinite Genre Sections */}
         <HorizontalGenreScroll 
-          title="Punjabi resonance" 
-          query="Latest Punjabi Hits 2024" 
+          title="Haryanvi Hits" 
+          query="Trending Haryanvi Hits Kabze 80 Lakh Mithe Tere Bol Pari" 
         />
-        
         <HorizontalGenreScroll 
-          title="Haryanvi beats" 
-          query="New Haryanvi Songs 2024" 
+          title="Punjabi Bangers" 
+          query="Latest Punjabi Hits Karan Aujla Diljit AP Dhillon" 
         />
-        
         <HorizontalGenreScroll 
-          title="Lofi sanctuary" 
-          query="Soft Lofi Beats 2024" 
+          title="Desi Beats" 
+          query="Desi Beats Haryanvi Punjabi Hindi Rap Mix" 
+        />
+        <HorizontalGenreScroll 
+          title="Haryanvi Heat" 
+          query="Fresh Haryanvi Releases Heat 2024 2025" 
+        />
+        <HorizontalGenreScroll 
+          title="Punjabi 2.0" 
+          query="Modern Punjabi Hip-Hop Trap Vibes" 
+        />
+        <HorizontalGenreScroll 
+          title="Sufi & Folk Punjab" 
+          query="Traditional Punjabi Sufi Folk Music" 
+        />
+        <HorizontalGenreScroll 
+          title="Haryanvi Party" 
+          query="High-Energy Haryanvi Party Tracks Dance" 
         />
       </main>
     </div>

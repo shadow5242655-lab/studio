@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -452,27 +451,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying, totalSeconds, recordActiveDay, queue, currentTrack, repeatMode, performCrossfade]);
 
+  // Audio Ref Setup
+  if (!audioRef.current && typeof window !== 'undefined') audioRef.current = new Audio();
+  if (!secondaryAudioRef.current && typeof window !== 'undefined') secondaryAudioRef.current = new Audio();
+
+  // Use a ref for nextTrack to avoid infinite loops in event listener setup
+  const nextTrackRef = useRef(nextTrack);
   useEffect(() => {
-    if (!audioRef.current) audioRef.current = new Audio();
-    if (!secondaryAudioRef.current) secondaryAudioRef.current = new Audio();
-    
-    const audio = audioRef.current;
-    
-    const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => !isCrossfadingRef.current && nextTrack(); 
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onWaiting = () => setIsBuffering(true);
-    const onPlaying = () => setIsBuffering(false);
+    nextTrackRef.current = nextTrack;
+  }, [nextTrack]);
 
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('waiting', onWaiting);
-    audio.addEventListener('playing', onPlaying);
-    audio.addEventListener('canplay', () => setIsBuffering(false));
-
+  // Persistent State Load
+  useEffect(() => {
     const savedLiked = localStorage.getItem('ayumusics_liked');
     if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
     const savedPlaylists = localStorage.getItem('ayumusics_playlists');
@@ -490,15 +480,36 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     const lastTrackStr = localStorage.getItem('ayumusics_last_track');
     const lastPosStr = localStorage.getItem('ayumusics_last_pos');
-    if (lastTrackStr && lastPosStr) {
+    if (lastTrackStr && lastPosStr && audioRef.current) {
       const track = JSON.parse(lastTrackStr);
       const pos = parseFloat(lastPosStr);
       setCurrentTrack(track);
-      audio.src = getBestDownload(track);
-      audio.currentTime = pos;
+      audioRef.current.src = getBestDownload(track);
+      audioRef.current.currentTime = pos;
       setProgress(pos);
       fetchLyrics(track);
     }
+  }, []);
+
+  // Audio Event Listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const onLoadedMetadata = () => setDuration(audio.duration);
+    const onEnded = () => !isCrossfadingRef.current && nextTrackRef.current(); 
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onWaiting = () => setIsBuffering(true);
+    const onPlaying = () => setIsBuffering(false);
+
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
+    audio.addEventListener('canplay', () => setIsBuffering(false));
 
     return () => {
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -508,7 +519,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('playing', onPlaying);
     };
-  }, [nextTrack]);
+  }, []);
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);

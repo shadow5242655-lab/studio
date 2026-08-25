@@ -151,7 +151,9 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         } else {
           setSongs(prev => {
             const unique = new Map();
-            [...prev, ...data].forEach(s => unique.set(s.id, s));
+            [...prev, ...data].forEach(s => {
+              if (s && s.id) unique.set(s.id, s);
+            });
             return Array.from(unique.values());
           });
         }
@@ -277,7 +279,7 @@ export default function Home() {
           })
         );
         
-        // Deduplicate Daily Picks
+        // Strict Deduplication
         const filteredDaily = dailyResults.filter(Boolean);
         const uniqueDaily = Array.from(new Map(filteredDaily.map(s => [s.id, s])).values());
         setDailyPicks(uniqueDaily);
@@ -304,7 +306,7 @@ export default function Home() {
           })
         );
         
-        // Deduplicate Trending
+        // Strict Deduplication
         const filteredTrending = trendingResults.filter(Boolean);
         const uniqueTrending = Array.from(new Map(filteredTrending.map(s => [s.id, s])).values());
         setTrending(uniqueTrending);
@@ -323,7 +325,7 @@ export default function Home() {
         setSearching(true);
         try {
           const results = await searchSongs(searchQuery);
-          // Deduplicate Live Search Results
+          // Strict Deduplication for Live Results
           const uniqueResults = Array.from(new Map(results.map(s => [s.id, s])).values());
           setLiveResults(uniqueResults.slice(0, 12));
         } catch (e) {
@@ -568,10 +570,6 @@ export default function Home() {
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
           query="Punjabi Hits 2024 Karan Aujla Diljit" 
-        />
-        <HorizontalGenreScroll 
-          title="Desi Beats" 
-          query="Desi Beats Haryanvi Punjabi Hindi Rap" 
         />
         <HorizontalGenreScroll 
           title="Bhojpuri Beats" 

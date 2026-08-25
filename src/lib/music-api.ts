@@ -61,7 +61,7 @@ export function applySmartRank3(songs: Song[], localPopularity: Record<string, n
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    // Increased limit to 50 for comprehensive results
+    // Increased limit to 50 for comprehensive results and discovery
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=50`);
     const data = await res.json();
     return data.data?.results || data.data || [];

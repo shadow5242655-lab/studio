@@ -70,37 +70,40 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
   );
 };
 
-const SectionHeader = ({ title, actionLabel, onAction }: { title: string, actionLabel?: string, onAction?: () => void }) => {
+const SectionHeader = ({ title, subtitle, actionLabel, onAction }: { title: string, subtitle?: string, actionLabel?: string, onAction?: () => void }) => {
   const startPos = useRef<{ x: number, y: number } | null>(null);
   const isPlayAll = actionLabel === "Play all";
 
   return (
-    <div className="flex items-center justify-between px-4 mb-4">
-      <h2 className="text-xl font-bold tracking-tight text-white font-sans italic uppercase">{title}</h2>
-      {onAction && (
-        <button 
-          onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
-          onPointerUp={(e) => {
-            if (!startPos.current) return;
-            const dx = Math.abs(e.clientX - startPos.current.x);
-            const dy = Math.abs(e.clientY - startPos.current.y);
-            if (dx < 10 && dy < 10) {
-              e.preventDefault(); 
-              onAction();
-            }
-            startPos.current = null;
-          }}
-          className={cn(
-            "flex items-center gap-1.5 transition-all active:scale-95",
-            isPlayAll 
-              ? "bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
-              : "text-[10px] font-black text-primary uppercase tracking-widest hover:underline hover:scale-105"
-          )}
-        >
-          {isPlayAll && <Play className="h-3 w-3 fill-current" />}
-          {actionLabel || "See all"}
-        </button>
-      )}
+    <div className="flex flex-col px-4 mb-4 gap-1">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold tracking-tight text-white font-sans italic uppercase">{title}</h2>
+        {onAction && (
+          <button 
+            onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
+            onPointerUp={(e) => {
+              if (!startPos.current) return;
+              const dx = Math.abs(e.clientX - startPos.current.x);
+              const dy = Math.abs(e.clientY - startPos.current.y);
+              if (dx < 10 && dy < 10) {
+                e.preventDefault(); 
+                onAction();
+              }
+              startPos.current = null;
+            }}
+            className={cn(
+              "flex items-center gap-1.5 transition-all active:scale-95",
+              isPlayAll 
+                ? "bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
+                : "text-[10px] font-black text-primary uppercase tracking-widest hover:underline hover:scale-105"
+            )}
+          >
+            {isPlayAll && <Play className="h-3 w-3 fill-current" />}
+            {actionLabel || "See all"}
+          </button>
+        )}
+      </div>
+      {subtitle && <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{subtitle}</p>}
     </div>
   );
 };
@@ -218,6 +221,20 @@ export default function Home() {
     setSearchQuery('');
     setLiveResults([]);
   };
+
+  const topCharts = [
+    { name: "Hindi: India Superhits Top 50", provider: "AYUMUSIC", image: "https://picsum.photos/seed/chart-hindi/400/400", hint: "bollywood cover" },
+    { name: "International: India Superhits", provider: "AYUMUSIC", image: "https://picsum.photos/seed/chart-intl/400/400", hint: "pop star" },
+    { name: "Bengali: India Superhits Top 50", provider: "AYUMUSIC", image: "https://picsum.photos/seed/chart-bengali/400/400", hint: "kolkata music" },
+    { name: "India Superhits Top 50 Indie", provider: "AYUMUSIC", image: "https://picsum.photos/seed/chart-indie/400/400", hint: "indie rock" },
+  ];
+
+  const freshPlaylists = [
+    { name: "Chartbusters 2026 - Bengali", meta: "50 songs • 1.2K saves", image: "https://picsum.photos/seed/pb-bengali/400/400", hint: "party music" },
+    { name: "Chartbusters 2026 - Intl", meta: "50 songs • 953 saves", image: "https://picsum.photos/seed/pb-intl/400/400", hint: "global hits" },
+    { name: "Viral Nation", meta: "30 songs • 67K saves", image: "https://picsum.photos/seed/pb-viral/400/400", hint: "trending sound" },
+    { name: "Chartbusters 2026 - Hindi", meta: "50 songs • 3.3K saves", image: "https://picsum.photos/seed/pb-hindi/400/400", hint: "bollywood hits" },
+  ];
 
   return (
     <div className="bg-[#000000] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
@@ -415,11 +432,69 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="pb-10">
-          <SectionHeader title="Top charts" />
+        <section>
+          <SectionHeader title="Top charts" subtitle="India's most-played, updated daily" />
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 px-4 pb-4">
-              {["INDIA SUPERHITS", "GLOBAL VIRAL", "BENGALI TOP 50", "HINDI HOT 50", "INDIE ROCK"].map((name, i) => (
+              {topCharts.map((chart, i) => (
+                <div 
+                  key={i} 
+                  className="w-40 shrink-0 bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap group" 
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handleInteraction(() => router.push(`/search?q=${encodeURIComponent(chart.name)}`))}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
+                    <img src={chart.image} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt="" data-ai-hint={chart.hint} />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute bottom-2 right-2 p-2 bg-primary text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      <Play className="h-4 w-4 fill-current" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white truncate font-sans whitespace-normal line-clamp-2 leading-tight">{chart.name}</p>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-black font-sans mt-1">{chart.provider}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </section>
+
+        <section>
+          <SectionHeader title="Fresh playlists" subtitle="Editorial picks for every mood" />
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex gap-4 px-4 pb-4">
+              {freshPlaylists.map((playlist, i) => (
+                <div 
+                  key={i} 
+                  className="w-40 shrink-0 bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap group" 
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handleInteraction(() => router.push(`/search?q=${encodeURIComponent(playlist.name)}`))}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
+                    <img src={playlist.image} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt="" data-ai-hint={playlist.hint} />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute bottom-2 right-2 p-2 bg-primary text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      <Play className="h-4 w-4 fill-current" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white truncate font-sans whitespace-normal line-clamp-1">{playlist.name}</p>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-black font-sans mt-1">{playlist.meta}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </section>
+
+        <section className="pb-10">
+          <SectionHeader title="Explore more" />
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex gap-4 px-4 pb-4">
+              {["GLOBAL VIRAL", "BENGALI TOP 50", "HINDI HOT 50", "INDIE ROCK"].map((name, i) => (
                 <div 
                   key={i} 
                   className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap" 

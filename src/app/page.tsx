@@ -92,9 +92,9 @@ const SectionHeader = ({ title, subtitle, actionLabel, onAction }: { title: stri
               startPos.current = null;
             }}
             className={cn(
-              "flex items-center gap-1.5 transition-all active:scale-95",
+              "flex items-center gap-1.5 transition-all active:scale-95 border border-white/10 px-3 py-1.5 rounded-full bg-white/5",
               isPlayAll 
-                ? "bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
+                ? "text-white text-[10px] font-bold" 
                 : "text-[10px] font-black text-primary uppercase tracking-widest hover:underline hover:scale-105"
             )}
           >
@@ -143,20 +143,25 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const data = await searchSongs(query, page);
-      if (data.length === 0) {
-        setHasMore(false);
-      } else {
-        setSongs(prev => {
-          const unique = new Map();
-          [...prev, ...data].forEach(s => unique.set(s.id, s));
-          return Array.from(unique.values());
-        });
+      try {
+        const data = await searchSongs(query, page);
+        if (data.length === 0) {
+          setHasMore(false);
+        } else {
+          setSongs(prev => {
+            const unique = new Map();
+            [...prev, ...data].forEach(s => unique.set(s.id, s));
+            return Array.from(unique.values());
+          });
+        }
+      } catch (e) {
+        console.error(`Failed to load genre ${title}:`, e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     load();
-  }, [query, page]);
+  }, [query, page, title]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -179,43 +184,49 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         <h2 className="text-xl font-bold text-white tracking-tight font-sans italic uppercase">{title}</h2>
       </div>
       <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-        {songs.map((song, idx) => {
-          const img = getBestImage(song);
-          const isLast = idx === songs.length - 1;
-          return (
-            <div 
-              key={`${query}-${song.id}-${idx}`} 
-              ref={isLast ? lastElementRef : null}
-              className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
-              onPointerDown={handlePointerDown}
-              onPointerUp={handleInteraction(song)}
-            >
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
-                {img ? (
-                  <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
-                )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
-                    <Play className="h-5 w-5 fill-current" />
+        {songs.length > 0 ? (
+          songs.map((song, idx) => {
+            const img = getBestImage(song);
+            const isLast = idx === songs.length - 1;
+            return (
+              <div 
+                key={`${query}-${song.id}-${idx}`} 
+                ref={isLast ? lastElementRef : null}
+                className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
+                onPointerDown={handlePointerDown}
+                onPointerUp={handleInteraction(song)}
+              >
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
+                  {img ? (
+                    <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
+                      <Play className="h-5 w-5 fill-current" />
+                    </div>
                   </div>
                 </div>
+                <div className="px-1 min-w-0">
+                  <p className={cn(
+                    "font-bold text-xs truncate font-sans",
+                    currentTrack?.id === song.id ? "text-primary" : "text-white"
+                  )}>
+                    {song.name}
+                  </p>
+                  <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
+                    {song.artists.primary.map(a => a.name).join(', ')}
+                  </p>
+                </div>
               </div>
-              <div className="px-1 min-w-0">
-                <p className={cn(
-                  "font-bold text-xs truncate font-sans",
-                  currentTrack?.id === song.id ? "text-primary" : "text-white"
-                )}>
-                  {song.name}
-                </p>
-                <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
-                  {song.artists.primary.map(a => a.name).join(', ')}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : !loading && (
+          <div className="px-4 text-neutral-600 text-[10px] font-bold uppercase tracking-widest italic">
+            Scanning frequencies...
+          </div>
+        )}
         {loading && (
           Array(3).fill(0).map((_, i) => (
             <div key={`loader-${i}`} className="min-w-[140px] space-y-3 animate-pulse">
@@ -538,31 +549,31 @@ export default function Home() {
         {/* Horizontal Infinite Genre Sections */}
         <HorizontalGenreScroll 
           title="Haryanvi Hits" 
-          query="Trending Haryanvi Hits Kabze 80 Lakh Mithe Tere Bol Pari" 
+          query="Trending Haryanvi Hits 2024" 
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Latest Punjabi Hits Karan Aujla Diljit AP Dhillon" 
+          query="Top Punjabi Hits Karan Aujla Diljit AP Dhillon" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 
-          query="Desi Beats Haryanvi Punjabi Hindi Rap Mix" 
+          query="Desi Beats Haryanvi Punjabi" 
         />
         <HorizontalGenreScroll 
           title="Haryanvi Heat" 
-          query="Fresh Haryanvi Releases Heat 2024 2025" 
+          query="New Haryanvi Songs" 
         />
         <HorizontalGenreScroll 
           title="Punjabi 2.0" 
-          query="Modern Punjabi Hip-Hop Trap Vibes" 
+          query="Punjabi Hip Hop Trap" 
         />
         <HorizontalGenreScroll 
           title="Sufi & Folk Punjab" 
-          query="Traditional Punjabi Sufi Folk Music" 
+          query="Punjabi Sufi Folk" 
         />
         <HorizontalGenreScroll 
           title="Haryanvi Party" 
-          query="High-Energy Haryanvi Party Tracks Dance" 
+          query="Haryanvi Party Dance" 
         />
       </main>
     </div>

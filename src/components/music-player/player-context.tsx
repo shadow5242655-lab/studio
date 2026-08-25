@@ -93,7 +93,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const isCrossfadingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
 
-  // Define core functions before they are used or passed to context
+  // Stable Logic Ref pattern to prevent control-lock during automatic transitions
+  const stableLogicRef = useRef<{
+    playTrack: (track: Song, fromQueue?: Song[]) => void;
+    nextTrack: () => void;
+    playRandomTrack: () => Promise<void>;
+    fetchLyrics: (song: Song) => Promise<void>;
+  } | null>(null);
+
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -109,7 +116,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const triggerMoodMix = useCallback(async (song: Song, lyricData: string) => {
-    if (!smartMood) return;
+    if (!smartMood || !lyricData || lyricData === "No lyrics found") return;
     try {
       const emotion = await analyzeMood(lyricData);
       const genre = mapMoodToGenre(emotion);
@@ -166,6 +173,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       queueRef.current = fromQueue;
     }
     
+    // UI state reset immediately
     setProgress(0);
     setDuration(track.duration || 0);
     
@@ -220,10 +228,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
-  const logicRef = useRef({ nextTrack, prevTrack, playTrack });
-  useEffect(() => { 
-    logicRef.current = { nextTrack, prevTrack, playTrack }; 
-  }, [nextTrack, prevTrack, playTrack]);
+  // Update stable logic ref
+  useEffect(() => {
+    stableLogicRef.current = { playTrack, nextTrack, playRandomTrack, fetchLyrics };
+  }, [playTrack, nextTrack, playRandomTrack, fetchLyrics]);
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
@@ -281,66 +289,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory([]);
   }, []);
 
-  const performCrossfade = useCallback((nextSong: Song) => {
-    if (!audioRef.current || !secondaryAudioRef.current || isCrossfadingRef.current) return;
-    isCrossfadingRef.current = true;
-    const nextUrl = getBestDownload(nextSong);
-    const primary = audioRef.current;
-    const secondary = secondaryAudioRef.current;
-    secondary.src = nextUrl;
-    secondary.volume = 0;
-    secondary.play().then(() => {
-      let step = 0;
-      const steps = 60;
-      const curVol = volumeRef.current;
-      const fade = setInterval(() => {
-        step++;
-        const ratio = step / steps;
-        primary.volume = Math.max(0, curVol * (1 - ratio));
-        secondary.volume = Math.min(curVol, curVol * ratio);
-        if (step >= steps) {
-          clearInterval(fade);
-          primary.pause();
-          primary.src = secondary.src;
-          primary.currentTime = secondary.currentTime;
-          primary.volume = curVol;
-          setCurrentTrack(nextSong);
-          currentTrackRef.current = nextSong;
-          fetchLyrics(nextSong);
-          isCrossfadingRef.current = false;
-        }
-      }, 50);
-    }).catch(() => { 
-      isCrossfadingRef.current = false; 
-      logicRef.current.playTrack(nextSong); 
-    });
-  }, [fetchLyrics]);
-
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlayingRef.current) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
+      // Throttled UI update
       if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 250) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
       }
       
-      const left = audioRef.current.duration - time;
-      if (left > 0 && left < 3 && !isCrossfadingRef.current) {
-        if (smartMood && autoMixQueueRef.current.length > 0) {
-           performCrossfade(autoMixQueueRef.current[0]);
-           const rem = autoMixQueueRef.current.slice(1);
-           setAutoMixQueue(rem);
-           autoMixQueueRef.current = rem;
-        } else {
-          const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
-          if (idx !== -1 && idx < queueRef.current.length - 1) {
-            performCrossfade(queueRef.current[idx + 1]);
-          }
-        }
-      }
-      
+      // Throttled persistence
       if (! (window as any).lastTimerUpdate || now - (window as any).lastTimerUpdate > 5000) {
          setTotalSeconds(prev => prev + 5);
          (window as any).lastTimerUpdate = now;
@@ -348,20 +308,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [performCrossfade, smartMood]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     (window as any).lastProgUpdate = 0;
     (window as any).lastTimerUpdate = 0;
     audioRef.current = new Audio();
-    secondaryAudioRef.current = new Audio();
     const audio = audioRef.current;
     
     const hs = {
       loadedmetadata: () => setDuration(audio.duration),
       durationchange: () => setDuration(audio.duration),
-      ended: () => { if (!isCrossfadingRef.current) logicRef.current.nextTrack(); },
+      ended: () => { stableLogicRef.current?.nextTrack(); },
       play: () => { setIsPlaying(true); isPlayingRef.current = true; },
       pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
       waiting: () => setIsBuffering(true),
@@ -369,19 +328,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
     Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
     
+    // Load last track
     const saved = localStorage.getItem('ayumusics_last_track');
     const pos = localStorage.getItem('ayumusics_last_pos');
     if (saved) {
-      const track = JSON.parse(saved);
-      setCurrentTrack(track);
-      currentTrackRef.current = track;
-      audio.src = getBestDownload(track);
-      if (pos) audio.currentTime = parseFloat(pos);
-      fetchLyrics(track);
+      try {
+        const track = JSON.parse(saved);
+        setCurrentTrack(track);
+        currentTrackRef.current = track;
+        audio.src = getBestDownload(track);
+        if (pos) audio.currentTime = parseFloat(pos);
+        stableLogicRef.current?.fetchLyrics(track);
+      } catch (e) {}
     }
     
     return () => Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
-  }, [fetchLyrics]);
+  }, []);
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);

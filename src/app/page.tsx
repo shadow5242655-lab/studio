@@ -1,26 +1,51 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Song, searchSongs, formatDuration } from '@/lib/music-api';
-import { SongCard } from '@/components/music-player/song-card';
-import { Heart, Play, MoreVertical, ListMusic, Disc, Mic2, Music2, TrendingUp, Sparkles, Star } from 'lucide-react';
+import { 
+  Heart, Play, MoreVertical, Music2, 
+  Smartphone, Sliders, X, Sparkles, 
+  Shuffle, Search, Heart as HeartIcon,
+  Flame, Coffee, PartyPopper, Dumbbell, Frown, Ghost, Mic2
+} from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
-const TopNavChips = () => {
-  const chips = ["Songs", "Artists", "Albums", "Playlists", "Genres", "Moods", "Charts"];
+const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => {
+  const vibes = [
+    { name: "Romance", icon: HeartIcon, query: "Romantic Songs" },
+    { name: "Party", icon: PartyPopper, query: "Party Dance Hits" },
+    { name: "Lo-fi", icon: Coffee, query: "Lo-fi Beats" },
+    { name: "Workout", icon: Dumbbell, query: "Gym Workout Rap" },
+    { name: "Sad", icon: Frown, query: "Sad Emotional Songs" },
+    { name: "Phonk", icon: Ghost, query: "Phonk Night Drive" },
+  ];
+
+  const [active, setActive] = useState('');
+
   return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar py-4 px-4">
-      {chips.map((chip) => (
-        <button
-          key={chip}
-          className="whitespace-nowrap px-6 py-2 rounded-full bg-[#1e1e1e] hover:bg-[#282828] text-sm font-medium transition-colors border border-white/5 active:scale-95 touch-action-manipulation"
-        >
-          {chip}
-        </button>
-      ))}
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-white tracking-tight px-4">Pick a vibe</h2>
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-4">
+        {vibes.map((vibe) => (
+          <button
+            key={vibe.name}
+            onPointerUp={() => { onVibeClick(vibe.query); setActive(vibe.name); }}
+            className={cn(
+              "flex items-center gap-2 whitespace-nowrap px-5 py-2.5 rounded-xl transition-all border lag-free-tap font-bold text-sm",
+              active === vibe.name 
+                ? "bg-primary border-primary text-white scale-105" 
+                : "bg-[#1e1e1e] border-white/5 text-neutral-400 hover:text-white hover:bg-[#282828]"
+            )}
+          >
+            <vibe.icon className="h-4 w-4" />
+            {vibe.name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
@@ -33,48 +58,138 @@ const SectionHeader = ({ title }: { title: string }) => (
 );
 
 export default function Home() {
-  const { playTrack, toggleLike, isLiked, playRandomTrack } = useMusic();
+  const { playTrack, toggleLike, isLiked, playRandomTrack, currentTrack } = useMusic();
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
   const [trending, setTrending] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showInstall, setShowInstall] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       const [picks, trendData] = await Promise.all([
         searchSongs("Banjaare Roni Manish Sonipat Aala"),
-        searchSongs("Arijit Singh Top Hits 2024")
+        searchSongs("Arijit Singh Best 2024")
       ]);
-      setDailyPicks(picks.slice(0, 8));
+      setDailyPicks(picks.slice(0, 10));
       setTrending(trendData.slice(0, 5));
       setLoading(false);
     }
     loadData();
   }, []);
 
-  const handleInteraction = (callback: () => void) => (e: React.PointerEvent) => {
-    e.preventDefault();
-    callback();
+  const handleVibeClick = async (query: string) => {
+    setLoading(true);
+    const results = await searchSongs(query);
+    setDailyPicks(results.slice(0, 10));
+    setLoading(false);
   };
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5">
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary p-1.5 rounded-lg">
-            <Music2 className="h-5 w-5 text-white" />
-          </div>
-          <h1 className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</h1>
+    <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
+      {/* Header - Venom Style */}
+      <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
+        <div className="text-primary hover:scale-110 transition-transform cursor-pointer">
+          <Music2 className="h-7 w-7" />
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
-          <MoreVertical className="h-5 w-5" />
+        <div className="flex-1 relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Songs, artists, albums, playlists..." 
+            className="bg-[#1e1e1e] border-none rounded-full h-10 pl-10 text-sm focus-visible:ring-primary/30 text-white placeholder:text-neutral-600"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
+          <Smartphone className="h-5 w-5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
+          <Sliders className="h-5 w-5" />
         </Button>
       </header>
 
-      <TopNavChips />
+      <main className="space-y-8 py-4">
+        {/* Hero Section - Venom Layout with Red Theme */}
+        <section className="px-4">
+          <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
+            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+              <Music2 className="h-40 w-40 text-primary rotate-12" />
+            </div>
+            
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black tracking-[0.2em] text-primary uppercase">
+              <Sparkles className="h-3 w-3" />
+              No Ads • No Sign-up
+            </div>
+            
+            <div className="space-y-2 relative z-10">
+              <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
+                Late night <br /> resonance
+              </h1>
+              <p className="text-sm text-neutral-400 font-medium leading-tight max-w-[280px]">
+                Fresh sounds straight from the source — millions of tracks in <span className="text-primary font-bold">320 kbps</span>, synced lyrics, and offline-ready.
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3 pt-2 relative z-10">
+              <Button 
+                className="bg-primary text-white rounded-full px-6 h-12 font-black gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform lag-free-tap"
+                onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+              >
+                <Play className="h-5 w-5 fill-current" />
+                Play trending
+              </Button>
+              <Button 
+                variant="outline"
+                className="bg-white/5 border-white/10 text-white rounded-full px-6 h-12 font-black gap-2 hover:bg-white/10 lag-free-tap"
+                onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+              >
+                <Shuffle className="h-4 w-4" />
+                Shuffle
+              </Button>
+              <Button 
+                variant="ghost"
+                className="text-neutral-500 hover:text-white font-bold lag-free-tap"
+              >
+                Browse catalog
+              </Button>
+            </div>
+          </div>
+        </section>
 
-      <main className="space-y-10 py-4">
-        {/* Daily Picks - Vertical List */}
+        {/* Install Banner */}
+        {showInstall && (
+          <section className="px-4">
+            <div className="bg-[#1e1e1e]/50 border border-white/5 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
+                  <Music2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-none">Install AYUMUSIC</h3>
+                  <p className="text-[10px] text-neutral-500 mt-1">One tap — full app, no browser chrome</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="bg-primary text-white rounded-full px-4 h-8 text-[10px] font-black uppercase lag-free-tap">
+                  Install
+                </Button>
+                <button 
+                  onPointerUp={() => setShowInstall(false)}
+                  className="text-neutral-600 hover:text-white p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Vibe Chips */}
+        <VibeChips onVibeClick={handleVibeClick} />
+
+        {/* Daily Picks */}
         <section>
           <SectionHeader title="Daily picks" />
           <div className="px-4 space-y-3">
@@ -84,22 +199,25 @@ export default function Home() {
               dailyPicks.map((song) => (
                 <div 
                   key={song.id} 
-                  className="flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5"
-                  onPointerUp={handleInteraction(() => playTrack(song, dailyPicks))}
+                  className={cn(
+                    "flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
+                    currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
+                  )}
+                  onPointerDown={(e) => { e.preventDefault(); playTrack(song, dailyPicks); }}
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-800 shrink-0">
+                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5">
                       <img src={song.image[1]?.link || song.image[0]?.link} className="h-full w-full object-cover" alt="" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-sm text-white truncate">{song.name}</p>
+                      <p className={cn("font-bold text-sm truncate", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
                       <p className="text-xs text-neutral-500 truncate">{song.artists.primary.map(a => a.name).join(', ')}</p>
                     </div>
                   </div>
                   <button 
-                    onPointerDown={(e) => { e.stopPropagation(); }}
+                    onPointerDown={(e) => e.stopPropagation()}
                     onPointerUp={(e) => { e.stopPropagation(); toggleLike(song); }}
-                    className="p-2 text-neutral-500 hover:text-primary transition-colors"
+                    className="p-2 text-neutral-600 hover:text-primary transition-colors"
                   >
                     <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
                   </button>
@@ -109,17 +227,17 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Trending Now - Numbered List */}
+        {/* Trending Now */}
         <section className="bg-[#121212] py-8 border-y border-white/5">
           <SectionHeader title="Trending now" />
           <div className="px-4 space-y-4">
             {trending.map((song, idx) => (
               <div 
                 key={song.id} 
-                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                onPointerUp={handleInteraction(() => playTrack(song, trending))}
+                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer group lag-free-tap"
+                onPointerDown={(e) => { e.preventDefault(); playTrack(song, trending); }}
               >
-                <span className="text-lg font-black text-neutral-700 italic min-w-[24px]">{idx + 1}</span>
+                <span className="text-lg font-black text-neutral-700 italic min-w-[24px] group-hover:text-primary transition-colors">{idx + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-white truncate">{song.name}</p>
                   <p className="text-xs text-neutral-500 truncate">{song.artists.primary[0].name}</p>
@@ -130,13 +248,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Horizontal Clusters */}
-        <section>
+        {/* Top Charts */}
+        <section className="pb-10">
           <SectionHeader title="Top charts" />
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 px-4 pb-4">
               {["INDIA SUPERHITS", "GLOBAL VIRAL", "BENGALI TOP 50", "HINDI HOT 50", "INDIE ROCK"].map((name, i) => (
-                <div key={i} className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3">
+                <div key={i} className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap">
                   <div className="aspect-square rounded-lg bg-gradient-to-br from-primary to-neutral-800 flex items-center justify-center p-4">
                     <span className="text-xs font-black text-white text-center leading-none tracking-tighter uppercase italic">{name}</span>
                   </div>
@@ -149,45 +267,6 @@ export default function Home() {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-        </section>
-
-        <section>
-          <SectionHeader title="Fresh playlists" />
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-4 px-4 pb-4">
-              {["Viral Nation", "Chartbusters 2024", "Evening Vibe", "Morning Energy"].map((name, i) => (
-                <div key={i} className="w-36 shrink-0 space-y-2">
-                  <div className="aspect-square rounded-2xl bg-[#1e1e1e] flex items-center justify-center border border-white/5 relative overflow-hidden group">
-                    <img src={`https://picsum.photos/seed/plist-${i}/300/300`} className="h-full w-full object-cover opacity-60 group-hover:scale-110 transition-transform" alt="" />
-                    <Play className="absolute inset-0 m-auto h-8 w-8 text-white fill-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white truncate">{name}</p>
-                    <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">50 songs • 109 saves</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-        </section>
-
-        {/* Featured Highlight - Bottom */}
-        <section className="px-4">
-          <div className="relative h-48 rounded-3xl overflow-hidden group cursor-pointer border border-white/10" onPointerUp={handleInteraction(playRandomTrack)}>
-            <img src="https://picsum.photos/seed/featured-pro/800/600" className="h-full w-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700" alt="" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-              <div>
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary mb-1 block">Featured Release</span>
-                <p className="text-lg font-black text-white italic uppercase tracking-tighter">Jamaican (Bam Bam)</p>
-                <p className="text-xs font-bold text-neutral-400">Hugel, SOLTO (FR)</p>
-              </div>
-              <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center text-black shadow-2xl hover:scale-110 transition-transform">
-                <Play className="h-6 w-6 fill-current ml-1" />
-              </div>
-            </div>
-          </div>
         </section>
       </main>
     </div>

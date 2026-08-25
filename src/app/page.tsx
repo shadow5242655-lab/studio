@@ -93,7 +93,7 @@ const SectionHeader = ({ title, actionLabel, onAction }: { title: string, action
           className={cn(
             "flex items-center gap-1.5 transition-all active:scale-95",
             isPlayAll 
-              ? "bg-[#1e1e1e] hover:bg-[#282828] text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
+              ? "bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
               : "text-[10px] font-black text-primary uppercase tracking-widest hover:underline hover:scale-105"
           )}
         >
@@ -117,17 +117,33 @@ export default function Home() {
 
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
-  // Load initial data
+  // Load initial data matching the screenshot and user requests
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [picks, trendData] = await Promise.all([
-          searchSongs("Banjaare Roni Manish Sonipat Aala"),
-          searchSongs("Latest Bollywood Viral Hits 2026")
-        ]);
+        // Daily Picks: requested samples
+        const picks = await searchSongs("Barsaat Roni Swara Verma मनीष Fortuner Kabze");
+        
+        // Trending: specific songs from the screenshot
+        const trendingTerms = [
+          "Sohniye Tu Original Zubeen Garg",
+          "Bhalolaage Tomake Arijit Singh",
+          "Akasheo Alpo Neel Arijit Singh",
+          "Dandelions Ruth B",
+          "Boom Shaka Dhanda Nyoliwala",
+          "Amer Achaar Acoustic Dipankar"
+        ];
+        
+        const trendingResults = await Promise.all(
+          trendingTerms.map(async (term) => {
+            const res = await searchSongs(term);
+            return res[0];
+          })
+        );
+
         setDailyPicks(picks.slice(0, 10));
-        setTrending(trendData.slice(0, 10));
+        setTrending(trendingResults.filter(Boolean));
       } catch (e) {
         console.error("Initial load failed", e);
       } finally {
@@ -383,7 +399,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Trending Now Section - Reference Matched Layout */}
+        {/* Trending Now Section - Reference Matched Layout from Screenshot */}
         <section className="py-8">
           <SectionHeader 
             title="Trending now" 
@@ -392,10 +408,12 @@ export default function Home() {
           />
           <div className="px-4 space-y-2">
             {loading ? (
-              Array(5).fill(0).map((_, i) => <div key={i} className="h-14 bg-[#1e1e1e] rounded-lg animate-pulse" />)
+              Array(6).fill(0).map((_, i) => <div key={i} className="h-14 bg-[#1e1e1e] rounded-lg animate-pulse" />)
             ) : (
               trending.map((song, idx) => {
                 const img = getBestImage(song);
+                const isExplicit = song.name.toLowerCase().includes("boom shaka");
+                
                 return (
                   <div 
                     key={song.id} 
@@ -421,7 +439,12 @@ export default function Home() {
 
                     {/* Meta Data */}
                     <div className="flex-1 min-w-0">
-                      <p className={cn("font-bold text-sm text-white truncate font-sans", currentTrack?.id === song.id && "text-primary")}>{song.name}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className={cn("font-bold text-sm text-white truncate font-sans", currentTrack?.id === song.id && "text-primary")}>{song.name}</p>
+                        {isExplicit && (
+                          <span className="shrink-0 text-[8px] bg-neutral-700 text-neutral-300 font-bold px-1 rounded-sm">E</span>
+                        )}
+                      </div>
                       <p className="text-xs text-neutral-500 truncate font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
                     </div>
 

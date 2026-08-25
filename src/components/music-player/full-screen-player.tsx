@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, ChevronDown, MoreHorizontal, Download, PlusCircle, Mic2, Loader2, ListMusic, Forward } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, ChevronDown, MoreHorizontal, Download, PlusCircle, Mic2, Loader2, ListMusic, Forward, Heart } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, playlists, addToPlaylist, 
-    setIsLyricsOpen, playNext, addToQueue 
+    setIsLyricsOpen, playNext, addToQueue, toggleLike, isLiked 
   } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
   const router = useRouter();
@@ -70,6 +70,8 @@ export function FullScreenPlayer() {
     setIsPlayerOpen(false);
     router.push(`/search?q=${encodeURIComponent(artistName)}`);
   };
+
+  const liked = isLiked(currentTrack.id);
 
   return (
     <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
@@ -127,9 +129,9 @@ export function FullScreenPlayer() {
 
       {/* Main Content Area */}
       <ScrollArea className="flex-1 w-full z-10">
-        <div className="px-6 py-4 flex flex-col items-center justify-center space-y-8 min-h-full">
+        <div className="px-6 py-4 flex flex-col items-center justify-center space-y-6 md:space-y-8 min-h-full">
           {/* Artwork */}
-          <div className="relative aspect-square w-full max-w-[70vw] md:max-w-sm rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
+          <div className="relative aspect-square w-full max-w-[75vw] md:max-w-sm rounded-[2rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
             {imageSrc ? (
               <img 
                 src={imageSrc} 
@@ -151,45 +153,57 @@ export function FullScreenPlayer() {
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
             onPointerCancel={handlePointerCancel}
-            className="h-10 px-8 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-2 hover:bg-primary/10 transition-colors text-[10px]"
+            className="h-12 px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-2 hover:bg-primary/10 transition-colors text-[10px] shadow-2xl"
           >
-            <Mic2 className="h-3 w-3" />
+            <Mic2 className="h-4 w-4" />
             Lyrics
           </Button>
 
           {/* Track Info with Adaptive Marquee */}
-          <div className="w-full space-y-6 max-w-sm px-2 text-center overflow-hidden">
-            <div className="space-y-1">
-                <div className="overflow-hidden whitespace-nowrap">
-                  <h2 className={cn(
-                    "text-2xl md:text-3xl font-black text-white italic tracking-tighter uppercase leading-tight inline-block",
-                    trackName.length > 25 && "animate-marquee"
-                  )}>
-                    {trackName}
-                    {trackName.length > 25 && <span className="ml-8">{trackName}</span>}
-                  </h2>
-                </div>
-                
-                <div className="overflow-hidden whitespace-nowrap">
-                  <p className={cn(
-                    "text-xs md:text-lg text-primary/70 font-bold uppercase tracking-widest inline-block",
-                    artistNames.length > 30 && "animate-marquee"
-                  )}>
-                    {currentTrack.artists.primary.map((artist, index) => (
-                      <span key={artist.id || index}>
-                        <span 
-                          onPointerDown={handlePointerDown}
-                          onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
-                          className="hover:text-white hover:underline cursor-pointer"
-                        >
-                          {decodeEntities(artist.name)}
+          <div className="w-full space-y-4 md:space-y-6 max-w-sm px-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="whitespace-nowrap">
+                    <h2 className={cn(
+                      "text-3xl md:text-4xl font-black text-white italic tracking-tighter uppercase leading-tight inline-block",
+                      trackName.length > 18 && "animate-marquee"
+                    )}>
+                      {trackName}
+                      {trackName.length > 18 && <span className="ml-8">{trackName}</span>}
+                    </h2>
+                  </div>
+                  
+                  <div className="whitespace-nowrap overflow-hidden">
+                    <p className={cn(
+                      "text-sm md:text-lg text-primary font-bold uppercase tracking-widest inline-block opacity-80",
+                      artistNames.length > 25 && "animate-marquee"
+                    )}>
+                      {currentTrack.artists.primary.map((artist, index) => (
+                        <span key={artist.id || index}>
+                          <span 
+                            onPointerDown={handlePointerDown}
+                            onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
+                            className="hover:text-white hover:underline cursor-pointer"
+                          >
+                            {decodeEntities(artist.name)}
+                          </span>
+                          {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
                         </span>
-                        {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                    {artistNames.length > 30 && <span className="ml-8">{artistNames}</span>}
-                  </p>
-                </div>
+                      ))}
+                      {artistNames.length > 25 && <span className="ml-8">{artistNames}</span>}
+                    </p>
+                  </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="shrink-0 text-neutral-400 hover:text-primary transition-colors"
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp(() => toggleLike(currentTrack))}
+                onPointerCancel={handlePointerCancel}
+              >
+                <Heart className={cn("h-6 w-6", liked && "fill-primary text-primary")} />
+              </Button>
             </div>
 
             {/* Seek Bar */}
@@ -201,7 +215,7 @@ export function FullScreenPlayer() {
                 onValueChange={(vals) => seek(vals[0])}
                 className="py-2 cursor-pointer" 
               />
-              <div className="flex items-center justify-between text-[8px] font-black tracking-widest text-neutral-500 uppercase">
+              <div className="flex items-center justify-between text-[10px] font-black tracking-widest text-neutral-500 uppercase">
                 <span>{formatDuration(progress)}</span>
                 <span>{formatDuration(duration)}</span>
               </div>
@@ -211,12 +225,12 @@ export function FullScreenPlayer() {
       </ScrollArea>
 
       {/* Bottom Playback Controls (Ergonomic cluster) */}
-      <div className="shrink-0 z-10 bg-gradient-to-t from-black via-black/90 to-transparent w-full pb-10 pt-2 border-t border-white/5">
-        <div className="flex items-center justify-center gap-12 w-full max-w-xs mx-auto relative h-16">
+      <div className="shrink-0 z-10 bg-gradient-to-t from-black via-black/90 to-transparent w-full pb-8 pt-2 border-t border-white/5">
+        <div className="flex items-center justify-center gap-12 w-full max-w-xs mx-auto relative h-14">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 h-16 w-16 group absolute left-0" 
+            className="text-white hover:scale-110 h-14 w-14 group absolute left-0" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
@@ -225,24 +239,24 @@ export function FullScreenPlayer() {
           </Button>
           
           <Button 
-            className="bg-primary text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] z-20" 
+            className="bg-primary text-black rounded-full h-14 w-14 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] z-20" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
             {isBuffering ? (
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <Loader2 className="h-6 w-6 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="h-8 w-8 fill-current" />
+              <Pause className="h-6 w-6 fill-current" />
             ) : (
-              <Play className="h-8 w-8 fill-current" />
+              <Play className="h-6 w-6 fill-current" />
             )}
           </Button>
 
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 h-16 w-16 group absolute right-0" 
+            className="text-white hover:scale-110 h-14 w-14 group absolute right-0" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}

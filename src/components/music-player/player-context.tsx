@@ -127,17 +127,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = false;
   }, []);
 
-  const parseLRC = (lrc: string) => {
-    return lrc.split('\n').map((line: string) => {
-      const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
-      if (match) {
-        const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
-        return { time, text: decodeEntities(match[3].trim()) };
-      }
-      return null;
-    }).filter(Boolean);
-  };
-
   const cleanMetadata = (str: string) => {
     if (!str) return '';
     return decodeEntities(str)
@@ -162,30 +151,42 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const cleanTitle = cleanMetadata(song.name);
       const cleanArtist = song.artists.primary[0]?.name ? cleanMetadata(song.artists.primary[0].name) : '';
       
-      let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
-      
-      if (!res.ok) {
-        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
-        if (searchRes.ok) {
-          const results = await searchRes.json();
-          if (results.length > 0 && currentTrackRef.current?.id === targetId) {
-            const best = results[0];
-            setLyrics({ 
-              synced: best.syncedLyrics ? parseLRC(best.syncedLyrics) : [], 
-              plain: best.plainLyrics || "" 
-            });
-            setLoadingLyrics(false);
-            return;
+      const searchQueries = [
+        `https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`,
+        `https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`
+      ];
+
+      let data = null;
+      for (const url of searchQueries) {
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json) && json.length > 0) {
+            data = json[0];
+            break;
+          } else if (!Array.isArray(json) && json.trackName) {
+            data = json;
+            break;
           }
         }
-      } else {
-        const data = await res.json();
-        if (currentTrackRef.current?.id === targetId) {
-          setLyrics({ 
-            synced: data.syncedLyrics ? parseLRC(data.syncedLyrics) : [], 
-            plain: data.plainLyrics || "" 
-          });
-        }
+      }
+
+      if (data && currentTrackRef.current?.id === targetId) {
+        const parseLRC = (lrc: string) => {
+          return lrc.split('\n').map((line) => {
+            const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+            if (match) {
+              const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
+              return { time, text: decodeEntities(match[3].trim()) };
+            }
+            return null;
+          }).filter(Boolean);
+        };
+
+        setLyrics({ 
+          synced: data.syncedLyrics ? parseLRC(data.syncedLyrics) : [], 
+          plain: data.plainLyrics || "" 
+        });
       }
     } catch (e) {
       console.warn("Lyrics resonance lookup failed", e);
@@ -246,7 +247,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (!track) return playRandomTrack();
     
     if (repeatModeRef.current === 'one') {
-      if (audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play(); }
+      if (audioRef.current) { 
+        audioRef.current.currentTime = 0; 
+        audioRef.current.play().catch(() => {}); 
+      }
       return;
     }
 
@@ -267,6 +271,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (idx !== -1 && idx > 0) playTrack(queueRef.current[idx - 1]);
     else playTrack(queueRef.current[queueRef.current.length - 1]);
   }, [playTrack]);
+
+  // Logic Ref pattern to ensure listeners always use latest logic
+  const logicRef = useRef({ nextTrack, prevTrack });
+  useEffect(() => {
+    logicRef.current = { nextTrack, prevTrack };
+  }, [nextTrack, prevTrack]);
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
@@ -451,8 +461,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         lastPersistenceUpdateRef.current = now;
       }
       
-      const timeLeft = audioRef.current.duration - currentTime;
-      if (timeLeft < 3 && !isCrossfadingRef.current && repeatModeRef.current !== 'one') {
+      const timeLeft = (audioRef.current.duration || 0) - currentTime;
+      if (timeLeft > 0 && timeLeft < 3 && !isCrossfadingRef.current && repeatModeRef.current !== 'one') {
          const idx = queueRef.current.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
          if (idx !== -1 && idx < queueRef.current.length - 1) performCrossfade(queueRef.current[idx + 1]);
       }
@@ -489,7 +499,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     const handlers = {
       loadedmetadata: () => setDuration(audio.duration),
-      ended: () => !isCrossfadingRef.current && nextTrack(),
+      ended: () => {
+        if (!isCrossfadingRef.current) {
+          logicRef.current.nextTrack();
+        }
+      },
       play: () => { setIsPlaying(true); isPlayingRef.current = true; },
       pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
       waiting: () => setIsBuffering(true),
@@ -498,7 +512,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
     Object.entries(handlers).forEach(([ev, fn]) => audio.addEventListener(ev, fn));
     return () => Object.entries(handlers).forEach(([ev, fn]) => audio.removeEventListener(ev, fn));
-  }, [nextTrack, fetchLyrics]);
+  }, [fetchLyrics]); // Listeners added once, using logicRef for stability
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);

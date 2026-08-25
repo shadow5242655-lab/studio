@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, searchSongs } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -111,27 +111,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const lastProgressUpdateRef = useRef<number>(0);
+  const lastPersistenceUpdateRef = useRef<number>(0);
   const totalSecondsAccumulatorRef = useRef<number>(0);
   const isCrossfadingRef = useRef(false);
-
-  // Core Function Definitions (Hoisted for effect safety)
-  const stopTrack = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-      audioRef.current.load();
-    }
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.pause();
-      secondaryAudioRef.current.src = "";
-      secondaryAudioRef.current.load();
-    }
-    setCurrentTrack(null);
-    setIsPlaying(false);
-    setProgress(0);
-    setDuration(0);
-    isCrossfadingRef.current = false;
-  }, []);
 
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -148,7 +130,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setLoadingLyrics(true);
     setLyrics(null);
     try {
-      // Aggressive cleaning for high-fidelity lyrics matching
       const cleanTitle = song.name
         .replace(/\(Official Video\)/gi, '')
         .replace(/\(Official Audio\)/gi, '')
@@ -183,8 +164,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    // Definitive Audio Reset (Fixes 2 songs playing at once)
+  const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -194,6 +174,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       secondaryAudioRef.current.pause();
       secondaryAudioRef.current.src = "";
       secondaryAudioRef.current.load();
+    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(0);
+    isCrossfadingRef.current = false;
+  }, []);
+
+  const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    if (secondaryAudioRef.current) {
+      secondaryAudioRef.current.pause();
+      secondaryAudioRef.current.src = "";
     }
     isCrossfadingRef.current = false;
 
@@ -400,7 +396,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     secondary.volume = 0;
     secondary.play().then(() => {
       let step = 0;
-      const steps = 60; // ~3 seconds at 50ms interval
+      const steps = 60;
       const currentVol = volumeRef.current;
       const fade = setInterval(() => {
         step++;
@@ -430,26 +426,26 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const timeLeft = audioRef.current.duration - currentTime;
       const now = performance.now();
       
-      // Hardware-accelerated throttling to prevent re-render depth errors
       if (now - lastProgressUpdateRef.current > 250) {
         setProgress(currentTime);
-        if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
         lastProgressUpdateRef.current = now;
       }
+
+      if (now - lastPersistenceUpdateRef.current > 5000) {
+        if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
+        lastPersistenceUpdateRef.current = now;
+      }
       
-      // Initiate crossfade 3 seconds before end
       if (timeLeft < 3 && !isCrossfadingRef.current && repeatModeRef.current !== 'one') {
          const idx = queueRef.current.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
          if (idx !== -1 && idx < queueRef.current.length - 1) performCrossfade(queueRef.current[idx + 1]);
       }
       
-      // Update listening time (Throttled state update)
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           const currentTotal = Math.floor(totalSecondsAccumulatorRef.current);
-          // Only update state once every 10 seconds to avoid depth errors
           if (currentTotal !== totalSecondsRef.current && currentTotal % 10 === 0) {
             totalSecondsRef.current = currentTotal;
             setTotalSeconds(currentTotal);
@@ -462,7 +458,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [performCrossfade]);
 
-  // Effects
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
   useEffect(() => { queueRef.current = queue; }, [queue]);
   useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);

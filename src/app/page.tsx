@@ -553,27 +553,27 @@ export default function Home() {
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Top Punjabi Hits Karan Aujla Diljit AP Dhillon" 
+          query="Latest Punjabi Hits Karan Aujla Diljit AP Dhillon" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 
-          query="Desi Beats Haryanvi Punjabi" 
+          query="Desi Beats Haryanvi Punjabi Hindi" 
         />
         <HorizontalGenreScroll 
           title="Haryanvi Heat" 
-          query="New Haryanvi Songs" 
+          query="New Haryanvi Songs Weekly" 
         />
         <HorizontalGenreScroll 
           title="Punjabi 2.0" 
-          query="Punjabi Hip Hop Trap" 
+          query="Punjabi Hip Hop Trap 2024" 
         />
         <HorizontalGenreScroll 
           title="Sufi & Folk Punjab" 
-          query="Punjabi Sufi Folk" 
+          query="Punjabi Sufi Folk Songs" 
         />
         <HorizontalGenreScroll 
           title="Haryanvi Party" 
-          query="Haryanvi Party Dance" 
+          query="Haryanvi Party Dance Tracks" 
         />
       </main>
     </div>

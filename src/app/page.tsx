@@ -51,10 +51,17 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
   );
 };
 
-const SectionHeader = ({ title, showSeeAll = true }: { title: string, showSeeAll?: boolean }) => (
+const SectionHeader = ({ title, actionLabel, onAction }: { title: string, actionLabel?: string, onAction?: () => void }) => (
   <div className="flex items-center justify-between px-4 mb-4">
     <h2 className="text-xl font-bold tracking-tight text-white font-sans">{title}</h2>
-    {showSeeAll && <button className="text-xs font-bold text-neutral-500 uppercase tracking-widest hover:text-white transition-colors">See all</button>}
+    {onAction && (
+      <button 
+        onPointerUp={(e) => { e.preventDefault(); onAction(); }}
+        className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all hover:scale-105"
+      >
+        {actionLabel || "See all"}
+      </button>
+    )}
   </div>
 );
 
@@ -254,7 +261,11 @@ export default function Home() {
         )}
 
         <section>
-          <SectionHeader title="Daily picks" />
+          <SectionHeader 
+            title="Daily picks" 
+            actionLabel="Play all" 
+            onAction={() => dailyPicks.length > 0 && playTrack(dailyPicks[0], dailyPicks)} 
+          />
           <div className="px-4 space-y-3">
             {loading ? (
               Array(6).fill(0).map((_, i) => <div key={i} className="h-16 bg-[#1e1e1e] rounded-xl animate-pulse" />)
@@ -298,7 +309,11 @@ export default function Home() {
         </section>
 
         <section className="bg-[#121212] py-8 border-y border-white/5">
-          <SectionHeader title="Trending now" />
+          <SectionHeader 
+            title="Trending now" 
+            actionLabel="Play all" 
+            onAction={() => trending.length > 0 && playTrack(trending[0], trending)} 
+          />
           <div className="px-4 space-y-4">
             {trending.map((song, idx) => (
               <div 

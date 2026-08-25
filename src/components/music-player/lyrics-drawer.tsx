@@ -16,7 +16,7 @@ export function LyricsDrawer() {
     if (activeRef.current && scrollRef.current) {
       activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [progress]);
+  }, [progress, lyrics]);
 
   if (!isLyricsOpen) return null;
 
@@ -35,9 +35,9 @@ export function LyricsDrawer() {
             <div className="bg-primary/20 p-2 rounded-xl">
               <Music2 className="h-6 w-6 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-xl font-black italic uppercase tracking-tighter">Resonance</h2>
-              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{currentTrack?.name}</p>
+              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest truncate max-w-[200px]">{currentTrack?.name}</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onPointerDown={() => setIsLyricsOpen(false)} className="rounded-full bg-white/5 hover:bg-white/10">
@@ -45,7 +45,7 @@ export function LyricsDrawer() {
           </Button>
         </header>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6 pb-40">
           {loadingLyrics ? (
             <div className="h-full flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -68,13 +68,13 @@ export function LyricsDrawer() {
               );
             })
           ) : lyrics?.plain ? (
-            <div className="whitespace-pre-wrap text-neutral-400 text-lg md:text-2xl font-bold leading-relaxed py-8">
+            <div className="whitespace-pre-wrap text-neutral-400 text-lg md:text-2xl font-bold leading-relaxed py-8 italic uppercase tracking-tight">
               {lyrics.plain}
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
               <Music2 className="h-16 w-16 text-neutral-800" />
-              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not available for this sound</p>
+              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not found for this sound</p>
             </div>
           )}
         </div>

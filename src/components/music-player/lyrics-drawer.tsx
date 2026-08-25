@@ -13,9 +13,12 @@ export function LyricsDrawer() {
   const activeLineRef = useRef<HTMLParagraphElement>(null);
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
 
-  // High-fidelity highlighting logic
+  // High-fidelity highlighting and debug logging
   useEffect(() => {
     if (lyrics?.synced.length) {
+      // Debug log as requested to verify progress resonance
+      console.log('Updating lyrics at:', progress);
+
       let currentIndex = -1;
       for (let i = 0; i < lyrics.synced.length; i++) {
         if (lyrics.synced[i].time <= progress) {

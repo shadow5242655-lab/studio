@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Song, searchSongs, formatDuration, getBestImage } from '@/lib/music-api';
 import { 
   Heart, Play, Music2, 
@@ -26,6 +26,24 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
   ];
 
   const [active, setActive] = useState('');
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handleInteraction = (query: string, name: string) => (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    const dt = Date.now() - startPos.current.time;
+    
+    if (dx < 10 && dy < 10 && dt < 300) {
+      onVibeClick(query);
+      setActive(name);
+    }
+    startPos.current = null;
+  };
 
   return (
     <div className="space-y-4">
@@ -34,7 +52,8 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
         {vibes.map((vibe) => (
           <button
             key={vibe.name}
-            onPointerUp={() => { onVibeClick(vibe.query); setActive(vibe.name); }}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handleInteraction(vibe.query, vibe.name)}
             className={cn(
               "flex items-center gap-2 whitespace-nowrap px-5 py-2.5 rounded-xl transition-all border lag-free-tap font-bold text-sm",
               active === vibe.name 
@@ -51,19 +70,33 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
   );
 };
 
-const SectionHeader = ({ title, actionLabel, onAction }: { title: string, actionLabel?: string, onAction?: () => void }) => (
-  <div className="flex items-center justify-between px-4 mb-4">
-    <h2 className="text-xl font-bold tracking-tight text-white font-sans">{title}</h2>
-    {onAction && (
-      <button 
-        onPointerUp={(e) => { e.preventDefault(); onAction(); }}
-        className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all hover:scale-105"
-      >
-        {actionLabel || "See all"}
-      </button>
-    )}
-  </div>
-);
+const SectionHeader = ({ title, actionLabel, onAction }: { title: string, actionLabel?: string, onAction?: () => void }) => {
+  const startPos = useRef<{ x: number, y: number } | null>(null);
+
+  return (
+    <div className="flex items-center justify-between px-4 mb-4">
+      <h2 className="text-xl font-bold tracking-tight text-white font-sans">{title}</h2>
+      {onAction && (
+        <button 
+          onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
+          onPointerUp={(e) => {
+            if (!startPos.current) return;
+            const dx = Math.abs(e.clientX - startPos.current.x);
+            const dy = Math.abs(e.clientY - startPos.current.y);
+            if (dx < 10 && dy < 10) {
+              e.preventDefault(); 
+              onAction();
+            }
+            startPos.current = null;
+          }}
+          className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all hover:scale-105"
+        >
+          {actionLabel || "See all"}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, playRandomTrack, currentTrack } = useMusic();
@@ -74,6 +107,8 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+
+  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -116,6 +151,27 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handleInteraction = (callback: () => void) => (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = Math.abs(e.clientX - startPos.current.x);
+    const dy = Math.abs(e.clientY - startPos.current.y);
+    const dt = Date.now() - startPos.current.time;
+    
+    // Distinguish between scroll and click
+    if (dx < 10 && dy < 10 && dt < 300) {
+      callback();
+    }
+    startPos.current = null;
+  };
+
+  const handlePointerCancel = () => {
+    startPos.current = null;
+  };
+
   const handleVibeClick = async (query: string) => {
     setLoading(true);
     const results = await searchSongs(query);
@@ -131,7 +187,11 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
       <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
-        <div className="text-primary hover:scale-110 transition-transform cursor-pointer" onPointerDown={() => router.push('/')}>
+        <div 
+          className="text-primary hover:scale-110 transition-transform cursor-pointer" 
+          onPointerDown={handlePointerDown}
+          onPointerUp={handleInteraction(() => router.push('/'))}
+        >
           <Music2 className="h-7 w-7" />
         </div>
         <div className="flex-1 relative group">
@@ -169,7 +229,8 @@ export default function Home() {
                  {searching && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
                </div>
                <button 
-                 onClick={() => router.push(`/search?q=${encodeURIComponent(searchQuery)}`)}
+                 onPointerDown={handlePointerDown}
+                 onPointerUp={handleInteraction(() => router.push(`/search?q=${encodeURIComponent(searchQuery)}`))}
                  className="text-[10px] font-black text-primary uppercase tracking-widest"
                >
                  Discovery Mode
@@ -187,7 +248,9 @@ export default function Home() {
                         "flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
                         currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
                       )}
-                      onPointerDown={(e) => { e.preventDefault(); playTrack(song, liveResults); }}
+                      onPointerDown={handlePointerDown}
+                      onPointerUp={handleInteraction(() => playTrack(song, liveResults))}
+                      onPointerCancel={handlePointerCancel}
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
@@ -239,7 +302,8 @@ export default function Home() {
                 <div className="flex flex-wrap gap-3 pt-2 relative z-10">
                   <Button 
                     className="bg-primary text-white rounded-full px-6 h-12 font-black gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform lag-free-tap font-sans"
-                    onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handleInteraction(() => playRandomTrack())}
                   >
                     <Play className="h-5 w-5 fill-current" />
                     Play Trending
@@ -247,7 +311,8 @@ export default function Home() {
                   <Button 
                     variant="outline"
                     className="bg-white/5 border-white/10 text-white rounded-full px-6 h-12 font-black gap-2 hover:bg-white/10 lag-free-tap font-sans"
-                    onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handleInteraction(() => playRandomTrack())}
                   >
                     <Shuffle className="h-4 w-4" />
                     Shuffle
@@ -279,7 +344,9 @@ export default function Home() {
                       "flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
                       currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
                     )}
-                    onPointerDown={(e) => { e.preventDefault(); playTrack(song, dailyPicks); }}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handleInteraction(() => playTrack(song, dailyPicks))}
+                    onPointerCancel={handlePointerCancel}
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
@@ -319,7 +386,9 @@ export default function Home() {
               <div 
                 key={song.id} 
                 className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer group lag-free-tap"
-                onPointerDown={(e) => { e.preventDefault(); playTrack(song, trending); }}
+                onPointerDown={handlePointerDown}
+                onPointerUp={handleInteraction(() => playTrack(song, trending))}
+                onPointerCancel={handlePointerCancel}
               >
                 <span className="text-lg font-black text-neutral-700 italic min-w-[24px] group-hover:text-primary transition-colors font-sans">{idx + 1}</span>
                 <div className="flex-1 min-w-0">
@@ -337,7 +406,12 @@ export default function Home() {
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 px-4 pb-4">
               {["INDIA SUPERHITS", "GLOBAL VIRAL", "BENGALI TOP 50", "HINDI HOT 50", "INDIE ROCK"].map((name, i) => (
-                <div key={i} className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap" onPointerDown={() => router.push(`/search?q=${encodeURIComponent(name)}`)}>
+                <div 
+                  key={i} 
+                  className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap" 
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handleInteraction(() => router.push(`/search?q=${encodeURIComponent(name)}`))}
+                >
                   <div className="aspect-square rounded-lg bg-gradient-to-br from-primary to-neutral-800 flex items-center justify-center p-4">
                     <span className="text-xs font-black text-white text-center leading-none tracking-tighter uppercase italic font-sans">{name}</span>
                   </div>

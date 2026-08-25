@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
 import { Song, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { TrendingUp, Music2, Disc, Zap, Play, Info, Flame, Heart, Radio, Wind, Coffee, Headphones, BarChart3, Star, Sparkles } from 'lucide-react';
+import { Star, Zap, Play, BarChart3, Wind, Flame, Radio, Headphones, Heart, Disc, Coffee, Sparkles, Music2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -22,19 +22,22 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
       setLoading(false);
       return;
     }
-    if (!initialQuery && !externalSongs && p === 1) {
-      const trending = await getTrending(p);
-      setSongs(trending);
-      setLoading(false);
-      return;
-    }
-    if (initialQuery) {
-      const data = await searchSongs(initialQuery, p);
+    setLoading(true);
+    try {
+      let data: Song[] = [];
+      if (!initialQuery && !externalSongs) {
+        data = await getTrending(p);
+      } else if (initialQuery) {
+        data = await searchSongs(initialQuery, p);
+      }
+      
       setSongs(prev => {
-        const next = [...prev, ...data];
-        // Unique filter by ID
+        const next = p === 1 ? data : [...prev, ...data];
         return Array.from(new Map(next.map(item => [item.id, item])).values());
       });
+    } catch (e) {
+      console.error("Discovery error", e);
+    } finally {
       setLoading(false);
     }
   }, [initialQuery, externalSongs]);
@@ -50,7 +53,7 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
           setPage(prev => prev + 1);
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { threshold: 0.1, rootMargin: '400px' }
     );
 
     if (observerTarget.current) {

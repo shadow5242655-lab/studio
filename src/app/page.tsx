@@ -72,6 +72,7 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
 
 const SectionHeader = ({ title, actionLabel, onAction }: { title: string, actionLabel?: string, onAction?: () => void }) => {
   const startPos = useRef<{ x: number, y: number } | null>(null);
+  const isPlayAll = actionLabel === "Play all";
 
   return (
     <div className="flex items-center justify-between px-4 mb-4">
@@ -89,8 +90,14 @@ const SectionHeader = ({ title, actionLabel, onAction }: { title: string, action
             }
             startPos.current = null;
           }}
-          className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all hover:scale-105"
+          className={cn(
+            "flex items-center gap-1.5 transition-all active:scale-95",
+            isPlayAll 
+              ? "bg-[#1e1e1e] hover:bg-[#282828] text-white text-[10px] font-bold px-4 py-1.5 rounded-full border border-white/5" 
+              : "text-[10px] font-black text-primary uppercase tracking-widest hover:underline hover:scale-105"
+          )}
         >
+          {isPlayAll && <Play className="h-3 w-3 fill-current" />}
           {actionLabel || "See all"}
         </button>
       )}
@@ -117,7 +124,7 @@ export default function Home() {
       try {
         const [picks, trendData] = await Promise.all([
           searchSongs("Banjaare Roni Manish Sonipat Aala"),
-          searchSongs("Arijit Singh Best 2024")
+          searchSongs("Latest Bollywood Viral Hits 2026")
         ]);
         setDailyPicks(picks.slice(0, 10));
         setTrending(trendData.slice(0, 10));
@@ -185,8 +192,8 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
-      <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
+    <div className="bg-[#000000] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
+      <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#000000]/95 backdrop-blur-md z-30 border-b border-white/5">
         <div 
           className="text-primary hover:scale-110 transition-transform cursor-pointer" 
           onPointerDown={handlePointerDown}
@@ -198,7 +205,7 @@ export default function Home() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
           <Input 
             placeholder="Search for sounds..." 
-            className="bg-[#1e1e1e] border-2 border-primary/20 rounded-full h-10 pl-10 pr-10 text-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-white placeholder:text-neutral-600 transition-all font-sans"
+            className="bg-[#1e1e1e] border border-primary/20 rounded-full h-10 pl-10 pr-10 text-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-white placeholder:text-neutral-600 transition-all font-sans"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -325,13 +332,14 @@ export default function Home() {
           </>
         )}
 
+        {/* Daily Picks Section */}
         <section>
           <SectionHeader 
             title="Daily picks" 
             actionLabel="Play all" 
             onAction={() => dailyPicks.length > 0 && playTrack(dailyPicks[0], dailyPicks)} 
           />
-          <div className="px-4 space-y-3">
+          <div className="px-4 space-y-2">
             {loading ? (
               Array(6).fill(0).map((_, i) => <div key={i} className="h-16 bg-[#1e1e1e] rounded-xl animate-pulse" />)
             ) : (
@@ -358,7 +366,7 @@ export default function Home() {
                       </div>
                       <div className="min-w-0">
                         <p className={cn("font-bold text-sm truncate font-sans", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
-                        <p className="text-xs text-neutral-500 truncate font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
+                        <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
                       </div>
                     </div>
                     <button 
@@ -375,29 +383,65 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-[#121212] py-8 border-y border-white/5">
+        {/* Trending Now Section - Reference Matched Layout */}
+        <section className="py-8">
           <SectionHeader 
             title="Trending now" 
             actionLabel="Play all" 
             onAction={() => trending.length > 0 && playTrack(trending[0], trending)} 
           />
-          <div className="px-4 space-y-4">
-            {trending.map((song, idx) => (
-              <div 
-                key={song.id} 
-                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer group lag-free-tap"
-                onPointerDown={handlePointerDown}
-                onPointerUp={handleInteraction(() => playTrack(song, trending))}
-                onPointerCancel={handlePointerCancel}
-              >
-                <span className="text-lg font-black text-neutral-700 italic min-w-[24px] group-hover:text-primary transition-colors font-sans">{idx + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-white truncate font-sans">{song.name}</p>
-                  <p className="text-xs text-neutral-500 truncate font-sans">{song.artists.primary[0].name}</p>
-                </div>
-                <span className="text-[10px] font-bold text-neutral-600 font-mono">{formatDuration(song.duration)}</span>
-              </div>
-            ))}
+          <div className="px-4 space-y-2">
+            {loading ? (
+              Array(5).fill(0).map((_, i) => <div key={i} className="h-14 bg-[#1e1e1e] rounded-lg animate-pulse" />)
+            ) : (
+              trending.map((song, idx) => {
+                const img = getBestImage(song);
+                return (
+                  <div 
+                    key={song.id} 
+                    className={cn(
+                      "flex items-center gap-4 p-2 hover:bg-white/5 rounded-xl transition-all cursor-pointer group lag-free-tap relative",
+                      currentTrack?.id === song.id && "bg-white/5"
+                    )}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handleInteraction(() => playTrack(song, trending))}
+                    onPointerCancel={handlePointerCancel}
+                  >
+                    {/* Rank Number */}
+                    <span className="text-sm font-bold text-neutral-600 min-w-[20px] text-center font-sans">{idx + 1}</span>
+                    
+                    {/* Song Artwork */}
+                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
+                      {img ? (
+                        <img src={img} className="h-full w-full object-cover" alt="" />
+                      ) : (
+                        <Music2 className="h-6 w-6 text-neutral-800" />
+                      )}
+                    </div>
+
+                    {/* Meta Data */}
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("font-bold text-sm text-white truncate font-sans", currentTrack?.id === song.id && "text-primary")}>{song.name}</p>
+                      <p className="text-xs text-neutral-500 truncate font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
+                    </div>
+
+                    {/* Heart Action */}
+                    <button 
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onPointerUp={(e) => { e.stopPropagation(); toggleLike(song); }}
+                      className="p-2 text-neutral-400 hover:text-white transition-colors"
+                    >
+                      <Heart className={cn("h-4 w-4", isLiked(song.id) && "fill-white text-white")} />
+                    </button>
+
+                    {/* Duration */}
+                    <span className="text-xs font-medium text-neutral-500 min-w-[35px] text-right font-mono">
+                      {formatDuration(song.duration)}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
 

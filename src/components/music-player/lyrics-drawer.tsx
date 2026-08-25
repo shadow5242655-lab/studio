@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Music2, Loader2 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,32 @@ export function LyricsDrawer() {
   const { isLyricsOpen, setIsLyricsOpen, lyrics, loadingLyrics, currentTrack } = useMusic();
   const { progress } = useMusicProgress();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef<HTMLParagraphElement>(null);
+  const activeLineRef = useRef<HTMLParagraphElement>(null);
+  const [activeLineIndex, setActiveLineIndex] = useState(-1);
 
+  // High-fidelity highlighting logic
   useEffect(() => {
-    if (activeRef.current && scrollRef.current) {
-      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (lyrics?.synced.length) {
+      let currentIndex = -1;
+      for (let i = 0; i < lyrics.synced.length; i++) {
+        if (lyrics.synced[i].time <= progress) {
+          currentIndex = i;
+        } else {
+          break;
+        }
+      }
+      if (currentIndex !== activeLineIndex) {
+        setActiveLineIndex(currentIndex);
+      }
     }
-  }, [progress, lyrics]);
+  }, [progress, lyrics, activeLineIndex]);
+
+  // High-fidelity auto-scroll logic
+  useEffect(() => {
+    if (activeLineRef.current && isLyricsOpen) {
+      activeLineRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeLineIndex, isLyricsOpen]);
 
   if (!isLyricsOpen) return null;
 
@@ -36,11 +55,11 @@ export function LyricsDrawer() {
               <Music2 className="h-6 w-6 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xl font-black italic uppercase tracking-tighter">Resonance</h2>
+              <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Resonance</h2>
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest truncate max-w-[200px]">{currentTrack?.name}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onPointerDown={() => setIsLyricsOpen(false)} className="rounded-full bg-white/5 hover:bg-white/10">
+          <Button variant="ghost" size="icon" onPointerDown={() => setIsLyricsOpen(false)} className="rounded-full bg-white/5 hover:bg-white/10 text-white">
             <X className="h-6 w-6" />
           </Button>
         </header>
@@ -53,16 +72,16 @@ export function LyricsDrawer() {
             </div>
           ) : lyrics?.synced.length ? (
             lyrics.synced.map((line, i) => {
-              const isActive = progress >= line.time && (i === lyrics.synced.length - 1 || progress < lyrics.synced[i+1].time);
+              const isActive = i === activeLineIndex;
               return (
                 <p 
                   key={i} 
-                  ref={isActive ? activeRef : null}
+                  ref={isActive ? activeLineRef : null}
                   className={cn(
                     "text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-tight transition-all duration-300",
                     isActive 
-                      ? "text-white opacity-100 scale-105 origin-center md:origin-left neon-glow" 
-                      : "text-neutral-500 opacity-20 scale-100"
+                      ? "text-primary scale-105 origin-center md:origin-left neon-glow active-lyrics" 
+                      : "text-neutral-500 opacity-30 scale-100"
                   )}
                 >
                   {line.text}
@@ -76,7 +95,7 @@ export function LyricsDrawer() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
               <Music2 className="h-16 w-16 text-neutral-800" />
-              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not found for this sound</p>
+              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not available for this sound</p>
             </div>
           )}
         </div>

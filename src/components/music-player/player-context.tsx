@@ -136,8 +136,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         if (currentTrackRef.current?.id === targetId) {
           const synced = data.syncedLyrics ? data.syncedLyrics.split('\n').map((l: string) => {
             const m = l.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
-            return m ? { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() } : null;
-          }).filter(Boolean) : [];
+            if (m) {
+              const minutes = parseInt(m[1]);
+              const seconds = parseFloat(m[2]);
+              const text = m[3].trim();
+              return { time: minutes * 60 + seconds, text };
+            }
+            return null;
+          }).filter(Boolean).sort((a: any, b: any) => a.time - b.time) : [];
+          
           const plain = data.plainLyrics || "";
           setLyrics({ synced, plain });
           triggerMoodMix(song, plain);
@@ -258,7 +265,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
-      // Standard progress tracking for robust lyrics highlighting (100ms interval)
+      // Hardware-accelerated progress tracking (100ms interval for lyrics sync)
       if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 100) {
         setProgress(time);
         (window as any).lastProgUpdate = now;

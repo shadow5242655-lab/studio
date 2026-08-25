@@ -133,7 +133,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         setPage(prev => prev + 1);
       }
     }, {
-      rootMargin: '400px', // Fetch earlier
+      rootMargin: '400px', // Fetch earlier for seamless experience
       threshold: 0.1
     });
 
@@ -555,7 +555,7 @@ export default function Home() {
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Top Punjabi Hits Karan Aujla Diljit AP Dhillon" 
+          query="Punjabi Hits 2024 AP Dhillon Karan Aujla Diljit" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 

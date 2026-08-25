@@ -111,49 +111,68 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const frameRef = useRef<number | null>(null);
   const lastProgressUpdateRef = useRef<number>(0);
   const lastPersistenceUpdateRef = useRef<number>(0);
-  const totalSecondsAccumulatorRef = useRef<number>(0);
   const isCrossfadingRef = useRef(false);
 
-  const recordActiveDay = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
-    setActiveDays(prev => {
-      if (prev.includes(today)) return prev;
-      const next = [...prev, today];
-      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_activedays', JSON.stringify(next));
-      return next;
-    });
-  }, []);
+  const parseLRC = (lrc: string) => {
+    return lrc.split('\n').map((line: string) => {
+      const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+      if (match) {
+        const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
+        return { time, text: match[3].trim() };
+      }
+      return null;
+    }).filter(Boolean);
+  };
+
+  const cleanMetadata = (str: string) => {
+    return str
+      .replace(/\(Official Video\)/gi, '')
+      .replace(/\(Official Audio\)/gi, '')
+      .replace(/\(Lyrical\)/gi, '')
+      .replace(/\(Live\)/gi, '')
+      .replace(/\(From .*\)/gi, '')
+      .replace(/\[.*\]/g, '')
+      .replace(/\(.*\)/g, '')
+      .replace(/ft\..*/gi, '')
+      .replace(/feat\..*/gi, '')
+      .split('-')[0]
+      .trim();
+  };
 
   const fetchLyrics = useCallback(async (song: Song) => {
     const targetId = song.id;
     setLoadingLyrics(true);
     setLyrics(null);
     try {
-      const cleanTitle = song.name
-        .replace(/\(Official Video\)/gi, '')
-        .replace(/\(Official Audio\)/gi, '')
-        .replace(/\(Lyrical\)/gi, '')
-        .replace(/\(Live\)/gi, '')
-        .replace(/\[.*\]/g, '')
-        .replace(/\(.*\)/g, '')
-        .split('-')[0].trim();
-        
-      const cleanArtist = song.artists.primary[0]?.name.replace(/\(.*\)/g, '').trim() || '';
-      const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
+      const cleanTitle = cleanMetadata(song.name);
+      const cleanArtist = song.artists.primary[0]?.name ? cleanMetadata(song.artists.primary[0].name) : '';
       
-      if (currentTrackRef.current?.id !== targetId) return;
+      // Attempt 1: Direct Get
+      let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
       
-      if (res.ok) {
-        const data = await res.json();
-        const synced = data.syncedLyrics ? data.syncedLyrics.split('\n').map((line: string) => {
-          const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
-          if (match) {
-            const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
-            return { time, text: match[3].trim() };
+      if (!res.ok) {
+        // Attempt 2: Search Fallback (Fuzzy)
+        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
+        if (searchRes.ok) {
+          const results = await searchRes.json();
+          if (results.length > 0 && currentTrackRef.current?.id === targetId) {
+            const best = results[0];
+            setLyrics({ 
+              synced: best.syncedLyrics ? parseLRC(best.syncedLyrics) : [], 
+              plain: best.plainLyrics || "" 
+            });
+            setLoadingLyrics(false);
+            return;
           }
-          return null;
-        }).filter(Boolean) : [];
-        setLyrics({ synced, plain: data.plainLyrics || "" });
+        }
+      } else {
+        const data = await res.json();
+        if (currentTrackRef.current?.id === targetId) {
+          setLyrics({ 
+            synced: data.syncedLyrics ? parseLRC(data.syncedLyrics) : [], 
+            plain: data.plainLyrics || "" 
+          });
+        }
       }
     } catch (e) {
       console.warn("Lyrics resonance lookup failed", e);
@@ -166,38 +185,23 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
-      audioRef.current.load();
     }
     if (secondaryAudioRef.current) {
       secondaryAudioRef.current.pause();
       secondaryAudioRef.current.src = "";
-      secondaryAudioRef.current.load();
     }
-    setCurrentTrack(null);
-    setIsPlaying(false);
-    setProgress(0);
-    setDuration(0);
     isCrossfadingRef.current = false;
+    setIsPlaying(false);
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    // Definitive Stop to prevent double audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.pause();
-      secondaryAudioRef.current.src = "";
-    }
-    isCrossfadingRef.current = false;
+    stopTrack();
 
     if (fromQueue) {
       setQueue(fromQueue);
       queueRef.current = fromQueue;
     }
     
-    recordActiveDay();
     setPlayedHistory(prev => {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
       const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
@@ -214,7 +218,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       fetchLyrics(track);
       audioRef.current.play().catch(() => {});
     }
-  }, [recordActiveDay, fetchLyrics]);
+  }, [fetchLyrics, stopTrack]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -424,15 +428,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioRef.current.currentTime;
       const now = performance.now();
       
-      // Hardware-Accelerated Throttling: Update state only every 250ms
       if (now - lastProgressUpdateRef.current > 250) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
       }
 
-      // Persistence Throttling: Save every 5 seconds
       if (now - lastPersistenceUpdateRef.current > 5000) {
-        if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
+        if (typeof window !== 'undefined') {
+           localStorage.setItem('ayumusics_last_pos', currentTime.toString());
+           totalSecondsRef.current += 5;
+           if (totalSecondsRef.current % 60 === 0) setTotalSeconds(totalSecondsRef.current);
+        }
         lastPersistenceUpdateRef.current = now;
       }
       
@@ -465,11 +471,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setExclusionRules(loadSaved('ayumusics_rules') || []);
     setSmartMoodState(loadSaved('ayumusics_smartmood') ?? true);
     setSongPopularity(loadSaved('ayumusics_popularity') || {});
-    
-    const s = parseInt(localStorage.getItem('ayumusics_seconds') || '0');
-    setTotalSeconds(s); 
-    totalSecondsRef.current = s;
-    totalSecondsAccumulatorRef.current = s;
     
     const lastTrack = loadSaved('ayumusics_last_track');
     const lastPos = parseFloat(localStorage.getItem('ayumusics_last_pos') || '0');

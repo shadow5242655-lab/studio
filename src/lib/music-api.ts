@@ -69,6 +69,8 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
  */
 export async function analyzeMood(text: string): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY || 'YOUR_API_KEY';
+  if (!text || text.length < 10) return "neutral";
+  
   try {
     const response = await fetch("https://twinword-emotion-analysis-v1.p.rapidapi.com/analyze/", {
       method: "POST",

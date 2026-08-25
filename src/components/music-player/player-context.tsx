@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, searchSongs, decodeEntities } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, searchSongs, decodeEntities, analyzeMood, mapMoodToGenre } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -23,12 +23,15 @@ interface MusicStateContextType {
   isPlayerOpen: boolean;
   isLyricsOpen: boolean;
   queue: Song[];
+  autoMixQueue: Song[];
   likedSongs: Song[];
   playlists: Playlist[];
   playedHistory: HistoryItem[];
   lyrics: { synced: { time: number; text: string }[]; plain: string } | null;
   loadingLyrics: boolean;
   songPopularity: Record<string, number>;
+  smartMood: boolean;
+  setSmartMood: (val: boolean) => void;
   setIsPlayerOpen: (open: boolean) => void;
   setIsLyricsOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
@@ -49,6 +52,7 @@ interface MusicProgressContextType {
   progress: number;
   duration: number;
   volume: number;
+  totalMinutes: number;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
 }
@@ -66,6 +70,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [queue, setQueue] = useState<Song[]>([]);
   const queueRef = useRef<Song[]>([]);
+  const [autoMixQueue, setAutoMixQueue] = useState<Song[]>([]);
+  const autoMixQueueRef = useRef<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
@@ -76,13 +82,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const volumeRef = useRef(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  const totalSecondsRef = useRef(0);
+  const [smartMood, setSmartMood] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
   const isCrossfadingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
 
-  // CORE FUNCTIONS DEFINED FIRST
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -97,12 +105,28 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = false;
   }, []);
 
+  const triggerMoodMix = useCallback(async (song: Song, lyricData: string) => {
+    if (!smartMood) return;
+    try {
+      const emotion = await analyzeMood(lyricData);
+      const genre = mapMoodToGenre(emotion);
+      const results = await searchSongs(genre);
+      const freshMix = results.filter(s => s.id !== song.id).slice(0, 10);
+      setAutoMixQueue(freshMix);
+      autoMixQueueRef.current = freshMix;
+    } catch (e) {
+      const fallback = await getTrending();
+      const randMix = fallback.sort(() => 0.5 - Math.random()).slice(0, 10);
+      setAutoMixQueue(randMix);
+      autoMixQueueRef.current = randMix;
+    }
+  }, [smartMood]);
+
   const fetchLyrics = useCallback(async (song: Song) => {
     const targetId = song.id;
     setLoadingLyrics(true);
     setLyrics(null);
     try {
-      // High-Fidelity Metadata Cleaning
       const clean = (s: string) => decodeEntities(s)
         .replace(/\(.*\)|\[.*\]|feat\..*|&.*?;|official video|music video/gi, '')
         .trim();
@@ -118,15 +142,20 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
             const m = l.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
             return m ? { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() } : null;
           }).filter(Boolean) : [];
-          setLyrics({ synced, plain: data.plainLyrics || "" });
+          const plain = data.plainLyrics || "";
+          setLyrics({ synced, plain });
+          triggerMoodMix(song, plain);
         }
+      } else {
+        triggerMoodMix(song, "No lyrics found for analysis");
       }
     } catch (e) {
       console.warn("Lyrics resonance failed", e);
+      triggerMoodMix(song, "Error fetching lyrics");
     } finally {
       if (currentTrackRef.current?.id === targetId) setLoadingLyrics(false);
     }
-  }, []);
+  }, [triggerMoodMix]);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     stopTrack();
@@ -156,14 +185,26 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playTrack]);
 
   const nextTrack = useCallback(() => {
-    if (queueRef.current.length === 0) return;
+    if (smartMood && autoMixQueueRef.current.length > 0) {
+      const next = autoMixQueueRef.current[0];
+      const remaining = autoMixQueueRef.current.slice(1);
+      setAutoMixQueue(remaining);
+      autoMixQueueRef.current = remaining;
+      playTrack(next);
+      return;
+    }
+
+    if (queueRef.current.length === 0) {
+      playRandomTrack();
+      return;
+    }
     const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
     if (idx !== -1 && idx < queueRef.current.length - 1) {
       playTrack(queueRef.current[idx + 1]);
     } else {
       playRandomTrack();
     }
-  }, [playTrack, playRandomTrack]);
+  }, [playTrack, playRandomTrack, smartMood]);
 
   const prevTrack = useCallback(() => {
     if (queueRef.current.length === 0) return;
@@ -173,11 +214,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
-  // Logic stabilization ref for event listeners
   const logicRef = useRef({ nextTrack, prevTrack, playTrack });
-  useEffect(() => { 
-    logicRef.current = { nextTrack, prevTrack, playTrack }; 
-  }, [nextTrack, prevTrack, playTrack]);
+  useEffect(() => { logicRef.current = { nextTrack, prevTrack, playTrack }; }, [nextTrack, prevTrack, playTrack]);
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
@@ -262,28 +300,39 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current && isPlayingRef.current) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
-      // Throttle state updates and disk I/O to 250ms
       if (now - (window as any).lastProgUpdate > 250) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
-        localStorage.setItem('ayumusics_last_pos', time.toString());
       }
       
-      // Auto-Crossfade logic at last 3 seconds
       const left = audioRef.current.duration - time;
       if (left > 0 && left < 3 && !isCrossfadingRef.current) {
-        const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
-        if (idx !== -1 && idx < queueRef.current.length - 1) {
-          performCrossfade(queueRef.current[idx + 1]);
+        if (smartMood && autoMixQueueRef.current.length > 0) {
+           performCrossfade(autoMixQueueRef.current[0]);
+           const rem = autoMixQueueRef.current.slice(1);
+           setAutoMixQueue(rem);
+           autoMixQueueRef.current = rem;
+        } else {
+          const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
+          if (idx !== -1 && idx < queueRef.current.length - 1) {
+            performCrossfade(queueRef.current[idx + 1]);
+          }
         }
+      }
+      
+      if (now - (window as any).lastTimerUpdate > 5000) {
+         setTotalSeconds(prev => prev + 5);
+         (window as any).lastTimerUpdate = now;
+         localStorage.setItem('ayumusics_last_pos', time.toString());
       }
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [performCrossfade]);
+  }, [performCrossfade, smartMood]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     (window as any).lastProgUpdate = 0;
+    (window as any).lastTimerUpdate = 0;
     audioRef.current = new Audio();
     secondaryAudioRef.current = new Audio();
     const audio = audioRef.current;
@@ -319,17 +368,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [isPlaying, updateProgress]);
 
   const stateVal = useMemo(() => ({
-    currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists,
-    playedHistory, lyrics, loadingLyrics, songPopularity,
+    currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists,
+    playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, setSmartMood,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
     isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist]);
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist]);
 
   const progVal = useMemo(() => ({ 
-    progress, duration, volume, 
+    progress, duration, volume, totalMinutes: Math.floor(totalSeconds / 60),
     seek: (t: number) => { if (audioRef.current) audioRef.current.currentTime = t; setProgress(t); }, 
     setVolume: (v: number) => { setVolumeState(v); volumeRef.current = v; if (audioRef.current) audioRef.current.volume = v; } 
-  }), [progress, duration, volume]);
+  }), [progress, duration, volume, totalSeconds]);
 
   return (
     <MusicStateContext.Provider value={stateVal}>

@@ -19,7 +19,7 @@ export default function IntelligencePage() {
   const { 
     playedHistory = [], removeFromHistory, clearHistory, 
     exclusionRules = [], addExclusionRule, removeExclusionRule,
-    createPlaylist, smartMood, setSmartMood
+    createPlaylist, smartMood, setSmartMood, autoMixQueue
   } = useMusic();
   
   const { toast } = useToast();
@@ -76,13 +76,13 @@ export default function IntelligencePage() {
         <p className="text-neutral-400 max-w-2xl text-lg font-medium">Control your history, architect your taste, and let AI bridge your emotional spectrum.</p>
       </header>
 
-      <Tabs defaultValue="mixer" className="space-y-8">
+      <Tabs defaultValue="sync" className="space-y-8">
         <TabsList className="bg-neutral-900 border border-white/5 p-1 rounded-xl h-auto flex flex-wrap gap-1">
-          <TabsTrigger value="mixer" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
-            <Zap className="h-4 w-4" /> AI Mixer
-          </TabsTrigger>
           <TabsTrigger value="sync" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
             <Radio className="h-4 w-4" /> Mood Sync
+          </TabsTrigger>
+          <TabsTrigger value="mixer" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
+            <Zap className="h-4 w-4" /> AI Mixer
           </TabsTrigger>
           <TabsTrigger value="journey" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
             <Wind className="h-4 w-4" /> Emotion Journey
@@ -90,10 +90,39 @@ export default function IntelligencePage() {
           <TabsTrigger value="history" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
             <History className="h-4 w-4" /> History Control
           </TabsTrigger>
-          <TabsTrigger value="rules" className="rounded-lg py-3 px-6 gap-2 font-bold uppercase italic tracking-tighter data-[state=active]:bg-primary">
-            <ShieldAlert className="h-4 w-4" /> Exclusions
-          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sync" className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
+          <Card className="bg-neutral-900 border-white/5 shadow-2xl max-w-3xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-3xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
+                <Radio className="h-6 w-6 text-primary" />
+                Background Mood Auto-Mix
+              </CardTitle>
+              <CardDescription>Definitive vibe continuity engine</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="space-y-1">
+                  <Label htmlFor="smart-mood" className="text-xl font-bold italic tracking-tighter uppercase">Enable Neural Sync</Label>
+                  <p className="text-sm text-neutral-500">Automatically analyzes song lyrics to predicted mood and curate the next 10 matching frequencies.</p>
+                </div>
+                <Switch 
+                  id="smart-mood" 
+                  checked={smartMood} 
+                  onCheckedChange={setSmartMood}
+                />
+              </div>
+              
+              <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-4">
+                 <h4 className="font-bold text-primary italic uppercase tracking-tight">Active Neural Engine</h4>
+                 <p className="text-xs text-neutral-400 leading-relaxed italic">
+                   The system is currently buffering <span className="text-primary font-bold">{autoMixQueue.length} tracks</span> for your next transition. Each time a new song starts, the lyrics are analyzed via Twinword AI to shift the sound lineage.
+                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="mixer" className="animate-in fade-in slide-in-from-bottom-4 max-w-2xl mx-auto text-center space-y-8">
            <div className="space-y-4">
@@ -117,38 +146,6 @@ export default function IntelligencePage() {
                CREATE MIX
              </Button>
            </div>
-        </TabsContent>
-
-        <TabsContent value="sync" className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-          <Card className="bg-neutral-900 border-white/5 shadow-2xl max-w-3xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-3xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
-                <Radio className="h-6 w-6 text-primary" />
-                Smart Mood Sync
-              </CardTitle>
-              <CardDescription>Definitive vibe continuity engine</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
-                <div className="space-y-1">
-                  <Label htmlFor="smart-mood" className="text-xl font-bold italic tracking-tighter uppercase">Enable Sync</Label>
-                  <p className="text-sm text-neutral-500">Automatically discover and play matching frequencies (Lofi, Bhojpuri, etc.) when the current track ends.</p>
-                </div>
-                <Switch 
-                  id="smart-mood" 
-                  checked={smartMood} 
-                  onCheckedChange={setSmartMood}
-                />
-              </div>
-              
-              <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-4">
-                 <h4 className="font-bold text-primary italic uppercase tracking-tight">Active Frequency Analysis</h4>
-                 <p className="text-xs text-neutral-400 leading-relaxed italic">
-                   Our neural engine monitors your current resonance. If you are listening to <span className="text-primary font-bold">Lofi</span>, the engine will prioritize Lofi for the next discovery. If you shift to <span className="text-primary font-bold">Bhojpuri</span>, it bridges the next song to match that energy instantly.
-                 </p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="journey" className="animate-in fade-in slide-in-from-bottom-4 max-w-2xl mx-auto space-y-12">
@@ -224,45 +221,6 @@ export default function IntelligencePage() {
                <p className="text-neutral-500 font-bold uppercase italic tracking-widest text-xs">No history recorded yet.</p>
              </div>
            )}
-        </TabsContent>
-
-        <TabsContent value="rules" className="animate-in fade-in slide-in-from-bottom-4 max-w-3xl mx-auto space-y-8">
-           <div className="space-y-4">
-             <h2 className="text-4xl font-black italic uppercase tracking-tighter">Smart Exclusions</h2>
-             <p className="text-neutral-400">Blacklist specific artists or genres to permanently exclude them from all AI-generated suggestions.</p>
-           </div>
-
-           <div className="flex gap-4">
-             <Input 
-               placeholder="Enter Artist, Song or Genre to exclude..." 
-               className="h-14 bg-neutral-900 border-white/10 rounded-xl"
-               value={exclusionInput}
-               onChange={(e) => setExclusionInput(e.target.value)}
-             />
-             <Button className="h-14 px-8 rounded-xl font-bold" onClick={() => {
-               if (exclusionInput) {
-                 addExclusionRule('artist', exclusionInput);
-                 setExclusionInput('');
-               }
-             }}>
-               <Plus className="h-5 w-5 mr-2" /> Add Rule
-             </Button>
-           </div>
-
-           <div className="space-y-3">
-             {exclusionRules.map(rule => (
-               <div key={rule.id} className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/10">
-                 <div className="flex items-center gap-3">
-                   <ShieldAlert className="h-4 w-4 text-primary" />
-                   <span className="font-bold text-white uppercase italic tracking-tighter">{rule.value}</span>
-                   <Badge variant="secondary" className="text-[8px] uppercase">{rule.type}</Badge>
-                 </div>
-                 <Button variant="ghost" size="icon" onClick={() => removeExclusionRule(rule.id)}>
-                   <Trash2 className="h-4 w-4 text-neutral-500" />
-                 </Button>
-               </div>
-             ))}
-           </div>
         </TabsContent>
       </Tabs>
     </div>

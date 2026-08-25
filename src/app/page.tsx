@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
-import { Song, getTrending, searchSongs, applySmartRank3, analyzeMood, mapMoodToGenre, decodeEntities } from '@/lib/music-api';
+import { Song, getTrending, searchSongs, applySmartRank3, decodeEntities } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Star, Zap, Play, BarChart3, Wind, Flame, Radio, Sparkles, Brain, Loader2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useMusic } from '@/components/music-player/player-context';
-import { useToast } from '@/hooks/use-toast';
 
 const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -34,7 +32,6 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
       }
       setSongs(prev => {
         const next = p === 1 ? data : [...prev, ...data];
-        // Deduplicate
         return Array.from(new Map(next.map(item => [item.id, item])).values());
       });
     } catch (e) {
@@ -48,7 +45,6 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     fetchSongs(page);
   }, [page, fetchSongs]);
 
-  // Infinite horizontal discovery intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -95,34 +91,11 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
 });
 
 export default function Home() {
-  const { playRandomTrack } = useMusic();
-  const { toast } = useToast();
-  const [moodText, setMoodText] = useState('');
-  const [moodSongs, setMoodSongs] = useState<Song[]>([]);
-  const [isDetecting, setIsDetecting] = useState(false);
-
-  const handleMoodDetection = async () => {
-    if (!moodText.trim()) return;
-    setIsDetecting(true);
-    try {
-      const emotion = await analyzeMood(moodText);
-      const genre = mapMoodToGenre(emotion);
-      const results = await searchSongs(genre);
-      setMoodSongs(results.slice(0, 15));
-      toast({ title: "Mood Synced", description: `Detected "${emotion.toUpperCase()}". Curating ${genre} frequencies.` });
-    } catch (e) {
-      const fallbackGenre = mapMoodToGenre("neutral");
-      const results = await searchSongs(fallbackGenre);
-      setMoodSongs(results.slice(0, 15));
-      toast({ variant: "destructive", title: "API Resonance Failure", description: "Defaulting to fallback frequencies." });
-    } finally {
-      setIsDetecting(false);
-    }
-  };
+  const { playRandomTrack, autoMixQueue } = useMusic();
 
   return (
     <div className="pb-40 space-y-20 pt-8 animate-in fade-in duration-1000">
-      <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[60vh] flex flex-col justify-center">
+      <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[50vh] flex flex-col justify-center">
         <div className="absolute inset-0 z-0 opacity-40">
            <img 
             src="https://picsum.photos/seed/music-resonance-pro/1600/900" 
@@ -133,7 +106,7 @@ export default function Home() {
            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
         </div>
         
-        <div className="relative z-10 space-y-8 max-w-4xl pt-20">
+        <div className="relative z-10 space-y-8 max-w-4xl">
           <div className="flex items-center gap-3">
             <div className="h-1 w-12 bg-primary" />
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Verified Frequency</span>
@@ -142,29 +115,6 @@ export default function Home() {
           <h1 className="text-6xl md:text-[8rem] font-black tracking-tighter italic uppercase leading-none text-white">
             AYUMUSIC
           </h1>
-          
-          {/* Neural Mood Input Cluster */}
-          <div className="max-w-xl bg-[#121212] p-6 rounded-[2rem] border border-white/5 shadow-2xl space-y-4 animate-in slide-in-from-left duration-700">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#1DB954]">
-              <Brain className="h-3 w-3" />
-              How are you feeling right now?
-            </div>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="e.g., I'm feeling very energetic and happy today..."
-                value={moodText}
-                onChange={(e) => setMoodText(e.target.value)}
-                className="bg-black/40 border-white/10 rounded-xl h-12 focus-visible:ring-[#1DB954]"
-              />
-              <Button 
-                onClick={handleMoodDetection}
-                disabled={isDetecting}
-                className="bg-[#1DB954] text-black font-black uppercase tracking-tighter rounded-xl px-6 h-12 hover:bg-[#1DB954]/90 lag-free-tap"
-              >
-                {isDetecting ? <Loader2 className="h-5 w-5 animate-spin" /> : "DETECT"}
-              </Button>
-            </div>
-          </div>
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Button 
@@ -186,12 +136,12 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
-        {moodSongs.length > 0 && (
+        {autoMixQueue.length > 0 && (
           <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-            <MusicSection title="Mood Matches for You" songs={moodSongs} icon={Brain} />
+            <MusicSection title="Neural Mood Sync" songs={autoMixQueue} icon={Brain} />
           </div>
         )}
-        <MusicSection title="Trending Pulse" initialQuery="Atif Aslam Hits Tera Hone Laga Hoon" icon={Star} />
+        <MusicSection title="Trending Pulse" initialQuery="Top Trending Indian Hits 2024" icon={Star} />
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits 2024" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />
         <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Super Hits" icon={Flame} />

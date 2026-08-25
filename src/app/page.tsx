@@ -47,7 +47,7 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-white tracking-tight px-4 font-sans">Pick a vibe</h2>
+      <h2 className="text-xl font-bold text-white tracking-tight px-4 font-sans italic uppercase">Pick a vibe</h2>
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-4">
         {vibes.map((vibe) => (
           <button
@@ -76,7 +76,7 @@ const SectionHeader = ({ title, actionLabel, onAction }: { title: string, action
 
   return (
     <div className="flex items-center justify-between px-4 mb-4">
-      <h2 className="text-xl font-bold tracking-tight text-white font-sans">{title}</h2>
+      <h2 className="text-xl font-bold tracking-tight text-white font-sans italic uppercase">{title}</h2>
       {onAction && (
         <button 
           onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
@@ -117,14 +117,30 @@ export default function Home() {
 
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
-  // Load initial data matching the screenshot and user requests
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        // Daily Picks: requested samples
-        const picks = await searchSongs("Barsaat Roni Swara Verma मनीष Fortuner Kabze");
+        // Daily Picks: specific lineage requested
+        const dailyTerms = [
+          "Barsaat Banjaare Roni Swara Verma",
+          "Bairan Banjaare",
+          "Sheesha Mitta Ror Swara Verma",
+          "Fortuner Raj Mawar",
+          "Kamar DJ Pe Manish Sonipat Aala",
+          "80 Lakh D Naveen",
+          "Kabze Bintu Pabra",
+          "Mithe Tere Bol Pari Masoom Sharma"
+        ];
         
+        const dailyResults = await Promise.all(
+          dailyTerms.map(async (term) => {
+            const res = await searchSongs(term);
+            return res[0];
+          })
+        );
+        setDailyPicks(dailyResults.filter(Boolean));
+
         // Trending: specific songs from the screenshot
         const trendingTerms = [
           "Sohniye Tu Original Zubeen Garg",
@@ -141,8 +157,6 @@ export default function Home() {
             return res[0];
           })
         );
-
-        setDailyPicks(picks.slice(0, 10));
         setTrending(trendingResults.filter(Boolean));
       } catch (e) {
         console.error("Initial load failed", e);
@@ -153,7 +167,6 @@ export default function Home() {
     loadData();
   }, []);
 
-  // Instant Live Search Logic
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {
@@ -170,7 +183,6 @@ export default function Home() {
         setLiveResults([]);
       }
     }, 400);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -183,11 +195,7 @@ export default function Home() {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    
-    // Distinguish between scroll and click
-    if (dx < 10 && dy < 10 && dt < 300) {
-      callback();
-    }
+    if (dx < 10 && dy < 10 && dt < 300) callback();
     startPos.current = null;
   };
 
@@ -226,24 +234,14 @@ export default function Home() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button 
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
-          <Smartphone className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
-          <Sliders className="h-5 w-5" />
-        </Button>
+        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5"><Smartphone className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5"><Sliders className="h-5 w-5" /></Button>
       </header>
 
       <main className="space-y-8 py-4">
-        {/* Instant Search Results Section */}
         {searchQuery.trim().length > 0 && (
           <section className="animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex items-center justify-between px-4 mb-4">
@@ -251,85 +249,58 @@ export default function Home() {
                  <h2 className="text-xl font-bold tracking-tight text-white italic uppercase font-sans">Live Results</h2>
                  {searching && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
                </div>
-               <button 
-                 onPointerDown={handlePointerDown}
-                 onPointerUp={handleInteraction(() => router.push(`/search?q=${encodeURIComponent(searchQuery)}`))}
-                 className="text-[10px] font-black text-primary uppercase tracking-widest"
-               >
-                 Discovery Mode
-               </button>
             </div>
-            
             <div className="px-4 space-y-3">
-              {liveResults.length > 0 ? (
-                liveResults.map((song) => {
-                  const img = getBestImage(song);
-                  return (
-                    <div 
-                      key={`live-${song.id}`} 
-                      className={cn(
-                        "flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
-                        currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
-                      )}
-                      onPointerDown={handlePointerDown}
-                      onPointerUp={handleInteraction(() => playTrack(song, liveResults))}
-                      onPointerCancel={handlePointerCancel}
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
-                          {img ? (
-                            <img src={img} className="h-full w-full object-cover" alt="" />
-                          ) : (
-                            <Music2 className="h-5 w-5 text-neutral-800" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className={cn("font-bold text-sm truncate font-sans", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
-                          <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
-                        </div>
+              {liveResults.length > 0 ? liveResults.map((song) => {
+                const img = getBestImage(song);
+                return (
+                  <div 
+                    key={`live-${song.id}`} 
+                    className={cn(
+                      "flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
+                      currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
+                    )}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handleInteraction(() => playTrack(song, liveResults))}
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
+                        {img ? <img src={img} className="h-full w-full object-cover" alt="" /> : <Music2 className="h-5 w-5 text-neutral-800" />}
                       </div>
-                      <Heart className={cn("h-4 w-4 text-neutral-600", isLiked(song.id) && "fill-primary text-primary")} />
+                      <div className="min-w-0">
+                        <p className={cn("font-bold text-sm truncate font-sans", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
+                        <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
+                      </div>
                     </div>
-                  );
-                })
-              ) : !searching && (
-                <p className="px-4 text-neutral-500 text-sm italic font-sans">Scanning frequencies...</p>
-              )}
+                    <Heart className={cn("h-4 w-4 text-neutral-600", isLiked(song.id) && "fill-primary text-primary")} />
+                  </div>
+                );
+              }) : !searching && <p className="px-4 text-neutral-500 text-sm italic font-sans">Scanning frequencies...</p>}
             </div>
           </section>
         )}
 
-        {/* Hero Section */}
         {searchQuery.trim().length === 0 && (
           <>
             <section className="px-4">
               <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
-                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                  <Music2 className="h-40 w-40 text-primary rotate-12" />
-                </div>
-                
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><Music2 className="h-40 w-40 text-primary rotate-12" /></div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black tracking-[0.2em] text-primary uppercase">
-                  <Sparkles className="h-3 w-3" />
-                  No Ads • No Sign-up
+                  <Sparkles className="h-3 w-3" /> No Ads • No Sign-up
                 </div>
-                
                 <div className="space-y-2 relative z-10">
-                  <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9] font-sans">
-                    AYUMUSIC
-                  </h1>
+                  <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9] font-sans">AYUMUSIC</h1>
                   <p className="text-sm text-neutral-400 font-medium leading-tight max-w-[280px] font-sans">
                     High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary font-bold">320 kbps</span>.
                   </p>
                 </div>
-                
                 <div className="flex flex-wrap gap-3 pt-2 relative z-10">
                   <Button 
                     className="bg-primary text-white rounded-full px-6 h-12 font-black gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform lag-free-tap font-sans"
                     onPointerDown={handlePointerDown}
                     onPointerUp={handleInteraction(() => playRandomTrack())}
                   >
-                    <Play className="h-5 w-5 fill-current" />
-                    Play Trending
+                    <Play className="h-5 w-5 fill-current" /> Play Trending
                   </Button>
                   <Button 
                     variant="outline"
@@ -337,18 +308,15 @@ export default function Home() {
                     onPointerDown={handlePointerDown}
                     onPointerUp={handleInteraction(() => playRandomTrack())}
                   >
-                    <Shuffle className="h-4 w-4" />
-                    Shuffle
+                    <Shuffle className="h-4 w-4" /> Shuffle
                   </Button>
                 </div>
               </div>
             </section>
-
             <VibeChips onVibeClick={handleVibeClick} />
           </>
         )}
 
-        {/* Daily Picks Section */}
         <section>
           <SectionHeader 
             title="Daily picks" 
@@ -370,15 +338,10 @@ export default function Home() {
                     )}
                     onPointerDown={handlePointerDown}
                     onPointerUp={handleInteraction(() => playTrack(song, dailyPicks))}
-                    onPointerCancel={handlePointerCancel}
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
-                        {img ? (
-                          <img src={img} className="h-full w-full object-cover" alt="" />
-                        ) : (
-                          <Music2 className="h-6 w-6 text-neutral-800" />
-                        )}
+                        {img ? <img src={img} className="h-full w-full object-cover" alt="" /> : <Music2 className="h-6 w-6 text-neutral-800" />}
                       </div>
                       <div className="min-w-0">
                         <p className={cn("font-bold text-sm truncate font-sans", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
@@ -399,8 +362,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Trending Now Section - Reference Matched Layout from Screenshot */}
-        <section className="py-8">
+        <section>
           <SectionHeader 
             title="Trending now" 
             actionLabel="Play all" 
@@ -413,7 +375,6 @@ export default function Home() {
               trending.map((song, idx) => {
                 const img = getBestImage(song);
                 const isExplicit = song.name.toLowerCase().includes("boom shaka");
-                
                 return (
                   <div 
                     key={song.id} 
@@ -423,32 +384,18 @@ export default function Home() {
                     )}
                     onPointerDown={handlePointerDown}
                     onPointerUp={handleInteraction(() => playTrack(song, trending))}
-                    onPointerCancel={handlePointerCancel}
                   >
-                    {/* Rank Number */}
                     <span className="text-sm font-bold text-neutral-600 min-w-[20px] text-center font-sans">{idx + 1}</span>
-                    
-                    {/* Song Artwork */}
                     <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5 relative flex items-center justify-center">
-                      {img ? (
-                        <img src={img} className="h-full w-full object-cover" alt="" />
-                      ) : (
-                        <Music2 className="h-6 w-6 text-neutral-800" />
-                      )}
+                      {img ? <img src={img} className="h-full w-full object-cover" alt="" /> : <Music2 className="h-6 w-6 text-neutral-800" />}
                     </div>
-
-                    {/* Meta Data */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className={cn("font-bold text-sm text-white truncate font-sans", currentTrack?.id === song.id && "text-primary")}>{song.name}</p>
-                        {isExplicit && (
-                          <span className="shrink-0 text-[8px] bg-neutral-700 text-neutral-300 font-bold px-1 rounded-sm">E</span>
-                        )}
+                        {isExplicit && <span className="shrink-0 text-[8px] bg-neutral-700 text-neutral-300 font-bold px-1 rounded-sm">E</span>}
                       </div>
                       <p className="text-xs text-neutral-500 truncate font-sans">{song.artists.primary.map(a => a.name).join(', ')}</p>
                     </div>
-
-                    {/* Heart Action */}
                     <button 
                       onPointerDown={(e) => e.stopPropagation()}
                       onPointerUp={(e) => { e.stopPropagation(); toggleLike(song); }}
@@ -456,11 +403,7 @@ export default function Home() {
                     >
                       <Heart className={cn("h-4 w-4", isLiked(song.id) && "fill-white text-white")} />
                     </button>
-
-                    {/* Duration */}
-                    <span className="text-xs font-medium text-neutral-500 min-w-[35px] text-right font-mono">
-                      {formatDuration(song.duration)}
-                    </span>
+                    <span className="text-xs font-medium text-neutral-500 min-w-[35px] text-right font-mono">{formatDuration(song.duration)}</span>
                   </div>
                 );
               })

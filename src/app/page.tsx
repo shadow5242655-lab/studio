@@ -563,18 +563,6 @@ export default function Home() {
           title="Haryanvi Heat" 
           query="New Haryanvi Songs Weekly" 
         />
-        <HorizontalGenreScroll 
-          title="Punjabi 2.0" 
-          query="Punjabi Hip Hop Trap 2024" 
-        />
-        <HorizontalGenreScroll 
-          title="Sufi & Folk Punjab" 
-          query="Punjabi Sufi Folk Songs" 
-        />
-        <HorizontalGenreScroll 
-          title="Haryanvi Party" 
-          query="Haryanvi Party Dance Tracks" 
-        />
       </main>
     </div>
   );

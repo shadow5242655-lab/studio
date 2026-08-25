@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
-import { Song, getTrending, searchSongs, applySmartRank3 } from '@/lib/music-api';
+import { Song, getTrending, searchSongs, applySmartRank3, analyzeMood, mapMoodToGenre, decodeEntities } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
-import { Star, Zap, Play, BarChart3, Wind, Flame, Radio, Headphones, Heart, Disc, Coffee, Sparkles, Music2 } from 'lucide-react';
+import { Star, Zap, Play, BarChart3, Wind, Flame, Radio, Sparkles, Brain, Loader2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useMusic } from '@/components/music-player/player-context';
+import { useToast } from '@/hooks/use-toast';
 
 const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Icon, songs: externalSongs }: { title: string; initialQuery?: string; icon: any; songs?: Song[] }) {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -30,9 +32,9 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
       } else if (initialQuery) {
         data = await searchSongs(initialQuery, p);
       }
-      
       setSongs(prev => {
         const next = p === 1 ? data : [...prev, ...data];
+        // Deduplicate
         return Array.from(new Map(next.map(item => [item.id, item])).values());
       });
     } catch (e) {
@@ -46,26 +48,21 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
     fetchSongs(page);
   }, [page, fetchSongs]);
 
+  // Infinite horizontal discovery intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loading) {
+        if (entries[0].isIntersecting && !loading && !externalSongs) {
           setPage(prev => prev + 1);
         }
       },
       { threshold: 0.1, rootMargin: '400px' }
     );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
+    if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [loading]);
+  }, [loading, externalSongs]);
 
-  const rankedSongs = useMemo(() => {
-    return applySmartRank3(songs, songPopularity);
-  }, [songs, songPopularity]);
+  const rankedSongs = useMemo(() => applySmartRank3(songs, songPopularity), [songs, songPopularity]);
 
   if (!loading && songs.length === 0) return null;
 
@@ -99,31 +96,33 @@ const MusicSection = memo(function MusicSection({ title, initialQuery, icon: Ico
 
 export default function Home() {
   const { playRandomTrack } = useMusic();
-  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
+  const { toast } = useToast();
+  const [moodText, setMoodText] = useState('');
+  const [moodSongs, setMoodSongs] = useState<Song[]>([]);
+  const [isDetecting, setIsDetecting] = useState(false);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-  };
-
-  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
-    if (!startPos.current) return;
-    const dx = Math.abs(e.clientX - startPos.current.x);
-    const dy = Math.abs(e.clientY - startPos.current.y);
-    const dt = Date.now() - startPos.current.time;
-    
-    if (dx < 10 && dy < 10 && dt < 300) {
-      callback();
+  const handleMoodDetection = async () => {
+    if (!moodText.trim()) return;
+    setIsDetecting(true);
+    try {
+      const emotion = await analyzeMood(moodText);
+      const genre = mapMoodToGenre(emotion);
+      const results = await searchSongs(genre);
+      setMoodSongs(results.slice(0, 15));
+      toast({ title: "Mood Synced", description: `Detected "${emotion.toUpperCase()}". Curating ${genre} frequencies.` });
+    } catch (e) {
+      const fallbackGenre = mapMoodToGenre("neutral");
+      const results = await searchSongs(fallbackGenre);
+      setMoodSongs(results.slice(0, 15));
+      toast({ variant: "destructive", title: "API Resonance Failure", description: "Defaulting to fallback frequencies." });
+    } finally {
+      setIsDetecting(false);
     }
-    startPos.current = null;
-  };
-
-  const handlePointerCancel = () => {
-    startPos.current = null;
   };
 
   return (
     <div className="pb-40 space-y-20 pt-8 animate-in fade-in duration-1000">
-      <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[70vh] flex items-center">
+      <header className="px-6 md:px-12 py-12 relative overflow-hidden min-h-[60vh] flex flex-col justify-center">
         <div className="absolute inset-0 z-0 opacity-40">
            <img 
             src="https://picsum.photos/seed/music-resonance-pro/1600/900" 
@@ -140,22 +139,38 @@ export default function Home() {
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Verified Frequency</span>
           </div>
           
-          <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter italic uppercase leading-none text-white">
+          <h1 className="text-6xl md:text-[8rem] font-black tracking-tighter italic uppercase leading-none text-white">
             AYUMUSIC
           </h1>
           
-          <p className="text-xl md:text-2xl text-neutral-300 font-medium tracking-tight max-w-xl">
-            High-fidelity resonance powered by <span className="text-primary italic">SmartRank3</span>. Experience the definitive soundscape.
-          </p>
+          {/* Neural Mood Input Cluster */}
+          <div className="max-w-xl bg-[#121212] p-6 rounded-[2rem] border border-white/5 shadow-2xl space-y-4 animate-in slide-in-from-left duration-700">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#1DB954]">
+              <Brain className="h-3 w-3" />
+              How are you feeling right now?
+            </div>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="e.g., I'm feeling very energetic and happy today..."
+                value={moodText}
+                onChange={(e) => setMoodText(e.target.value)}
+                className="bg-black/40 border-white/10 rounded-xl h-12 focus-visible:ring-[#1DB954]"
+              />
+              <Button 
+                onClick={handleMoodDetection}
+                disabled={isDetecting}
+                className="bg-[#1DB954] text-black font-black uppercase tracking-tighter rounded-xl px-6 h-12 hover:bg-[#1DB954]/90 lag-free-tap"
+              >
+                {isDetecting ? <Loader2 className="h-5 w-5 animate-spin" /> : "DETECT"}
+              </Button>
+            </div>
+          </div>
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Button 
               size="lg" 
-              onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp(playRandomTrack)}
-              onPointerCancel={handlePointerCancel}
-              className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl shadow-primary/20"
-              style={{ touchAction: 'manipulation' }}
+              onClick={playRandomTrack}
+              className="h-16 px-12 rounded-full font-black text-lg gap-3 bg-primary text-white hover:scale-105 transition-transform lag-free-tap shadow-2xl"
             >
               <Play className="h-6 w-6 fill-current" />
               EXPLORE
@@ -171,23 +186,16 @@ export default function Home() {
       </header>
 
       <div className="space-y-24">
+        {moodSongs.length > 0 && (
+          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <MusicSection title="Mood Matches for You" songs={moodSongs} icon={Brain} />
+          </div>
+        )}
         <MusicSection title="Trending Pulse" initialQuery="Atif Aslam Hits Tera Hone Laga Hoon" icon={Star} />
         <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits 2024" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />
         <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Super Hits" icon={Flame} />
         <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Pop" icon={Radio} />
-        <MusicSection title="HIP HOP KINGS" initialQuery="Indian Rap Classics" icon={Headphones} />
-        <MusicSection title="ROMANTIC FREQUENCIES" initialQuery="Bollywood Romantic Hits" icon={Heart} />
-        <MusicSection title="Acoustic Resonance" initialQuery="Best Unplugged Songs" icon={Music2} />
-        <MusicSection title="BOLLYWOOD CLASSICS" initialQuery="90s Evergreen Hits" icon={Disc} />
-        <MusicSection title="DEVOTIONAL SOUNDS" initialQuery="Morning Bhajans" icon={Heart} />
-        <MusicSection title="INDIE VIBRATIONS" initialQuery="New Indian Indie" icon={Wind} />
-        <MusicSection title="GAZAL NIGHTS" initialQuery="Best Gazals" icon={Coffee} />
-        <MusicSection title="PARTY BANGERS" initialQuery="Ultimate Party Mix" icon={Flame} />
-        <MusicSection title="CHILL WAVE" initialQuery="Dreamy Synthpop" icon={Wind} />
-        <MusicSection title="WORKOUT RESONANCE" initialQuery="Gym Motivation Hits" icon={Zap} />
-        <MusicSection title="DISCO VIBES" initialQuery="Retro Indian Disco" icon={Disc} />
-        <MusicSection title="SUFI SOUL" initialQuery="Sufi Masterpieces" icon={Sparkles} />
       </div>
     </div>
   );

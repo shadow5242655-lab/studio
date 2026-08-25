@@ -46,6 +46,9 @@ interface MusicStateContextType {
   isLiked: (trackId: string) => boolean;
   createPlaylist: (name: string, songs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
+  deletePlaylist: (id: string) => void;
+  removeFromHistory: (id: string) => void;
+  clearHistory: () => void;
 }
 
 interface MusicProgressContextType {
@@ -83,7 +86,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
-  const totalSecondsRef = useRef(0);
   const [smartMood, setSmartMood] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -111,7 +113,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const emotion = await analyzeMood(lyricData);
       const genre = mapMoodToGenre(emotion);
       const results = await searchSongs(genre);
-      const freshMix = results.filter(s => s.id !== song.id).slice(0, 10);
+      const freshMix = results.filter(s => s.id !== song.id).slice(0, 15);
       setAutoMixQueue(freshMix);
       autoMixQueueRef.current = freshMix;
     } catch (e) {
@@ -128,7 +130,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setLyrics(null);
     try {
       const clean = (s: string) => decodeEntities(s)
-        .replace(/\(.*\)|\[.*\]|feat\..*|&.*?;|official video|music video/gi, '')
+        .replace(/\(.*\)|\[.*\]|feat\..*|&.*?;|official video|music video|lyrical|audio/gi, '')
         .trim();
       
       const title = clean(song.name);
@@ -150,7 +152,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         triggerMoodMix(song, "No lyrics found for analysis");
       }
     } catch (e) {
-      console.warn("Lyrics resonance failed", e);
       triggerMoodMix(song, "Error fetching lyrics");
     } finally {
       if (currentTrackRef.current?.id === targetId) setLoadingLyrics(false);
@@ -163,6 +164,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setQueue(fromQueue);
       queueRef.current = fromQueue;
     }
+    
+    // Reset progress/duration immediately to unlock seek bar
+    setProgress(0);
+    setDuration(track.duration || 0);
+    
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     const url = getBestDownload(track);
     if (audioRef.current && url) {
@@ -214,8 +220,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
+  // Stable Logic Ref to prevent transition control lock
   const logicRef = useRef({ nextTrack, prevTrack, playTrack });
-  useEffect(() => { logicRef.current = { nextTrack, prevTrack, playTrack }; }, [nextTrack, prevTrack, playTrack]);
+  useEffect(() => { 
+    logicRef.current = { nextTrack, prevTrack, playTrack }; 
+  }, [nextTrack, prevTrack, playTrack]);
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
@@ -256,9 +265,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlaylists(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), name, songs, createdAt: Date.now() }]);
   }, []);
 
+  const deletePlaylist = useCallback((id: string) => {
+    setPlaylists(prev => prev.filter(p => p.id !== id));
+  }, []);
+
   const addToPlaylist = useCallback((playlistId: string, track: Song) => {
     setPlaylists(prev => prev.map(p => p.id === playlistId ? { ...p, songs: [...p.songs.filter(s => s.id !== track.id), track] } : p));
     toast({ title: 'Collection Updated', description: `Track added to your playlist.` });
+  }, []);
+
+  const removeFromHistory = useCallback((id: string) => {
+    setPlayedHistory(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setPlayedHistory([]);
   }, []);
 
   const performCrossfade = useCallback((nextSong: Song) => {
@@ -300,7 +321,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current && isPlayingRef.current) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
-      if (now - (window as any).lastProgUpdate > 250) {
+      
+      // Throttled progress update to ensure seek bar stability
+      if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 250) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
       }
@@ -320,7 +343,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      if (now - (window as any).lastTimerUpdate > 5000) {
+      // Throttled persistence and timer update
+      if (! (window as any).lastTimerUpdate || now - (window as any).lastTimerUpdate > 5000) {
          setTotalSeconds(prev => prev + 5);
          (window as any).lastTimerUpdate = now;
          localStorage.setItem('ayumusics_last_pos', time.toString());
@@ -339,6 +363,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     const hs = {
       loadedmetadata: () => setDuration(audio.duration),
+      durationchange: () => setDuration(audio.duration),
       ended: () => { if (!isCrossfadingRef.current) logicRef.current.nextTrack(); },
       play: () => { setIsPlaying(true); isPlayingRef.current = true; },
       pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
@@ -371,8 +396,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists,
     playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, setSmartMood,
     setIsPlayerOpen, setIsLyricsOpen, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
-    isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist]);
+    isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory]);
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume, totalMinutes: Math.floor(totalSeconds / 60),

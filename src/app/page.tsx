@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo, useCallback } from 'react';
 import { Song, searchSongs, formatDuration, getBestImage } from '@/lib/music-api';
 import { 
   Heart, Play, Music2, 
   Smartphone, Sliders, Sparkles, 
   Shuffle, Search, Heart as HeartIcon,
   PartyPopper, Coffee, Dumbbell, Frown, Ghost, Loader2, X,
-  Pause, ChevronRight
+  Pause
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMusic } from '@/components/music-player/player-context';
@@ -110,15 +110,53 @@ const SectionHeader = ({ title, subtitle, actionLabel, onAction }: { title: stri
 
 const HorizontalGenreScroll = memo(function HorizontalGenreScroll({ 
   title, 
-  songs, 
-  loading 
+  query 
 }: { 
   title: string, 
-  songs: Song[], 
-  loading: boolean 
+  query: string 
 }) {
-  const { playTrack, currentTrack, isLiked, toggleLike } = useMusic();
+  const { playTrack, currentTrack } = useMusic();
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  
+  const observer = useRef<IntersectionObserver | null>(null);
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
+
+  const lastElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading || !hasMore) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        setPage(prev => prev + 1);
+      }
+    }, {
+      rootMargin: '200px',
+      threshold: 0.1
+    });
+
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const data = await searchSongs(query, page);
+      if (data.length === 0) {
+        setHasMore(false);
+      } else {
+        setSongs(prev => {
+          const unique = new Map();
+          [...prev, ...data].forEach(s => unique.set(s.id, s));
+          return Array.from(unique.values());
+        });
+      }
+      setLoading(false);
+    }
+    load();
+  }, [query, page]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -141,50 +179,50 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         <h2 className="text-xl font-bold text-white tracking-tight font-sans italic uppercase">{title}</h2>
       </div>
       <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-        {loading ? (
-          Array(6).fill(0).map((_, i) => (
-            <div key={i} className="min-w-[140px] space-y-3 animate-pulse">
-              <div className="aspect-square bg-[#1e1e1e] rounded-2xl" />
-              <div className="h-3 bg-[#1e1e1e] w-3/4 rounded-full" />
-              <div className="h-2 bg-[#1e1e1e] w-1/2 rounded-full" />
-            </div>
-          ))
-        ) : (
-          songs.map((song) => {
-            const img = getBestImage(song);
-            return (
-              <div 
-                key={song.id} 
-                className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
-                onPointerDown={handlePointerDown}
-                onPointerUp={handleInteraction(song)}
-              >
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
-                  {img ? (
-                    <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
-                      <Play className="h-5 w-5 fill-current" />
-                    </div>
+        {songs.map((song, idx) => {
+          const img = getBestImage(song);
+          const isLast = idx === songs.length - 1;
+          return (
+            <div 
+              key={`${query}-${song.id}-${idx}`} 
+              ref={isLast ? lastElementRef : null}
+              className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
+              onPointerDown={handlePointerDown}
+              onPointerUp={handleInteraction(song)}
+            >
+              <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
+                {img ? (
+                  <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
+                    <Play className="h-5 w-5 fill-current" />
                   </div>
                 </div>
-                <div className="px-1 min-w-0">
-                  <p className={cn(
-                    "font-bold text-xs truncate font-sans",
-                    currentTrack?.id === song.id ? "text-primary" : "text-white"
-                  )}>
-                    {song.name}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
-                    {song.artists.primary.map(a => a.name).join(', ')}
-                  </p>
-                </div>
               </div>
-            );
-          })
+              <div className="px-1 min-w-0">
+                <p className={cn(
+                  "font-bold text-xs truncate font-sans",
+                  currentTrack?.id === song.id ? "text-primary" : "text-white"
+                )}>
+                  {song.name}
+                </p>
+                <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
+                  {song.artists.primary.map(a => a.name).join(', ')}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+        {loading && (
+          Array(3).fill(0).map((_, i) => (
+            <div key={`loader-${i}`} className="min-w-[140px] space-y-3 animate-pulse">
+              <div className="aspect-square bg-[#1e1e1e] rounded-2xl" />
+              <div className="h-3 bg-[#1e1e1e] w-3/4 rounded-full" />
+            </div>
+          ))
         )}
       </div>
     </section>
@@ -192,13 +230,9 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
 });
 
 export default function Home() {
-  const { playTrack, toggleLike, isLiked, playRandomTrack, currentTrack, isPlaying } = useMusic();
+  const { playTrack, toggleLike, isLiked, playRandomTrack, currentTrack } = useMusic();
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
   const [trending, setTrending] = useState<Song[]>([]);
-  const [punjabi, setPunjabi] = useState<Song[]>([]);
-  const [haryanvi, setHaryanvi] = useState<Song[]>([]);
-  const [lofi, setLofi] = useState<Song[]>([]);
-  
   const [liveResults, setLiveResults] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -252,17 +286,6 @@ export default function Home() {
           })
         );
         setTrending(trendingResults.filter(Boolean));
-
-        // Fetch Horizontal Genre data
-        const punjabiData = await searchSongs("Latest Punjabi Hits 2024");
-        setPunjabi(punjabiData.slice(0, 20));
-        
-        const haryanviData = await searchSongs("New Haryanvi Songs 2024");
-        setHaryanvi(haryanviData.slice(0, 20));
-        
-        const lofiData = await searchSongs("Soft Lofi Beats 2024");
-        setLofi(lofiData.slice(0, 20));
-
       } catch (e) {
         console.error("Initial load failed", e);
       } finally {
@@ -512,23 +535,20 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Horizontal Genre Sections */}
+        {/* Horizontal Infinite Genre Sections */}
         <HorizontalGenreScroll 
           title="Punjabi resonance" 
-          songs={punjabi} 
-          loading={loading} 
+          query="Latest Punjabi Hits 2024" 
         />
         
         <HorizontalGenreScroll 
           title="Haryanvi beats" 
-          songs={haryanvi} 
-          loading={loading} 
+          query="New Haryanvi Songs 2024" 
         />
         
         <HorizontalGenreScroll 
           title="Lofi sanctuary" 
-          songs={lofi} 
-          loading={loading} 
+          query="Soft Lofi Beats 2024" 
         />
       </main>
     </div>

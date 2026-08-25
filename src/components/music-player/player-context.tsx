@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, searchSongs } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, searchSongs, decodeEntities } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -95,7 +95,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [smartMood, setSmartMoodState] = useState(true);
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
-  const repeatModeRef = useRef(repeatMode);
+  const repeatModeRef = useRef<'off' | 'one' | 'all'>('off');
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
   const totalSecondsRef = useRef(0);
@@ -113,19 +113,34 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const lastPersistenceUpdateRef = useRef<number>(0);
   const isCrossfadingRef = useRef(false);
 
+  const stopTrack = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    if (secondaryAudioRef.current) {
+      secondaryAudioRef.current.pause();
+      secondaryAudioRef.current.src = "";
+    }
+    isCrossfadingRef.current = false;
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+  }, []);
+
   const parseLRC = (lrc: string) => {
     return lrc.split('\n').map((line: string) => {
       const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
       if (match) {
         const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
-        return { time, text: match[3].trim() };
+        return { time, text: decodeEntities(match[3].trim()) };
       }
       return null;
     }).filter(Boolean);
   };
 
   const cleanMetadata = (str: string) => {
-    return str
+    if (!str) return '';
+    return decodeEntities(str)
       .replace(/\(Official Video\)/gi, '')
       .replace(/\(Official Audio\)/gi, '')
       .replace(/\(Lyrical\)/gi, '')
@@ -147,11 +162,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const cleanTitle = cleanMetadata(song.name);
       const cleanArtist = song.artists.primary[0]?.name ? cleanMetadata(song.artists.primary[0].name) : '';
       
-      // Attempt 1: Direct Get
       let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
       
       if (!res.ok) {
-        // Attempt 2: Search Fallback (Fuzzy)
         const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
         if (searchRes.ok) {
           const results = await searchRes.json();
@@ -181,19 +194,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const stopTrack = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.pause();
-      secondaryAudioRef.current.src = "";
-    }
-    isCrossfadingRef.current = false;
-    setIsPlaying(false);
-  }, []);
-
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     stopTrack();
 
@@ -215,6 +215,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.src = url;
       audioRef.current.volume = volumeRef.current;
       setCurrentTrack(track);
+      currentTrackRef.current = track;
       fetchLyrics(track);
       audioRef.current.play().catch(() => {});
     }
@@ -269,18 +270,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
-      const idx = prev.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
+      const currentId = currentTrackRef.current?.id || '';
+      const idx = prev.findIndex(s => s.id === currentId);
       const nextQueue = [...prev.filter(s => s.id !== track.id)];
       if (idx !== -1) nextQueue.splice(idx + 1, 0, track);
       else nextQueue.unshift(track);
+      queueRef.current = nextQueue;
       return nextQueue;
     });
-    toast({ title: 'Resonance Ordered', description: `"${track.name}" will play next.` });
+    toast({ title: 'Resonance Ordered', description: `"${decodeEntities(track.name)}" will play next.` });
   }, []);
 
   const addToQueue = useCallback((track: Song) => {
-    setQueue(prev => prev.find(s => s.id === track.id) ? prev : [...prev, track]);
-    toast({ title: 'Frequency Buffered', description: `"${track.name}" added to queue.` });
+    setQueue(prev => {
+      const next = prev.find(s => s.id === track.id) ? prev : [...prev, track];
+      queueRef.current = next;
+      return next;
+    });
+    toast({ title: 'Frequency Buffered', description: `"${decodeEntities(track.name)}" added to queue.` });
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -297,6 +304,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const setVolume = useCallback((vol: number) => {
     setVolumeState(vol);
+    volumeRef.current = vol;
     if (audioRef.current) audioRef.current.volume = vol;
     if (secondaryAudioRef.current) secondaryAudioRef.current.volume = vol;
   }, []);
@@ -374,9 +382,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const toggleShuffle = useCallback(() => setIsShuffle(prev => !prev), []);
   const toggleRepeat = useCallback(() => {
     setRepeatMode(prev => {
-      if (prev === 'off') return 'all';
-      if (prev === 'all') return 'one';
-      return 'off';
+      const next = prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off';
+      repeatModeRef.current = next;
+      return next;
     });
   }, []);
 
@@ -413,6 +421,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           primary.currentTime = secondary.currentTime;
           primary.volume = currentVol;
           setCurrentTrack(nextSong);
+          currentTrackRef.current = nextSong;
           fetchLyrics(nextSong);
           isCrossfadingRef.current = false;
         }
@@ -452,12 +461,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [performCrossfade]);
 
-  useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
-  useEffect(() => { queueRef.current = queue; }, [queue]);
-  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-  useEffect(() => { volumeRef.current = volume; }, [volume]);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     audioRef.current = new Audio();
@@ -475,7 +478,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const lastTrack = loadSaved('ayumusics_last_track');
     const lastPos = parseFloat(localStorage.getItem('ayumusics_last_pos') || '0');
     if (lastTrack && audioRef.current) {
-      setCurrentTrack(lastTrack); 
+      setCurrentTrack(lastTrack);
+      currentTrackRef.current = lastTrack;
       audioRef.current.src = getBestDownload(lastTrack);
       audioRef.current.currentTime = lastPos; 
       setProgress(lastPos); 
@@ -486,8 +490,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const handlers = {
       loadedmetadata: () => setDuration(audio.duration),
       ended: () => !isCrossfadingRef.current && nextTrack(),
-      play: () => setIsPlaying(true),
-      pause: () => setIsPlaying(false),
+      play: () => { setIsPlaying(true); isPlayingRef.current = true; },
+      pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
       waiting: () => setIsBuffering(true),
       playing: () => setIsBuffering(false),
       canplay: () => setIsBuffering(false)

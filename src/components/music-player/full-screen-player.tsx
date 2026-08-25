@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, MoreHorizontal, Download, PlusCircle, Mic2, Loader2, ListMusic, Forward } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, ChevronDown, MoreHorizontal, Download, PlusCircle, Mic2, Loader2, ListMusic, Forward } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, formatDuration, getBestDownload } from '@/lib/music-api';
+import { getBestImage, formatDuration, getBestDownload, decodeEntities } from '@/lib/music-api';
 import { cn } from '@/lib/utils';
 import { 
   DropdownMenu, 
@@ -23,8 +23,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
-    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, 
-    playlists, addToPlaylist, setIsLyricsOpen, playNext, addToQueue 
+    togglePlay, nextTrack, prevTrack, playlists, addToPlaylist, 
+    setIsLyricsOpen, playNext, addToQueue 
   } = useMusic();
   const { progress, duration, seek } = useMusicProgress();
   const router = useRouter();
@@ -33,7 +33,8 @@ export function FullScreenPlayer() {
   if (!isPlayerOpen || !currentTrack) return null;
 
   const imageSrc = getBestImage(currentTrack);
-  const liked = isLiked(currentTrack.id);
+  const trackName = decodeEntities(currentTrack.name);
+  const artistNames = currentTrack.artists.primary.map(a => decodeEntities(a.name)).join(', ');
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -92,14 +93,14 @@ export function FullScreenPlayer() {
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp(handleClose)}
           onPointerCancel={handlePointerCancel}
-          className="text-white hover:bg-white/5 lag-free-tap h-12 w-12"
+          className="text-white hover:bg-white/5 h-12 w-12"
         >
           <ChevronDown className="h-6 w-6" />
         </Button>
         <span className="text-[10px] font-black tracking-[0.3em] uppercase text-primary italic neon-glow">Resonating Now</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/5 lag-free-tap h-12 w-12">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/5 h-12 w-12">
               <MoreHorizontal className="h-6 w-6" />
             </Button>
           </DropdownMenuTrigger>
@@ -132,7 +133,7 @@ export function FullScreenPlayer() {
             {imageSrc ? (
               <img 
                 src={imageSrc} 
-                alt={currentTrack.name} 
+                alt={trackName} 
                 className={cn("w-full h-full object-cover transition-transform duration-[20s] linear animate-slow-zoom", isBuffering && "opacity-50")} 
               />
             ) : (
@@ -150,31 +151,45 @@ export function FullScreenPlayer() {
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
             onPointerCancel={handlePointerCancel}
-            className="h-10 px-6 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-2 lag-free-tap hover:bg-primary/10 transition-colors text-[10px]"
+            className="h-10 px-8 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-2 hover:bg-primary/10 transition-colors text-[10px]"
           >
             <Mic2 className="h-3 w-3" />
             Lyrics
           </Button>
 
-          {/* Track Info */}
-          <div className="w-full space-y-6 max-w-sm px-2 text-center">
-            <div className="space-y-2">
-                <h2 className="text-xl md:text-3xl font-black text-white truncate italic tracking-tighter uppercase leading-tight">{currentTrack.name}</h2>
-                <p className="text-xs md:text-lg text-primary/70 font-bold uppercase tracking-widest truncate">
-                  {currentTrack.artists.primary.map((artist, index) => (
-                    <span key={artist.id || index}>
-                      <span 
-                        onPointerDown={handlePointerDown}
-                        onPointerUp={handlePointerUp((e?: any) => handleArtistClick(e || { stopPropagation: () => {} } as any, artist.name))}
-                        onPointerCancel={handlePointerCancel}
-                        className="hover:text-white hover:underline cursor-pointer"
-                      >
-                        {artist.name}
+          {/* Track Info with Adaptive Marquee */}
+          <div className="w-full space-y-6 max-w-sm px-2 text-center overflow-hidden">
+            <div className="space-y-1">
+                <div className="overflow-hidden whitespace-nowrap">
+                  <h2 className={cn(
+                    "text-2xl md:text-3xl font-black text-white italic tracking-tighter uppercase leading-tight inline-block",
+                    trackName.length > 25 && "animate-marquee"
+                  )}>
+                    {trackName}
+                    {trackName.length > 25 && <span className="ml-8">{trackName}</span>}
+                  </h2>
+                </div>
+                
+                <div className="overflow-hidden whitespace-nowrap">
+                  <p className={cn(
+                    "text-xs md:text-lg text-primary/70 font-bold uppercase tracking-widest inline-block",
+                    artistNames.length > 30 && "animate-marquee"
+                  )}>
+                    {currentTrack.artists.primary.map((artist, index) => (
+                      <span key={artist.id || index}>
+                        <span 
+                          onPointerDown={handlePointerDown}
+                          onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
+                          className="hover:text-white hover:underline cursor-pointer"
+                        >
+                          {decodeEntities(artist.name)}
+                        </span>
+                        {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
                       </span>
-                      {index < currentTrack.artists.primary.length - 1 ? ', ' : ''}
-                    </span>
-                  ))}
-                </p>
+                    ))}
+                    {artistNames.length > 30 && <span className="ml-8">{artistNames}</span>}
+                  </p>
+                </div>
             </div>
 
             {/* Seek Bar */}
@@ -195,13 +210,13 @@ export function FullScreenPlayer() {
         </div>
       </ScrollArea>
 
-      {/* Bottom Playback Controls */}
-      <div className="shrink-0 z-10 bg-gradient-to-t from-black via-black/90 to-transparent w-full pb-8 pt-4 border-t border-white/5">
-        <div className="flex items-center justify-center gap-8 w-full max-w-xs mx-auto">
+      {/* Bottom Playback Controls (Ergonomic cluster) */}
+      <div className="shrink-0 z-10 bg-gradient-to-t from-black via-black/90 to-transparent w-full pb-10 pt-2 border-t border-white/5">
+        <div className="flex items-center justify-center gap-12 w-full max-w-xs mx-auto relative h-16">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 transition-transform lag-free-tap h-12 w-12" 
+            className="text-white hover:scale-110 h-16 w-16 group absolute left-0" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
@@ -210,7 +225,7 @@ export function FullScreenPlayer() {
           </Button>
           
           <Button 
-            className="bg-primary text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
+            className="bg-primary text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] z-20" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
@@ -227,7 +242,7 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 transition-transform lag-free-tap h-12 w-12" 
+            className="text-white hover:scale-110 h-16 w-16 group absolute right-0" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}

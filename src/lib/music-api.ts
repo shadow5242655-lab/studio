@@ -26,6 +26,22 @@ export interface PlaylistResult {
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
 
 /**
+ * High-Fidelity Entity Decoder
+ * Prevents ugly &QUOT; or &AMP; from appearing in the UI.
+ */
+export function decodeEntities(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#039;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&copy;/gi, '©')
+    .replace(/&reg;/gi, '®');
+}
+
+/**
  * SmartRank3 Algorithm
  * Prioritizes original/popular releases over covers, tributes, and low-fidelity versions.
  */
@@ -35,22 +51,18 @@ export function applySmartRank3(songs: Song[], localPopularity: Record<string, n
       let score = 0;
       const name = (song.name || '').toLowerCase();
       
-      // 1. Penalize obvious covers, tributes, and reprises
       if (name.includes('cover') || name.includes('tribute') || name.includes('reprise') || name.includes('remake')) {
         score -= 100;
       }
       
-      // 2. Bonus for original/official indicators
       if (name.includes('original') || name.includes('official') || name.includes('soundtrack') || name.includes('ost')) {
         score += 30;
       }
 
-      // 3. Local Resonance Factor (High weight for user-preferred tracks)
       score += (localPopularity[song.id] || 0) * 15;
       
-      // 4. Duration Heuristic (Original tracks are typically > 2 mins)
       if (song.duration > 120) score += 10;
-      if (song.duration < 60) score -= 20; // Penalize snippets
+      if (song.duration < 60) score -= 20; 
       
       return score;
     };
@@ -61,7 +73,6 @@ export function applySmartRank3(songs: Song[], localPopularity: Record<string, n
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    // Increased limit to 50 for comprehensive results and discovery
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=50`);
     const data = await res.json();
     return data.data?.results || data.data || [];
@@ -95,7 +106,6 @@ export async function searchPlaylists(query: string, page: number = 1): Promise<
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    // Optimized trending query for high-fidelity discovery
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=50`);
     const data = await res.json();
     return data.data?.results || data.data || [];

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -119,7 +120,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setActiveDays(prev => {
       if (prev.includes(today)) return prev;
       const next = [...prev, today];
-      localStorage.setItem('ayumusics_activedays', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_activedays', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -129,7 +130,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setLoadingLyrics(true);
     setLyrics(null);
     try {
-      // High-Fidelity cleaning of song metadata
       const cleanTitle = song.name
         .replace(/\(Official Video\)/gi, '')
         .replace(/\(Official Audio\)/gi, '')
@@ -145,12 +145,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
       const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
       
-      // Ensure we haven't skipped to a new frequency while waiting
       if (currentTrackRef.current?.id !== targetId) return;
 
       if (res.ok) {
         const data = await res.json();
-        // Robust regex for varied LRC formats
         const synced = data.syncedLyrics ? data.syncedLyrics.split('\n').map((line: string) => {
           const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
           if (match) {
@@ -163,7 +161,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setLyrics({ synced, plain: data.plainLyrics || "" });
       }
     } catch (e) {
-      console.error("Lyrics fetch resonance failure", e);
+      console.error("Lyrics resonance failure", e);
     } finally {
       if (currentTrackRef.current?.id === targetId) {
         setLoadingLyrics(false);
@@ -177,18 +175,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory(prev => {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
       const next = [historyItem, ...prev.filter(item => item.id !== track.id)].slice(0, 50);
-      localStorage.setItem('ayumusics_history', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_history', JSON.stringify(next));
       return next;
     });
     setSongPopularity(prev => {
       const next = { ...prev, [track.id]: (prev[track.id] || 0) + 1 };
-      localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
       return next;
     });
 
     const url = getBestDownload(track);
     if (audioRef.current && url) {
-      localStorage.setItem('ayumusics_last_track', JSON.stringify(track));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_track', JSON.stringify(track));
       if (currentTrack?.id === track.id && audioRef.current.src === url) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(() => {});
@@ -202,46 +200,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentTrack, recordActiveDay, volume]);
 
-  const performCrossfade = useCallback((nextSong: Song) => {
-    if (!audioRef.current || !secondaryAudioRef.current || isCrossfadingRef.current) return;
-    isCrossfadingRef.current = true;
-    
-    const nextUrl = getBestDownload(nextSong);
-    const primary = audioRef.current;
-    const secondary = secondaryAudioRef.current;
-
-    secondary.src = nextUrl;
-    secondary.volume = 0;
-    secondary.play().then(() => {
-      let step = 0;
-      const fadeDuration = 3000;
-      const interval = 50;
-      const steps = fadeDuration / interval;
-
-      const fade = setInterval(() => {
-        step++;
-        const ratio = step / steps;
-        primary.volume = Math.max(0, volume * (1 - ratio));
-        secondary.volume = Math.min(volume, volume * ratio);
-
-        if (step >= steps) {
-          clearInterval(fade);
-          primary.pause();
-          primary.src = secondary.src;
-          primary.currentTime = secondary.currentTime;
-          primary.volume = volume;
-          
-          setCurrentTrack(nextSong);
-          fetchLyrics(nextSong);
-          isCrossfadingRef.current = false;
-        }
-      }, interval);
-    }).catch(() => {
-      isCrossfadingRef.current = false;
-      playTrack(nextSong);
-    });
-  }, [volume, playTrack]);
-
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
     if (trending.length > 0) {
@@ -252,8 +210,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const handleInfiniteDiscovery = useCallback(async (baseTrack: Song) => {
     const artistName = baseTrack.artists.primary[0]?.name || "";
-    const trackName = baseTrack.name.split(' ')[0] || "";
-    const query = `${artistName} ${trackName}`.trim() || "Trending Hits";
+    const query = `${artistName}`.trim() || "Trending";
     try {
       const results = await searchSongs(query);
       const filtered = results.filter(s => s.id !== baseTrack.id);
@@ -271,7 +228,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       playRandomTrack();
       return;
     }
-
     if (repeatMode === 'one') {
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
@@ -279,7 +235,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
       return;
     }
-
     const idx = queue.findIndex(s => s.id === track.id);
     if (idx !== -1 && idx < queue.length - 1) {
       playTrack(queue[idx + 1]);
@@ -294,11 +249,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const track = currentTrackRef.current;
     if (!track || queue.length === 0) return;
     const idx = queue.findIndex(s => s.id === track.id);
-    if (idx !== -1 && idx > 0) {
-      playTrack(queue[idx - 1]);
-    } else {
-      playTrack(queue[queue.length - 1]);
-    }
+    if (idx !== -1 && idx > 0) playTrack(queue[idx - 1]);
+    else playTrack(queue[queue.length - 1]);
   }, [queue, playTrack]);
 
   const playNext = useCallback((track: Song) => {
@@ -306,11 +258,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const curr = currentTrackRef.current;
       const idx = prev.findIndex(s => s.id === (curr?.id || ''));
       const nextQueue = [...prev.filter(s => s.id !== track.id)];
-      if (idx !== -1) {
-        nextQueue.splice(idx + 1, 0, track);
-      } else {
-        nextQueue.unshift(track);
-      }
+      if (idx !== -1) nextQueue.splice(idx + 1, 0, track);
+      else nextQueue.unshift(track);
       return nextQueue;
     });
     toast({ title: 'Resonance Ordered', description: `"${track.name}" will play next.` });
@@ -318,7 +267,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const addToQueue = useCallback((track: Song) => {
     setQueue(prev => prev.find(s => s.id === track.id) ? prev : [...prev, track]);
-    toast({ title: 'Frequency Buffered', description: `"${track.name}" added to the end of the queue.` });
+    toast({ title: 'Frequency Buffered', description: `"${track.name}" added to queue.` });
   }, []);
 
   const stopTrack = useCallback(() => {
@@ -353,7 +302,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
       const next = prev.find(s => s.id === track.id) ? prev.filter(s => s.id !== track.id) : [track, ...prev];
-      localStorage.setItem('ayumusics_liked', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_liked', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -364,7 +313,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const newPlaylist: Playlist = { id: Math.random().toString(36).substr(2, 9), name, songs, createdAt: Date.now() };
     setPlaylists(prev => {
       const next = [...prev, newPlaylist];
-      localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -376,7 +325,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] }
           : p
       );
-      localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -384,7 +333,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const deletePlaylist = useCallback((playlistId: string) => {
     setPlaylists(prev => {
       const next = prev.filter(p => p.id !== playlistId);
-      localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -392,21 +341,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const removeFromHistory = useCallback((songId: string) => {
     setPlayedHistory(prev => {
       const next = prev.filter(item => item.id !== songId);
-      localStorage.setItem('ayumusics_history', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_history', JSON.stringify(next));
       return next;
     });
   }, []);
 
   const clearHistory = useCallback(() => {
     setPlayedHistory([]);
-    localStorage.removeItem('ayumusics_history');
+    if (typeof window !== 'undefined') localStorage.removeItem('ayumusics_history');
   }, []);
 
   const addExclusionRule = useCallback((type: 'artist' | 'genre' | 'song', value: string) => {
     const newRule: ExclusionRule = { id: Math.random().toString(36).substr(2, 9), type, value };
     setExclusionRules(prev => {
       const next = [...prev, newRule];
-      localStorage.setItem('ayumusics_rules', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_rules', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -414,20 +363,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const removeExclusionRule = useCallback((id: string) => {
     setExclusionRules(prev => {
       const next = prev.filter(r => r.id !== id);
-      localStorage.setItem('ayumusics_rules', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_rules', JSON.stringify(next));
       return next;
     });
   }, []);
 
   const setSmartMood = useCallback((enabled: boolean) => {
     setSmartMoodState(enabled);
-    localStorage.setItem('ayumusics_smartmood', JSON.stringify(enabled));
+    if (typeof window !== 'undefined') localStorage.setItem('ayumusics_smartmood', JSON.stringify(enabled));
   }, []);
 
-  const toggleShuffle = useCallback(() => {
-    setIsShuffle(prev => !prev);
-  }, []);
-
+  const toggleShuffle = useCallback(() => setIsShuffle(prev => !prev), []);
   const toggleRepeat = useCallback(() => {
     setRepeatMode(prev => {
       if (prev === 'off') return 'all';
@@ -439,7 +385,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const recordSearchSelection = useCallback((song: Song) => {
     setSongPopularity(prev => {
       const next = { ...prev, [song.id]: (prev[song.id] || 0) + 1 };
-      localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
+      if (typeof window !== 'undefined') localStorage.setItem('ayumusics_popularity', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -447,35 +393,63 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const nextTrackRef = useRef(nextTrack);
   useEffect(() => { nextTrackRef.current = nextTrack; }, [nextTrack]);
 
+  const performCrossfade = useCallback((nextSong: Song) => {
+    if (!audioRef.current || !secondaryAudioRef.current || isCrossfadingRef.current) return;
+    isCrossfadingRef.current = true;
+    const nextUrl = getBestDownload(nextSong);
+    const primary = audioRef.current;
+    const secondary = secondaryAudioRef.current;
+    secondary.src = nextUrl;
+    secondary.volume = 0;
+    secondary.play().then(() => {
+      let step = 0;
+      const steps = 60;
+      const interval = 50;
+      const fade = setInterval(() => {
+        step++;
+        const ratio = step / steps;
+        primary.volume = Math.max(0, volume * (1 - ratio));
+        secondary.volume = Math.min(volume, volume * ratio);
+        if (step >= steps) {
+          clearInterval(fade);
+          primary.pause();
+          primary.src = secondary.src;
+          primary.currentTime = secondary.currentTime;
+          primary.volume = volume;
+          setCurrentTrack(nextSong);
+          fetchLyrics(nextSong);
+          isCrossfadingRef.current = false;
+        }
+      }, interval);
+    }).catch(() => {
+      isCrossfadingRef.current = false;
+      playTrack(nextSong);
+    });
+  }, [volume, playTrack]);
+
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlaying) {
       const currentTime = audioRef.current.currentTime;
       const timeLeft = audioRef.current.duration - currentTime;
       const now = performance.now();
-      
-      if (now - lastProgressUpdateRef.current > 100) {
+      if (now - lastProgressUpdateRef.current > 200) {
         setProgress(currentTime);
-        localStorage.setItem('ayumusics_last_pos', currentTime.toString());
+        if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
         lastProgressUpdateRef.current = now;
       }
-
       if (timeLeft < 3 && !isCrossfadingRef.current && repeatMode !== 'one') {
          const curr = currentTrackRef.current;
          const idx = queue.findIndex(s => s.id === (curr?.id || ''));
-         if (idx !== -1 && idx < queue.length - 1) {
-           performCrossfade(queue[idx + 1]);
-         }
+         if (idx !== -1 && idx < queue.length - 1) performCrossfade(queue[idx + 1]);
       }
-      
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
-          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && 
-              Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
+          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
             const rounded = Math.floor(totalSecondsAccumulatorRef.current);
             setTotalSeconds(rounded);
-            localStorage.setItem('ayumusics_seconds', rounded.toString());
+            if (typeof window !== 'undefined') localStorage.setItem('ayumusics_seconds', rounded.toString());
             recordActiveDay();
           }
         }
@@ -485,10 +459,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying, totalSeconds, recordActiveDay, queue, repeatMode, performCrossfade]);
 
-  if (!audioRef.current && typeof window !== 'undefined') audioRef.current = new Audio();
-  if (!secondaryAudioRef.current && typeof window !== 'undefined') secondaryAudioRef.current = new Audio();
-
+  // Safe Initialization
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    audioRef.current = new Audio();
+    secondaryAudioRef.current = new Audio();
+
     const savedLiked = localStorage.getItem('ayumusics_liked');
     if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
     const savedPlaylists = localStorage.getItem('ayumusics_playlists');
@@ -503,6 +479,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedSmartMood) setSmartMoodState(JSON.parse(savedSmartMood));
     const savedPop = localStorage.getItem('ayumusics_popularity');
     if (savedPop) setSongPopularity(JSON.parse(savedPop));
+    const savedSeconds = localStorage.getItem('ayumusics_seconds');
+    if (savedSeconds) {
+      const s = parseInt(savedSeconds);
+      setTotalSeconds(s);
+      totalSecondsAccumulatorRef.current = s;
+    }
     
     const lastTrackStr = localStorage.getItem('ayumusics_last_track');
     const lastPosStr = localStorage.getItem('ayumusics_last_pos');
@@ -515,12 +497,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setProgress(pos);
       fetchLyrics(track);
     }
-  }, []);
 
-  useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
-    
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => !isCrossfadingRef.current && nextTrackRef.current(); 
     const onPlay = () => setIsPlaying(true);

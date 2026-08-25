@@ -92,7 +92,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const frameRef = useRef<number | null>(null);
   const stableLogicRef = useRef<any>(null);
 
-  // Define core methods first to avoid ReferenceErrors
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -125,7 +124,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setLyrics(null);
     try {
       const clean = (s: string) => decodeEntities(s)
-        .replace(/\(.*\)|\[.*\]|feat\..*|&.*?;|official video|music video|lyrical|audio/gi, '')
+        .replace(/\(.*\)|\[.*\]|feat\..*|&.*?;|official video|music video|lyrical|audio|prod\..*/gi, '')
         .trim();
       
       const title = clean(song.name);
@@ -250,7 +249,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory([]);
   }, []);
 
-  // Update stable logic ref to keep event listeners synchronized
   useEffect(() => {
     stableLogicRef.current = { playTrack, nextTrack, playRandomTrack, fetchLyrics, togglePlay };
   }, [playTrack, nextTrack, playRandomTrack, fetchLyrics, togglePlay]);
@@ -260,7 +258,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
-      if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 250) {
+      // High-fidelity progress tracking for precise lyrics highlighting (50ms interval)
+      if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 50) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
       }
@@ -301,12 +300,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         currentTrackRef.current = track;
         audio.src = getBestDownload(track);
         if (pos) audio.currentTime = parseFloat(pos);
-        stableLogicRef.current?.fetchLyrics(track);
+        fetchLyrics(track);
       } catch (e) {}
     }
     
     return () => Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
-  }, []);
+  }, [fetchLyrics]);
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);

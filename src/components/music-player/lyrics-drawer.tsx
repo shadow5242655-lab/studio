@@ -23,7 +23,7 @@ export function LyricsDrawer() {
   return (
     <div className="fixed inset-0 z-[70] flex items-end">
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-black/80 backdrop-blur-xl"
         onPointerDown={() => setIsLyricsOpen(false)}
       />
       
@@ -45,7 +45,7 @@ export function LyricsDrawer() {
           </Button>
         </header>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6 pb-40">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-8 pb-40 text-center md:text-left">
           {loadingLyrics ? (
             <div className="h-full flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -59,8 +59,10 @@ export function LyricsDrawer() {
                   key={i} 
                   ref={isActive ? activeRef : null}
                   className={cn(
-                    "text-2xl md:text-4xl font-black italic uppercase tracking-tighter leading-tight transition-all duration-500",
-                    isActive ? "text-primary neon-glow opacity-100 scale-105 origin-left" : "text-neutral-700 opacity-40 scale-100"
+                    "text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-tight transition-all duration-300",
+                    isActive 
+                      ? "text-white opacity-100 scale-105 origin-center md:origin-left neon-glow" 
+                      : "text-neutral-700 opacity-30 scale-100 blur-[1px]"
                   )}
                 >
                   {line.text}
@@ -68,7 +70,7 @@ export function LyricsDrawer() {
               );
             })
           ) : lyrics?.plain ? (
-            <div className="whitespace-pre-wrap text-neutral-400 text-lg md:text-2xl font-bold leading-relaxed py-8 italic uppercase tracking-tight">
+            <div className="whitespace-pre-wrap text-neutral-400 text-lg md:text-2xl font-bold leading-relaxed py-8 italic uppercase tracking-tight text-center md:text-left">
               {lyrics.plain}
             </div>
           ) : (

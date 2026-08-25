@@ -133,7 +133,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         setPage(prev => prev + 1);
       }
     }, {
-      rootMargin: '400px', // Fetch earlier for seamless experience
+      rootMargin: '400px',
       threshold: 0.1
     });
 
@@ -142,6 +142,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
 
   useEffect(() => {
     async function load() {
+      if (!hasMore) return;
       setLoading(true);
       try {
         const data = await searchSongs(query, page);
@@ -161,7 +162,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
       }
     }
     load();
-  }, [query, page, title]);
+  }, [query, page, title, hasMore]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -229,7 +230,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
               </div>
             )}
           </>
-        ) : loading && (
+        ) : (
           Array(4).fill(0).map((_, i) => (
             <div key={`loader-${i}`} className="min-w-[140px] space-y-3 animate-pulse">
               <div className="aspect-square bg-[#1e1e1e] rounded-2xl" />
@@ -555,11 +556,15 @@ export default function Home() {
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Punjabi Hits 2024 AP Dhillon Karan Aujla Diljit" 
+          query="Latest Punjabi Hits 2024 Karan Aujla Diljit" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 
           query="Desi Beats Haryanvi Punjabi Hindi Rap" 
+        />
+        <HorizontalGenreScroll 
+          title="Bhojpuri Beats" 
+          query="Top Bhojpuri Hits 2024 Pawan Singh Khesari Lal" 
         />
       </main>
     </div>

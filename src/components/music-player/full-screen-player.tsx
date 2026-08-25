@@ -79,20 +79,22 @@ export function FullScreenPlayer() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-      <div className="absolute inset-0 z-0">
+    <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
         {imageSrc && (
           <Image 
             src={imageSrc} 
-            alt="Background Blur" 
+            alt="Ambience" 
             fill 
-            className="object-cover opacity-20 blur-[100px] scale-150"
+            className="object-cover opacity-20 blur-[120px] scale-150 transition-opacity duration-1000"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/90 to-black" />
       </div>
       
-      <header className="flex items-center justify-between p-6 z-10 shrink-0">
+      {/* Top Header */}
+      <header className="flex items-center justify-between p-4 md:p-6 z-10 shrink-0">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -101,13 +103,13 @@ export function FullScreenPlayer() {
           onPointerCancel={handlePointerCancel}
           className="text-white hover:bg-white/5 lag-free-tap"
         >
-          <ChevronDown className="h-8 w-8" />
+          <ChevronDown className="h-6 w-6 md:h-8 md:w-8" />
         </Button>
-        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-primary italic neon-glow">Resonating Now</span>
+        <span className="text-[9px] md:text-[10px] font-black tracking-[0.3em] uppercase text-primary italic neon-glow">Resonating Now</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/5 lag-free-tap">
-              <MoreHorizontal className="h-6 w-6" />
+              <MoreHorizontal className="h-5 w-5 md:h-6 md:w-6" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="glass-card text-white w-56 border-white/10" align="end">
@@ -131,9 +133,11 @@ export function FullScreenPlayer() {
         </DropdownMenu>
       </header>
 
+      {/* Main Content Area */}
       <ScrollArea className="flex-1 w-full z-10">
-        <div className="flex flex-col items-center px-8 py-6 space-y-8 md:space-y-10 min-h-full justify-center">
-          <div className="relative aspect-square w-full max-w-[85vw] md:max-w-sm rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
+        <div className="flex flex-col items-center px-6 py-4 md:py-8 space-y-6 md:space-y-10 min-h-full justify-center">
+          {/* Artwork - Scaled for mobile */}
+          <div className="relative aspect-square w-full max-w-[70vw] md:max-w-sm rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
             {imageSrc ? (
               <Image 
                 src={imageSrc} 
@@ -141,33 +145,35 @@ export function FullScreenPlayer() {
                 fill 
                 className={cn("object-cover transition-transform duration-[20s] linear animate-slow-zoom", isBuffering && "opacity-50")} 
                 priority 
-                sizes="(max-width: 768px) 100vw, 400px"
+                sizes="(max-width: 768px) 70vw, 400px"
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center"><Music2 className="h-20 w-20 text-neutral-800" /></div>
             )}
             {isBuffering && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-primary animate-spin" />
+                <Loader2 className="h-10 w-10 md:h-16 md:w-16 text-primary animate-spin" />
               </div>
             )}
           </div>
 
+          {/* Lyrics Trigger - Smaller for mobile */}
           <Button 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
             onPointerCancel={handlePointerCancel}
-            className="h-12 md:h-14 px-8 md:px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-3 lag-free-tap hover:bg-primary/10 transition-colors"
+            className="h-10 md:h-14 px-6 md:px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-2 md:gap-3 lag-free-tap hover:bg-primary/10 transition-colors text-xs md:text-sm"
           >
-            <Mic2 className="h-5 w-5" />
+            <Mic2 className="h-4 w-4 md:h-5 md:w-5" />
             Lyrics
           </Button>
 
-          <div className="w-full space-y-4 max-w-sm">
+          {/* Track Info */}
+          <div className="w-full space-y-4 max-w-sm px-2">
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col min-w-0">
-                <h2 className="text-2xl md:text-5xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
-                <p className="text-base md:text-xl text-primary/70 font-bold uppercase tracking-widest truncate">
+                <h2 className="text-xl md:text-4xl font-black text-white truncate italic tracking-tighter uppercase leading-tight">{currentTrack.name}</h2>
+                <p className="text-sm md:text-xl text-primary/70 font-bold uppercase tracking-widest truncate">
                   {currentTrack.artists.primary.map((artist, index) => (
                     <span key={artist.id || index}>
                       <span 
@@ -189,21 +195,22 @@ export function FullScreenPlayer() {
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerUp(() => toggleLike(currentTrack))}
                 onPointerCancel={handlePointerCancel}
-                className={cn("lag-free-tap transition-colors h-12 w-12 md:h-14 md:w-14", liked ? "text-primary" : "text-neutral-500")}
+                className={cn("lag-free-tap transition-colors h-10 w-10 md:h-14 md:w-14", liked ? "text-primary" : "text-neutral-500")}
               >
-                <Heart className={cn("h-8 w-8 md:h-10 md:w-10", liked && "fill-current neon-glow")} />
+                <Heart className={cn("h-6 w-6 md:h-10 md:w-10", liked && "fill-current neon-glow")} />
               </Button>
             </div>
 
-            <div className="space-y-4">
+            {/* Seek Bar */}
+            <div className="space-y-3">
               <Slider 
                 value={[progress]} 
                 max={duration || 100} 
                 step={0.1} 
                 onValueChange={(vals) => seek(vals[0])}
-                className="py-4" 
+                className="py-2 cursor-pointer" 
               />
-              <div className="flex items-center justify-between text-[10px] font-black tracking-widest text-neutral-500 uppercase">
+              <div className="flex items-center justify-between text-[9px] md:text-[10px] font-black tracking-widest text-neutral-500 uppercase">
                 <span>{formatDuration(progress)}</span>
                 <span>{formatDuration(duration)}</span>
               </div>
@@ -212,41 +219,44 @@ export function FullScreenPlayer() {
         </div>
       </ScrollArea>
 
-      <div className="shrink-0 z-10 bg-gradient-to-t from-black to-transparent w-full">
-        <div className="flex items-center justify-between w-full max-w-xs mx-auto pb-10 md:pb-12 pt-4">
+      {/* Bottom Playback Controls - Sticky & Touch Optimized */}
+      <div className="shrink-0 z-10 bg-gradient-to-t from-black via-black/90 to-transparent w-full pb-8 md:pb-12 pt-4 border-t border-white/5">
+        <div className="flex items-center justify-center gap-8 md:gap-12 w-full max-w-xs mx-auto">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 transition-transform lag-free-tap" 
+            className="text-white hover:scale-110 transition-transform lag-free-tap h-12 w-12" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipBack className="h-8 w-8 md:h-10 md:w-10 fill-current" />
+            <SkipBack className="h-6 w-6 md:h-10 md:w-10 fill-current" />
           </Button>
+          
           <Button 
-            className="bg-primary text-black rounded-full h-20 w-20 md:h-24 md:w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
+            className="bg-primary text-black rounded-full h-16 w-16 md:h-24 md:w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
             {isBuffering ? (
-              <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin" />
+              <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="h-10 w-10 md:h-12 md:w-12 fill-current" />
+              <Pause className="h-8 w-8 md:h-12 md:w-12 fill-current" />
             ) : (
-              <Play className="h-10 w-10 md:h-12 md:w-12 fill-current" />
+              <Play className="h-8 w-8 md:h-12 md:w-12 fill-current" />
             )}
           </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:scale-110 transition-transform lag-free-tap" 
+            className="text-white hover:scale-110 transition-transform lag-free-tap h-12 w-12" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipForward className="h-8 w-8 md:h-10 md:w-10 fill-current" />
+            <SkipForward className="h-6 w-6 md:h-10 md:w-10 fill-current" />
           </Button>
         </div>
       </div>

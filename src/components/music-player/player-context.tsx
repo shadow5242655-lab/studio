@@ -109,7 +109,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
   const lastProgressUpdateRef = useRef<number>(0);
   const lastPersistenceUpdateRef = useRef<number>(0);
   const totalSecondsAccumulatorRef = useRef<number>(0);
@@ -140,7 +139,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         .split('-')[0].trim();
         
       const cleanArtist = song.artists.primary[0]?.name.replace(/\(.*\)/g, '').trim() || '';
-      
       const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
       
       if (currentTrackRef.current?.id !== targetId) return;
@@ -183,6 +181,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
+    // Definitive Stop to prevent double audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -423,37 +422,26 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlayingRef.current) {
       const currentTime = audioRef.current.currentTime;
-      const timeLeft = audioRef.current.duration - currentTime;
       const now = performance.now();
       
+      // Hardware-Accelerated Throttling: Update state only every 250ms
       if (now - lastProgressUpdateRef.current > 250) {
         setProgress(currentTime);
         lastProgressUpdateRef.current = now;
       }
 
+      // Persistence Throttling: Save every 5 seconds
       if (now - lastPersistenceUpdateRef.current > 5000) {
         if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
         lastPersistenceUpdateRef.current = now;
       }
       
+      const timeLeft = audioRef.current.duration - currentTime;
       if (timeLeft < 3 && !isCrossfadingRef.current && repeatModeRef.current !== 'one') {
          const idx = queueRef.current.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
          if (idx !== -1 && idx < queueRef.current.length - 1) performCrossfade(queueRef.current[idx + 1]);
       }
       
-      if (lastTimeRef.current > 0) {
-        const diff = currentTime - lastTimeRef.current;
-        if (diff > 0 && diff < 2) {
-          totalSecondsAccumulatorRef.current += diff;
-          const currentTotal = Math.floor(totalSecondsAccumulatorRef.current);
-          if (currentTotal !== totalSecondsRef.current && currentTotal % 10 === 0) {
-            totalSecondsRef.current = currentTotal;
-            setTotalSeconds(currentTotal);
-            if (typeof window !== 'undefined') localStorage.setItem('ayumusics_seconds', currentTotal.toString());
-          }
-        }
-      }
-      lastTimeRef.current = currentTime;
       frameRef.current = requestAnimationFrame(updateProgress);
     }
   }, [performCrossfade]);
@@ -509,7 +497,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
-    else { lastTimeRef.current = 0; if (frameRef.current) cancelAnimationFrame(frameRef.current); }
+    else if (frameRef.current) cancelAnimationFrame(frameRef.current);
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
   }, [isPlaying, updateProgress]);
 

@@ -89,28 +89,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [smartMood, setSmartMood] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
-  const isCrossfadingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
+  const stableLogicRef = useRef<any>(null);
 
-  // Stable Logic Ref pattern to prevent control-lock during automatic transitions
-  const stableLogicRef = useRef<{
-    playTrack: (track: Song, fromQueue?: Song[]) => void;
-    nextTrack: () => void;
-    playRandomTrack: () => Promise<void>;
-    fetchLyrics: (song: Song) => Promise<void>;
-  } | null>(null);
-
+  // Define core methods first to avoid ReferenceErrors
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
     }
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.pause();
-      secondaryAudioRef.current.src = "";
-    }
-    isCrossfadingRef.current = false;
     setIsPlaying(false);
     isPlayingRef.current = false;
   }, []);
@@ -173,7 +160,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       queueRef.current = fromQueue;
     }
     
-    // UI state reset immediately
     setProgress(0);
     setDuration(track.duration || 0);
     
@@ -228,31 +214,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
-  // Update stable logic ref
-  useEffect(() => {
-    stableLogicRef.current = { playTrack, nextTrack, playRandomTrack, fetchLyrics };
-  }, [playTrack, nextTrack, playRandomTrack, fetchLyrics]);
-
-  const playNext = useCallback((track: Song) => {
-    setQueue(prev => {
-      const next = [...prev.filter(s => s.id !== track.id)];
-      const idx = next.findIndex(s => s.id === currentTrackRef.current?.id);
-      next.splice(idx + 1, 0, track);
-      queueRef.current = next;
-      return next;
-    });
-    toast({ title: 'Ordered', description: `"${decodeEntities(track.name)}" is next.` });
-  }, []);
-
-  const addToQueue = useCallback((track: Song) => {
-    setQueue(prev => {
-      const next = prev.find(s => s.id === track.id) ? prev : [...prev, track];
-      queueRef.current = next;
-      return next;
-    });
-    toast({ title: 'Buffered', description: `"${decodeEntities(track.name)}" added to queue.` });
-  }, []);
-
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
       if (isPlayingRef.current) audioRef.current.pause();
@@ -289,18 +250,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory([]);
   }, []);
 
+  // Update stable logic ref to keep event listeners synchronized
+  useEffect(() => {
+    stableLogicRef.current = { playTrack, nextTrack, playRandomTrack, fetchLyrics, togglePlay };
+  }, [playTrack, nextTrack, playRandomTrack, fetchLyrics, togglePlay]);
+
   const updateProgress = useCallback(() => {
     if (audioRef.current && isPlayingRef.current) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
-      // Throttled UI update
       if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 250) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
       }
       
-      // Throttled persistence
       if (! (window as any).lastTimerUpdate || now - (window as any).lastTimerUpdate > 5000) {
          setTotalSeconds(prev => prev + 5);
          (window as any).lastTimerUpdate = now;
@@ -328,7 +292,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
     Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
     
-    // Load last track
     const saved = localStorage.getItem('ayumusics_last_track');
     const pos = localStorage.getItem('ayumusics_last_pos');
     if (saved) {
@@ -354,9 +317,27 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists,
     playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, setSmartMood,
-    setIsPlayerOpen, setIsLyricsOpen, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
+    setIsPlayerOpen, setIsLyricsOpen, playTrack, playNext: (t: Song) => {
+      setQueue(prev => {
+        const next = [...prev.filter(s => s.id !== t.id)];
+        const idx = next.findIndex(s => s.id === currentTrackRef.current?.id);
+        next.splice(idx + 1, 0, t);
+        queueRef.current = next;
+        return next;
+      });
+      toast({ title: 'Ordered', description: `"${decodeEntities(t.name)}" is next.` });
+    }, 
+    addToQueue: (t: Song) => {
+      setQueue(prev => {
+        const next = prev.find(s => s.id === t.id) ? prev : [...prev, t];
+        queueRef.current = next;
+        return next;
+      });
+      toast({ title: 'Buffered', description: `"${decodeEntities(t.name)}" added to queue.` });
+    },
+    playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
     isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory]);
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, autoMixQueue, likedSongs, playlists, playedHistory, lyrics, loadingLyrics, songPopularity, smartMood, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory]);
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume, totalMinutes: Math.floor(totalSeconds / 60),

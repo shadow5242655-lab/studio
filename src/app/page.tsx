@@ -3,16 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { Song, searchSongs, formatDuration } from '@/lib/music-api';
 import { 
-  Heart, Play, MoreVertical, Music2, 
-  Smartphone, Sliders, X, Sparkles, 
+  Heart, Play, Music2, 
+  Smartphone, Sliders, Sparkles, 
   Shuffle, Search, Heart as HeartIcon,
-  Flame, Coffee, PartyPopper, Dumbbell, Frown, Ghost, Mic2
+  PartyPopper, Coffee, Dumbbell, Frown, Ghost
 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
 
 const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => {
   const vibes = [
@@ -63,6 +64,7 @@ export default function Home() {
   const [trending, setTrending] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     async function loadData() {
@@ -85,14 +87,20 @@ export default function Home() {
     setLoading(false);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
-      {/* Header - Venom Style */}
       <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
-        <div className="text-primary hover:scale-110 transition-transform cursor-pointer">
+        <div className="text-primary hover:scale-110 transition-transform cursor-pointer" onPointerDown={() => router.push('/')}>
           <Music2 className="h-7 w-7" />
         </div>
-        <div className="flex-1 relative group">
+        <form onSubmit={handleSearch} className="flex-1 relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
           <Input 
             placeholder="Songs, artists, albums, playlists..." 
@@ -100,7 +108,7 @@ export default function Home() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
+        </form>
         <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
           <Smartphone className="h-5 w-5" />
         </Button>
@@ -110,7 +118,6 @@ export default function Home() {
       </header>
 
       <main className="space-y-8 py-4">
-        {/* Hero Section */}
         <section className="px-4">
           <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
@@ -150,6 +157,7 @@ export default function Home() {
               <Button 
                 variant="ghost"
                 className="text-neutral-500 hover:text-white font-bold lag-free-tap"
+                onPointerDown={() => router.push('/genres')}
               >
                 Browse catalog
               </Button>
@@ -157,10 +165,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Vibe Chips */}
         <VibeChips onVibeClick={handleVibeClick} />
 
-        {/* Daily Picks */}
         <section>
           <SectionHeader title="Daily picks" />
           <div className="px-4 space-y-3">
@@ -198,7 +204,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Trending Now */}
         <section className="bg-[#121212] py-8 border-y border-white/5">
           <SectionHeader title="Trending now" />
           <div className="px-4 space-y-4">
@@ -219,13 +224,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Top Charts */}
         <section className="pb-10">
           <SectionHeader title="Top charts" />
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 px-4 pb-4">
               {["INDIA SUPERHITS", "GLOBAL VIRAL", "BENGALI TOP 50", "HINDI HOT 50", "INDIE ROCK"].map((name, i) => (
-                <div key={i} className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap">
+                <div key={i} className="w-40 shrink-0 bg-[#1e1e1e] p-4 rounded-xl border border-white/5 space-y-3 hover:bg-[#282828] transition-colors cursor-pointer lag-free-tap" onPointerDown={() => router.push(`/search?q=${encodeURIComponent(name)}`)}>
                   <div className="aspect-square rounded-lg bg-gradient-to-br from-primary to-neutral-800 flex items-center justify-center p-4">
                     <span className="text-xs font-black text-white text-center leading-none tracking-tighter uppercase italic">{name}</span>
                   </div>

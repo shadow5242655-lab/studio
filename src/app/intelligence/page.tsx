@@ -38,8 +38,10 @@ export default function IntelligencePage() {
     try {
       const result = await generateVibePlaylist({ vibe: vibeInput });
       const foundSongs = await Promise.all(result.searchTerms.map(term => searchSongs(term)));
-      const songs = foundSongs.map(res => res[0]).filter(Boolean);
-      createPlaylist(result.playlistName, songs);
+      const flatSongs = foundSongs.map(res => res[0]).filter(Boolean);
+      // Deduplicate songs before creating playlist
+      const uniqueSongs = Array.from(new Map(flatSongs.map(s => [s.id, s])).values());
+      createPlaylist(result.playlistName, uniqueSongs);
       toast({ title: 'AI Mix Ready', description: `Playlist "${result.playlistName}" added to your library.` });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Intelligence Error', description: 'Could not mix the vibe.' });
@@ -55,8 +57,10 @@ export default function IntelligencePage() {
       const result = await generateEmotionJourney({ fromMood, toMood });
       const allSearchTerms = result.stages.flatMap(s => s.searchTerms);
       const foundSongs = await Promise.all(allSearchTerms.map(term => searchSongs(term)));
-      const songs = foundSongs.map(res => res[0]).filter(Boolean);
-      createPlaylist(result.journeyName, songs);
+      const flatSongs = foundSongs.map(res => res[0]).filter(Boolean);
+      // Deduplicate songs before creating playlist
+      const uniqueSongs = Array.from(new Map(flatSongs.map(s => [s.id, s])).values());
+      createPlaylist(result.journeyName, uniqueSongs);
       toast({ title: 'Journey Initiated', description: `"${result.journeyName}" transition playlist created.` });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Journey Error', description: 'Could not map the journey.' });

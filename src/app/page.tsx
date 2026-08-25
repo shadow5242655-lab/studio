@@ -276,7 +276,11 @@ export default function Home() {
             return res[0];
           })
         );
-        setDailyPicks(dailyResults.filter(Boolean));
+        
+        // Deduplicate Daily Picks
+        const filteredDaily = dailyResults.filter(Boolean);
+        const uniqueDaily = Array.from(new Map(filteredDaily.map(s => [s.id, s])).values());
+        setDailyPicks(uniqueDaily);
 
         const trendingTerms = [
           "Sohniye Tu Original Zubeen Garg",
@@ -299,7 +303,11 @@ export default function Home() {
             return res[0];
           })
         );
-        setTrending(trendingResults.filter(Boolean));
+        
+        // Deduplicate Trending
+        const filteredTrending = trendingResults.filter(Boolean);
+        const uniqueTrending = Array.from(new Map(filteredTrending.map(s => [s.id, s])).values());
+        setTrending(uniqueTrending);
       } catch (e) {
         console.error("Initial load failed", e);
       } finally {
@@ -315,7 +323,9 @@ export default function Home() {
         setSearching(true);
         try {
           const results = await searchSongs(searchQuery);
-          setLiveResults(results.slice(0, 12));
+          // Deduplicate Live Search Results
+          const uniqueResults = Array.from(new Map(results.map(s => [s.id, s])).values());
+          setLiveResults(uniqueResults.slice(0, 12));
         } catch (e) {
           console.error("Search failed", e);
         } finally {
@@ -344,7 +354,8 @@ export default function Home() {
   const handleVibeClick = async (query: string) => {
     setLoading(true);
     const results = await searchSongs(query);
-    setDailyPicks(results.slice(0, 10));
+    const unique = Array.from(new Map(results.map(s => [s.id, s])).values());
+    setDailyPicks(unique.slice(0, 10));
     setLoading(false);
   };
 
@@ -556,7 +567,7 @@ export default function Home() {
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Latest Punjabi Hits 2024 Karan Aujla Diljit" 
+          query="Punjabi Hits 2024 Karan Aujla Diljit" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 

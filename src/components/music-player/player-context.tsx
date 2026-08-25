@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -86,6 +85,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [queue, setQueue] = useState<Song[]>([]);
+  const queueRef = useRef<Song[]>([]);
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
@@ -94,6 +94,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [smartMood, setSmartMoodState] = useState(true);
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
+  const repeatModeRef = useRef(repeatMode);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
@@ -110,10 +111,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const totalSecondsAccumulatorRef = useRef<number>(0);
   const isCrossfadingRef = useRef(false);
 
-  // Sync ref for async closures
-  useEffect(() => {
-    currentTrackRef.current = currentTrack;
-  }, [currentTrack]);
+  useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
 
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -136,17 +136,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         .replace(/\(Lyrical\)/gi, '')
         .replace(/\[.*\]/g, '')
         .replace(/\(.*\)/g, '')
-        .split('-')[0]
-        .trim();
+        .split('-')[0].trim();
         
-      const cleanArtist = song.artists.primary[0].name
-        .replace(/\(.*\)/g, '')
-        .trim();
-
+      const cleanArtist = song.artists.primary[0].name.replace(/\(.*\)/g, '').trim();
       const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
       
       if (currentTrackRef.current?.id !== targetId) return;
-
       if (res.ok) {
         const data = await res.json();
         const synced = data.syncedLyrics ? data.syncedLyrics.split('\n').map((line: string) => {
@@ -157,15 +152,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           }
           return null;
         }).filter(Boolean) : [];
-        
         setLyrics({ synced, plain: data.plainLyrics || "" });
       }
     } catch (e) {
       console.error("Lyrics resonance failure", e);
     } finally {
-      if (currentTrackRef.current?.id === targetId) {
-        setLoadingLyrics(false);
-      }
+      if (currentTrackRef.current?.id === targetId) setLoadingLyrics(false);
     }
   };
 
@@ -187,18 +179,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const url = getBestDownload(track);
     if (audioRef.current && url) {
       if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_track', JSON.stringify(track));
-      if (currentTrack?.id === track.id && audioRef.current.src === url) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
-        return;
-      }
       audioRef.current.src = url;
       audioRef.current.volume = volume;
       setCurrentTrack(track);
       fetchLyrics(track);
       audioRef.current.play().catch(() => {});
     }
-  }, [currentTrack, recordActiveDay, volume]);
+  }, [recordActiveDay, volume]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -209,10 +196,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playTrack]);
 
   const handleInfiniteDiscovery = useCallback(async (baseTrack: Song) => {
-    const artistName = baseTrack.artists.primary[0]?.name || "";
-    const query = `${artistName}`.trim() || "Trending";
+    const artistName = baseTrack.artists.primary[0]?.name || "Trending";
     try {
-      const results = await searchSongs(query);
+      const results = await searchSongs(artistName);
       const filtered = results.filter(s => s.id !== baseTrack.id);
       const ranked = applySmartRank3(filtered, songPopularity);
       if (ranked.length > 0) playTrack(ranked[0]);
@@ -224,39 +210,28 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(() => {
     const track = currentTrackRef.current;
-    if (!track) {
-      playRandomTrack();
+    if (!track) return playRandomTrack();
+    if (repeatModeRef.current === 'one') {
+      if (audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play(); }
       return;
     }
-    if (repeatMode === 'one') {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-      }
-      return;
-    }
-    const idx = queue.findIndex(s => s.id === track.id);
-    if (idx !== -1 && idx < queue.length - 1) {
-      playTrack(queue[idx + 1]);
-    } else if (repeatMode === 'all' && queue.length > 0) {
-      playTrack(queue[0]);
-    } else {
-      handleInfiniteDiscovery(track);
-    }
-  }, [queue, playTrack, handleInfiniteDiscovery, playRandomTrack, repeatMode]);
+    const idx = queueRef.current.findIndex(s => s.id === track.id);
+    if (idx !== -1 && idx < queueRef.current.length - 1) playTrack(queueRef.current[idx + 1]);
+    else if (repeatModeRef.current === 'all' && queueRef.current.length > 0) playTrack(queueRef.current[0]);
+    else handleInfiniteDiscovery(track);
+  }, [playTrack, handleInfiniteDiscovery, playRandomTrack]);
 
   const prevTrack = useCallback(() => {
     const track = currentTrackRef.current;
-    if (!track || queue.length === 0) return;
-    const idx = queue.findIndex(s => s.id === track.id);
-    if (idx !== -1 && idx > 0) playTrack(queue[idx - 1]);
-    else playTrack(queue[queue.length - 1]);
-  }, [queue, playTrack]);
+    if (!track || queueRef.current.length === 0) return;
+    const idx = queueRef.current.findIndex(s => s.id === track.id);
+    if (idx !== -1 && idx > 0) playTrack(queueRef.current[idx - 1]);
+    else playTrack(queueRef.current[queueRef.current.length - 1]);
+  }, [playTrack]);
 
   const playNext = useCallback((track: Song) => {
     setQueue(prev => {
-      const curr = currentTrackRef.current;
-      const idx = prev.findIndex(s => s.id === (curr?.id || ''));
+      const idx = prev.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
       const nextQueue = [...prev.filter(s => s.id !== track.id)];
       if (idx !== -1) nextQueue.splice(idx + 1, 0, track);
       else nextQueue.unshift(track);
@@ -271,10 +246,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const stopTrack = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
     setCurrentTrack(null);
     setIsPlaying(false);
     setProgress(0);
@@ -320,11 +292,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const addToPlaylist = useCallback((playlistId: string, track: Song) => {
     setPlaylists(prev => {
-      const next = prev.map(p => 
-        p.id === playlistId 
-          ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] }
-          : p
-      );
+      const next = prev.map(p => p.id === playlistId ? { ...p, songs: p.songs.find(s => s.id === track.id) ? p.songs : [...p.songs, track] } : p);
       if (typeof window !== 'undefined') localStorage.setItem('ayumusics_playlists', JSON.stringify(next));
       return next;
     });
@@ -390,9 +358,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const nextTrackRef = useRef(nextTrack);
-  useEffect(() => { nextTrackRef.current = nextTrack; }, [nextTrack]);
-
   const performCrossfade = useCallback((nextSong: Song) => {
     if (!audioRef.current || !secondaryAudioRef.current || isCrossfadingRef.current) return;
     isCrossfadingRef.current = true;
@@ -404,7 +369,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     secondary.play().then(() => {
       let step = 0;
       const steps = 60;
-      const interval = 50;
       const fade = setInterval(() => {
         step++;
         const ratio = step / steps;
@@ -420,11 +384,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           fetchLyrics(nextSong);
           isCrossfadingRef.current = false;
         }
-      }, interval);
-    }).catch(() => {
-      isCrossfadingRef.current = false;
-      playTrack(nextSong);
-    });
+      }, 50);
+    }).catch(() => { isCrossfadingRef.current = false; playTrack(nextSong); });
   }, [volume, playTrack]);
 
   const updateProgress = useCallback(() => {
@@ -437,102 +398,65 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
         lastProgressUpdateRef.current = now;
       }
-      if (timeLeft < 3 && !isCrossfadingRef.current && repeatMode !== 'one') {
-         const curr = currentTrackRef.current;
-         const idx = queue.findIndex(s => s.id === (curr?.id || ''));
-         if (idx !== -1 && idx < queue.length - 1) performCrossfade(queue[idx + 1]);
+      if (timeLeft < 3 && !isCrossfadingRef.current && repeatModeRef.current !== 'one') {
+         const idx = queueRef.current.findIndex(s => s.id === (currentTrackRef.current?.id || ''));
+         if (idx !== -1 && idx < queueRef.current.length - 1) performCrossfade(queueRef.current[idx + 1]);
       }
       if (lastTimeRef.current > 0) {
         const diff = currentTime - lastTimeRef.current;
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
-          if (Math.floor(totalSecondsAccumulatorRef.current) > totalSeconds && Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
-            const rounded = Math.floor(totalSecondsAccumulatorRef.current);
-            setTotalSeconds(rounded);
-            if (typeof window !== 'undefined') localStorage.setItem('ayumusics_seconds', rounded.toString());
-            recordActiveDay();
+          if (Math.floor(totalSecondsAccumulatorRef.current) % 5 === 0) {
+            setTotalSeconds(Math.floor(totalSecondsAccumulatorRef.current));
           }
         }
       }
       lastTimeRef.current = currentTime;
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [isPlaying, totalSeconds, recordActiveDay, queue, repeatMode, performCrossfade]);
+  }, [isPlaying, performCrossfade]);
 
-  // Safe Initialization
   useEffect(() => {
     if (typeof window === 'undefined') return;
     audioRef.current = new Audio();
     secondaryAudioRef.current = new Audio();
 
-    const savedLiked = localStorage.getItem('ayumusics_liked');
-    if (savedLiked) setLikedSongs(JSON.parse(savedLiked));
-    const savedPlaylists = localStorage.getItem('ayumusics_playlists');
-    if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
-    const savedHistory = localStorage.getItem('ayumusics_history');
-    if (savedHistory) setPlayedHistory(JSON.parse(savedHistory));
-    const savedDays = localStorage.getItem('ayumusics_activedays');
-    if (savedDays) setActiveDays(JSON.parse(savedDays));
-    const savedRules = localStorage.getItem('ayumusics_rules');
-    if (savedRules) setExclusionRules(JSON.parse(savedRules));
-    const savedSmartMood = localStorage.getItem('ayumusics_smartmood');
-    if (savedSmartMood) setSmartMoodState(JSON.parse(savedSmartMood));
-    const savedPop = localStorage.getItem('ayumusics_popularity');
-    if (savedPop) setSongPopularity(JSON.parse(savedPop));
-    const savedSeconds = localStorage.getItem('ayumusics_seconds');
-    if (savedSeconds) {
-      const s = parseInt(savedSeconds);
-      setTotalSeconds(s);
-      totalSecondsAccumulatorRef.current = s;
-    }
+    const loadSaved = (key: string) => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
+    setLikedSongs(loadSaved('ayumusics_liked') || []);
+    setPlaylists(loadSaved('ayumusics_playlists') || []);
+    setPlayedHistory(loadSaved('ayumusics_history') || []);
+    setActiveDays(loadSaved('ayumusics_activedays') || []);
+    setExclusionRules(loadSaved('ayumusics_rules') || []);
+    setSmartMoodState(loadSaved('ayumusics_smartmood') ?? true);
+    setSongPopularity(loadSaved('ayumusics_popularity') || {});
+    const s = parseInt(localStorage.getItem('ayumusics_seconds') || '0');
+    setTotalSeconds(s); totalSecondsAccumulatorRef.current = s;
     
-    const lastTrackStr = localStorage.getItem('ayumusics_last_track');
-    const lastPosStr = localStorage.getItem('ayumusics_last_pos');
-    if (lastTrackStr && lastPosStr && audioRef.current) {
-      const track = JSON.parse(lastTrackStr);
-      const pos = parseFloat(lastPosStr);
-      setCurrentTrack(track);
-      audioRef.current.src = getBestDownload(track);
-      audioRef.current.currentTime = pos;
-      setProgress(pos);
-      fetchLyrics(track);
+    const lastTrack = loadSaved('ayumusics_last_track');
+    const lastPos = parseFloat(localStorage.getItem('ayumusics_last_pos') || '0');
+    if (lastTrack && audioRef.current) {
+      setCurrentTrack(lastTrack); audioRef.current.src = getBestDownload(lastTrack);
+      audioRef.current.currentTime = lastPos; setProgress(lastPos); fetchLyrics(lastTrack);
     }
 
     const audio = audioRef.current;
-    const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => !isCrossfadingRef.current && nextTrackRef.current(); 
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onWaiting = () => setIsBuffering(true);
-    const onPlaying = () => setIsBuffering(false);
-
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('waiting', onWaiting);
-    audio.addEventListener('playing', onPlaying);
-    audio.addEventListener('canplay', () => setIsBuffering(false));
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('ended', onEnded);
-      audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('pause', onPause);
-      audio.removeEventListener('waiting', onWaiting);
-      audio.removeEventListener('playing', onPlaying);
+    const handlers = {
+      loadedmetadata: () => setDuration(audio.duration),
+      ended: () => !isCrossfadingRef.current && nextTrack(),
+      play: () => setIsPlaying(true),
+      pause: () => setIsPlaying(false),
+      waiting: () => setIsBuffering(true),
+      playing: () => setIsBuffering(false),
+      canplay: () => setIsBuffering(false)
     };
-  }, []);
+    Object.entries(handlers).forEach(([ev, fn]) => audio.addEventListener(ev, fn));
+    return () => Object.entries(handlers).forEach(([ev, fn]) => audio.removeEventListener(ev, fn));
+  }, [nextTrack]);
 
   useEffect(() => {
     if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
-    else {
-      lastTimeRef.current = 0;
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    }
-    return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    };
+    else { lastTimeRef.current = 0; if (frameRef.current) cancelAnimationFrame(frameRef.current); }
+    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
   }, [isPlaying, updateProgress]);
 
   const stateValue = useMemo(() => ({
@@ -543,15 +467,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, toggleShuffle, toggleRepeat, recordSearchSelection
   }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, queue, likedSongs, playlists, playedHistory, activeDays, exclusionRules, smartMood, isShuffle, repeatMode, lyrics, loadingLyrics, songPopularity, totalSeconds, playTrack, playNext, addToQueue, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, isLiked, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory, addExclusionRule, removeExclusionRule, setSmartMood, toggleShuffle, toggleRepeat, recordSearchSelection]);
 
-  const progressValue = useMemo(() => ({
-    progress, duration, volume, seek, setVolume
-  }), [progress, duration, volume, seek, setVolume]);
+  const progressValue = useMemo(() => ({ progress, duration, volume, seek, setVolume }), [progress, duration, volume, seek, setVolume]);
 
   return (
     <MusicStateContext.Provider value={stateValue}>
-      <MusicProgressContext.Provider value={progressValue}>
-        {children}
-      </MusicProgressContext.Provider>
+      <MusicProgressContext.Provider value={progressValue}>{children}</MusicProgressContext.Provider>
     </MusicStateContext.Provider>
   );
 }

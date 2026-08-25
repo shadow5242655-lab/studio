@@ -61,7 +61,8 @@ export function applySmartRank3(songs: Song[], localPopularity: Record<string, n
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    // Increased limit to 50 for comprehensive results
+    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=50`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
@@ -94,7 +95,8 @@ export async function searchPlaylists(query: string, page: number = 1): Promise<
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Trending%20Songs&page=${page}&limit=20`);
+    // Optimized trending query for high-fidelity discovery
+    const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=50`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {

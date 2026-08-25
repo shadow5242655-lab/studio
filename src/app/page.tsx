@@ -135,13 +135,13 @@ export default function Home() {
 
       {/* Massive Scrollable Catalog */}
       <div className="space-y-24">
-        <MusicSection title="Trending Pulse" initialQuery="Top Trending Songs 2024" icon={Star} />
-        <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits" icon={Zap} />
+        <MusicSection title="Trending Pulse" initialQuery="Atif Aslam Hits Tera Hone Laga Hoon" icon={Star} />
+        <MusicSection title="PUNJABI BEATS" initialQuery="New Punjabi Hits 2024" icon={Zap} />
         <MusicSection title="LOFI SANCTUARY" initialQuery="Lofi Hip Hop Chill" icon={Wind} />
         <MusicSection title="BHOJPURI RHYTHMS" initialQuery="Bhojpuri Super Hits" icon={Flame} />
         <MusicSection title="HARYANVI SWAG" initialQuery="Haryanvi Pop" icon={Radio} />
         <MusicSection title="HIP HOP KINGS" initialQuery="Indian Rap Classics" icon={Headphones} />
-        <MusicSection title="ROMANTIC FREQUENCIES" initialQuery="Bollywood Romantic" icon={Heart} />
+        <MusicSection title="ROMANTIC FREQUENCIES" initialQuery="Bollywood Romantic Hits" icon={Heart} />
         <MusicSection title="Acoustic Resonance" initialQuery="Best Unplugged Songs" icon={Music2} />
         <MusicSection title="BOLLYWOOD CLASSICS" initialQuery="90s Evergreen Hits" icon={Disc} />
         <MusicSection title="DEVOTIONAL SOUNDS" initialQuery="Morning Bhajans" icon={Heart} />

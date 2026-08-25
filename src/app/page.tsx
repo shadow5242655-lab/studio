@@ -121,7 +121,6 @@ export default function Home() {
     async function loadData() {
       setLoading(true);
       try {
-        // Daily Picks: specific lineage requested
         const dailyTerms = [
           "Barsaat Banjaare Roni Swara Verma",
           "Bairan Banjaare",
@@ -141,14 +140,19 @@ export default function Home() {
         );
         setDailyPicks(dailyResults.filter(Boolean));
 
-        // Trending: specific songs from the screenshot
         const trendingTerms = [
           "Sohniye Tu Original Zubeen Garg",
           "Bhalolaage Tomake Arijit Singh",
           "Akasheo Alpo Neel Arijit Singh",
           "Dandelions Ruth B",
           "Boom Shaka Dhanda Nyoliwala",
-          "Amer Achaar Acoustic Dipankar"
+          "Amer Achaar Acoustic Dipankar",
+          "Perfect Ed Sheeran",
+          "Heeriye Arijit Singh",
+          "Pasoori Ali Sethi",
+          "Under The Influence Chris Brown",
+          "Tum Hi Ho Arijit Singh",
+          "Choo Lo The Local Train"
         ];
         
         const trendingResults = await Promise.all(
@@ -370,7 +374,7 @@ export default function Home() {
           />
           <div className="px-4 space-y-2">
             {loading ? (
-              Array(6).fill(0).map((_, i) => <div key={i} className="h-14 bg-[#1e1e1e] rounded-lg animate-pulse" />)
+              Array(12).fill(0).map((_, i) => <div key={i} className="h-14 bg-[#1e1e1e] rounded-lg animate-pulse" />)
             ) : (
               trending.map((song, idx) => {
                 const img = getBestImage(song);

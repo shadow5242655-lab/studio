@@ -571,10 +571,6 @@ export default function Home() {
           title="Bhojpuri Beats" 
           query="Top Bhojpuri Hits 2024 Pawan Singh Khesari Lal" 
         />
-        <HorizontalGenreScroll 
-          title="Lofi Sanctuary" 
-          query="Lofi Hip Hop Chill Beats 2024" 
-        />
       </main>
     </div>
   );

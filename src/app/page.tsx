@@ -6,8 +6,7 @@ import {
   Heart, Play, Music2, 
   Smartphone, Sliders, Sparkles, 
   Shuffle, Search, Heart as HeartIcon,
-  PartyPopper, Coffee, Dumbbell, Frown, Ghost, Loader2, X,
-  Pause
+  PartyPopper, Coffee, Dumbbell, Frown, Ghost, Loader2, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMusic } from '@/components/music-player/player-context';
@@ -574,7 +573,7 @@ export default function Home() {
         />
         <HorizontalGenreScroll 
           title="Lofi Sanctuary" 
-          query="Lofi Beats Chill Study Relaxing" 
+          query="Lofi Hip Hop Chill Beats 2024" 
         />
       </main>
     </div>

@@ -63,7 +63,6 @@ export default function Home() {
   const [trending, setTrending] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showInstall, setShowInstall] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -111,7 +110,7 @@ export default function Home() {
       </header>
 
       <main className="space-y-8 py-4">
-        {/* Hero Section - Venom Layout with Red Theme */}
+        {/* Hero Section */}
         <section className="px-4">
           <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
@@ -125,7 +124,7 @@ export default function Home() {
             
             <div className="space-y-2 relative z-10">
               <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
-                Late night <br /> resonance
+                AYUMUSIC
               </h1>
               <p className="text-sm text-neutral-400 font-medium leading-tight max-w-[280px]">
                 Fresh sounds straight from the source — millions of tracks in <span className="text-primary font-bold">320 kbps</span>, synced lyrics, and offline-ready.
@@ -157,34 +156,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* Install Banner */}
-        {showInstall && (
-          <section className="px-4">
-            <div className="bg-[#1e1e1e]/50 border border-white/5 rounded-2xl p-4 flex items-center justify-between backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
-                  <Music2 className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white leading-none">Install AYUMUSIC</h3>
-                  <p className="text-[10px] text-neutral-500 mt-1">One tap — full app, no browser chrome</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" className="bg-primary text-white rounded-full px-4 h-8 text-[10px] font-black uppercase lag-free-tap">
-                  Install
-                </Button>
-                <button 
-                  onPointerUp={() => setShowInstall(false)}
-                  className="text-neutral-600 hover:text-white p-1"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Vibe Chips */}
         <VibeChips onVibeClick={handleVibeClick} />

@@ -258,8 +258,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
-      // High-fidelity progress tracking for precise lyrics highlighting (50ms interval)
-      if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 50) {
+      // Standard progress tracking for robust lyrics highlighting (100ms interval)
+      if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 100) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
       }

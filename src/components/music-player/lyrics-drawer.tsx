@@ -62,7 +62,7 @@ export function LyricsDrawer() {
                     "text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-tight transition-all duration-300",
                     isActive 
                       ? "text-white opacity-100 scale-105 origin-center md:origin-left neon-glow" 
-                      : "text-neutral-700 opacity-30 scale-100 blur-[1px]"
+                      : "text-neutral-500 opacity-20 scale-100"
                   )}
                 >
                   {line.text}

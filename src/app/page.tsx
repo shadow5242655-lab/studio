@@ -94,6 +94,10 @@ export default function Home() {
     }
   };
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Prevent accidental clicks during scroll
+  };
+
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-40 max-w-[480px] mx-auto shadow-2xl relative border-x border-white/5 font-sans selection:bg-primary/30">
       <header className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
@@ -103,8 +107,8 @@ export default function Home() {
         <form onSubmit={handleSearch} className="flex-1 relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Songs, artists, albums, playlists..." 
-            className="bg-[#1e1e1e] border-none rounded-full h-10 pl-10 text-sm focus-visible:ring-primary/30 text-white placeholder:text-neutral-600"
+            placeholder="Search for sounds..." 
+            className="bg-[#1e1e1e] border border-primary/20 rounded-full h-10 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-white placeholder:text-neutral-600 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -153,13 +157,6 @@ export default function Home() {
               >
                 <Shuffle className="h-4 w-4" />
                 Shuffle
-              </Button>
-              <Button 
-                variant="ghost"
-                className="text-neutral-500 hover:text-white font-bold lag-free-tap"
-                onPointerDown={() => router.push('/genres')}
-              >
-                Browse catalog
               </Button>
             </div>
           </div>

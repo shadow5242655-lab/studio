@@ -147,14 +147,6 @@ export const Sidebar = memo(function Sidebar() {
 export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const [searchVal, setSearchVal] = useState('');
-  
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchVal.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchVal)}`);
-    }
-  };
 
   return (
     <header className="flex items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
@@ -165,30 +157,12 @@ export const Header = memo(function Header() {
           </div>
           <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </Link>
-        
-        <form onSubmit={handleSearch} className="relative w-full max-md hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-          <Input
-            placeholder="Search for songs, artists..."
-            className="pl-9 h-9 bg-neutral-900 border-white/10 rounded-full text-xs focus-visible:ring-primary/50 text-white"
-            value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
-          />
-        </form>
       </div>
       
       <div className="flex items-center gap-3">
-        <div className="md:hidden">
-          <Link href="/search">
-            <Button variant="ghost" size="icon" className="text-white">
-              <Search className="h-5 w-5" />
-            </Button>
-          </Link>
-        </div>
-        
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white md:hidden">
+            <Button variant="ghost" size="icon" className="text-white">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>

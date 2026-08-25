@@ -78,7 +78,7 @@ export function FullScreenPlayer() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden md:py-8">
       <div className="absolute inset-0 z-0">
         {imageSrc && (
           <Image 
@@ -91,7 +91,7 @@ export function FullScreenPlayer() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
       </div>
       
-      <header className="flex items-center justify-between p-6 z-10">
+      <header className="flex items-center justify-between p-6 z-10 shrink-0">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -130,8 +130,8 @@ export function FullScreenPlayer() {
         </DropdownMenu>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-10 z-10">
-        <div className="relative aspect-square w-full max-sm rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-6 md:space-y-10 z-10">
+        <div className="relative aspect-square w-full max-w-[85vw] md:max-w-sm rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/10 group">
           {imageSrc ? (
             <Image 
               src={imageSrc} 
@@ -146,7 +146,7 @@ export function FullScreenPlayer() {
           )}
           {isBuffering && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+              <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-primary animate-spin" />
             </div>
           )}
         </div>
@@ -155,7 +155,7 @@ export function FullScreenPlayer() {
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
           onPointerCancel={handlePointerCancel}
-          className="h-14 px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-3 lag-free-tap hover:bg-primary/10 transition-colors"
+          className="h-12 md:h-14 px-8 md:px-10 rounded-full glass-card border-primary/20 text-primary font-black uppercase italic tracking-widest gap-3 lag-free-tap hover:bg-primary/10 transition-colors"
         >
           <Mic2 className="h-5 w-5" />
           Lyrics
@@ -164,8 +164,8 @@ export function FullScreenPlayer() {
         <div className="w-full space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col min-w-0">
-              <h2 className="text-3xl md:text-5xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
-              <p className="text-lg md:text-xl text-primary/70 font-bold uppercase tracking-widest truncate">
+              <h2 className="text-2xl md:text-5xl font-black text-white truncate italic tracking-tighter uppercase">{currentTrack.name}</h2>
+              <p className="text-base md:text-xl text-primary/70 font-bold uppercase tracking-widest truncate">
                 {currentTrack.artists.primary.map((artist, index) => (
                   <span key={artist.id || index}>
                     <span 
@@ -187,9 +187,9 @@ export function FullScreenPlayer() {
               onPointerDown={handlePointerDown}
               onPointerUp={handlePointerUp(() => toggleLike(currentTrack))}
               onPointerCancel={handlePointerCancel}
-              className={cn("lag-free-tap transition-colors h-14 w-14", liked ? "text-primary" : "text-neutral-500")}
+              className={cn("lag-free-tap transition-colors h-12 w-12 md:h-14 md:w-14", liked ? "text-primary" : "text-neutral-500")}
             >
-              <Heart className={cn("h-10 w-10", liked && "fill-current neon-glow")} />
+              <Heart className={cn("h-8 w-8 md:h-10 md:w-10", liked && "fill-current neon-glow")} />
             </Button>
           </div>
 
@@ -208,7 +208,7 @@ export function FullScreenPlayer() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between w-full max-w-xs pb-12">
+        <div className="flex items-center justify-between w-full max-w-xs pb-10 md:pb-12">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -217,20 +217,20 @@ export function FullScreenPlayer() {
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipBack className="h-10 w-10 fill-current" />
+            <SkipBack className="h-8 w-8 md:h-10 md:w-10 fill-current" />
           </Button>
           <Button 
-            className="bg-primary text-black rounded-full h-24 w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
+            className="bg-primary text-black rounded-full h-20 w-20 md:h-24 md:w-24 p-0 hover:scale-105 active:scale-90 transition-transform shadow-[0_0_30px_hsl(var(--primary)/0.4)] lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
             {isBuffering ? (
-              <Loader2 className="h-12 w-12 animate-spin" />
+              <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="h-12 w-12 fill-current" />
+              <Pause className="h-10 w-10 md:h-12 md:w-12 fill-current" />
             ) : (
-              <Play className="h-12 w-12 fill-current" />
+              <Play className="h-10 w-10 md:h-12 md:w-12 fill-current" />
             )}
           </Button>
           <Button 
@@ -241,7 +241,7 @@ export function FullScreenPlayer() {
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipForward className="h-10 w-10 fill-current" />
+            <SkipForward className="h-8 w-8 md:h-10 md:w-10 fill-current" />
           </Button>
         </div>
       </div>

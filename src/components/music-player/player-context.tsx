@@ -167,7 +167,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    if (fromQueue) setQueue(fromQueue);
+    // Definitive Stop Logic to prevent multiple songs playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
+    }
+    if (secondaryAudioRef.current) {
+      secondaryAudioRef.current.pause();
+      secondaryAudioRef.current.src = "";
+      secondaryAudioRef.current.load();
+    }
+    isCrossfadingRef.current = false;
+
+    if (fromQueue) {
+      setQueue(fromQueue);
+      queueRef.current = fromQueue;
+    }
+    
     recordActiveDay();
     setPlayedHistory(prev => {
       const historyItem: HistoryItem = { id: track.id, name: track.name };
@@ -251,7 +268,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const stopTrack = useCallback(() => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current.load(); }
+    if (secondaryAudioRef.current) { secondaryAudioRef.current.pause(); secondaryAudioRef.current.src = ""; secondaryAudioRef.current.load(); }
     setCurrentTrack(null);
     setIsPlaying(false);
     setProgress(0);
@@ -391,7 +409,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           isCrossfadingRef.current = false;
         }
       }, 50);
-    }).catch(() => { isCrossfadingRef.current = false; playTrack(nextSong); });
+    }).catch(() => { 
+      isCrossfadingRef.current = false; 
+      playTrack(nextSong); 
+    });
   }, [playTrack, fetchLyrics]);
 
   const updateProgress = useCallback(() => {
@@ -400,7 +421,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const timeLeft = audioRef.current.duration - currentTime;
       const now = performance.now();
       
-      if (now - lastProgressUpdateRef.current > 200) {
+      // Hardware-accelerated throttling to prevent depth error
+      if (now - lastProgressUpdateRef.current > 250) {
         setProgress(currentTime);
         if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_pos', currentTime.toString());
         lastProgressUpdateRef.current = now;
@@ -416,7 +438,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           const currentTotal = Math.floor(totalSecondsAccumulatorRef.current);
-          if (currentTotal !== totalSecondsRef.current && currentTotal % 5 === 0) {
+          if (currentTotal !== totalSecondsRef.current && currentTotal % 10 === 0) {
             totalSecondsRef.current = currentTotal;
             setTotalSeconds(currentTotal);
             if (typeof window !== 'undefined') localStorage.setItem('ayumusics_seconds', currentTotal.toString());

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useRef } from 'react';
@@ -59,25 +58,25 @@ export function NowPlayingBar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 glass-card border-t border-white/10 px-6 flex items-center justify-between z-50 animate-in slide-in-from-bottom duration-500">
-      <div className="absolute top-0 left-0 right-0 h-[3px] group">
+    <div className="fixed bottom-0 left-0 right-0 h-20 md:h-24 glass-card border-t border-white/10 px-4 md:px-6 flex items-center justify-between z-50 animate-in slide-in-from-bottom duration-500">
+      <div className="absolute top-0 left-0 right-0 h-[2px] md:h-[3px] group">
         <Slider
           value={[progress]}
           max={duration || 100}
           step={0.1}
           onValueChange={(vals) => seek(vals[0])}
-          className="w-full absolute -top-[6px] cursor-pointer"
+          className="w-full absolute -top-[5px] md:-top-[6px] cursor-pointer"
         />
       </div>
 
       <div 
-        className="flex items-center gap-4 w-[30%] min-w-0 cursor-pointer lag-free-tap group"
+        className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0 cursor-pointer lag-free-tap group"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp(() => setIsPlayerOpen(true))}
         onPointerCancel={handlePointerCancel}
         style={{ touchAction: 'manipulation' }}
       >
-        <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/10 shadow-xl">
+        <div className="relative h-12 w-12 md:h-14 md:w-14 rounded-lg md:rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/10 shadow-xl">
           {imageSrc ? (
             <Image src={imageSrc} alt={currentTrack.name} fill className="object-cover group-hover:scale-110 transition-transform" />
           ) : (
@@ -87,13 +86,13 @@ export function NowPlayingBar() {
           )}
           {isBuffering && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              <Loader2 className="h-5 w-5 md:h-6 md:w-6 text-primary animate-spin" />
             </div>
           )}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter group-hover:text-primary transition-colors">{currentTrack.name}</span>
-          <span className="text-[10px] text-primary/70 font-bold truncate uppercase tracking-widest">
+          <span className="text-xs md:text-sm font-black text-white truncate italic uppercase tracking-tighter group-hover:text-primary transition-colors">{currentTrack.name}</span>
+          <span className="text-[9px] md:text-[10px] text-primary/70 font-bold truncate uppercase tracking-widest">
             {currentTrack.artists.primary.map((artist, index) => (
               <span key={artist.id || index}>
                 <span 
@@ -111,12 +110,12 @@ export function NowPlayingBar() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-1 flex-1">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col items-center gap-1 flex-1 md:flex-1">
+        <div className="flex items-center gap-4 md:gap-6">
           <Button 
             variant="ghost" 
             size="icon" 
-            className={cn("text-neutral-500 hover:text-white lag-free-tap", isShuffle && "text-primary")} 
+            className={cn("hidden md:flex text-neutral-500 hover:text-white lag-free-tap", isShuffle && "text-primary")} 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(toggleShuffle)}
             onPointerCancel={handlePointerCancel}
@@ -132,21 +131,21 @@ export function NowPlayingBar() {
             onPointerUp={handlePointerUp(prevTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipBack className="h-6 w-6 fill-current" />
+            <SkipBack className="h-5 w-5 md:h-6 md:w-6 fill-current" />
           </Button>
 
           <Button 
-            className="bg-white text-black rounded-full h-12 w-12 p-0 hover:scale-110 active:scale-95 transition-transform lag-free-tap shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+            className="bg-white text-black rounded-full h-10 w-10 md:h-12 md:w-12 p-0 hover:scale-110 active:scale-95 transition-transform lag-free-tap shadow-[0_0_20px_rgba(255,255,255,0.2)]"
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(togglePlay)}
             onPointerCancel={handlePointerCancel}
           >
             {isBuffering ? (
-              <Loader2 className="h-7 w-7 animate-spin" />
+              <Loader2 className="h-6 w-6 md:h-7 md:w-7 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="h-7 w-7 fill-current" />
+              <Pause className="h-6 w-6 md:h-7 md:w-7 fill-current" />
             ) : (
-              <Play className="h-7 w-7 fill-current" />
+              <Play className="h-6 w-6 md:h-7 md:w-7 fill-current" />
             )}
           </Button>
 
@@ -158,13 +157,13 @@ export function NowPlayingBar() {
             onPointerUp={handlePointerUp(nextTrack)}
             onPointerCancel={handlePointerCancel}
           >
-            <SkipForward className="h-6 w-6 fill-current" />
+            <SkipForward className="h-5 w-5 md:h-6 md:w-6 fill-current" />
           </Button>
 
           <Button 
             variant="ghost" 
             size="icon" 
-            className={cn("text-neutral-500 hover:text-white lag-free-tap", repeatMode !== 'off' && "text-primary")} 
+            className={cn("hidden md:flex text-neutral-500 hover:text-white lag-free-tap", repeatMode !== 'off' && "text-primary")} 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(toggleRepeat)}
             onPointerCancel={handlePointerCancel}
@@ -173,15 +172,15 @@ export function NowPlayingBar() {
           </Button>
         </div>
         
-        <div className="flex items-center gap-3 w-full max-w-[200px] justify-center text-[10px] font-black text-neutral-500 tracking-widest uppercase">
+        <div className="hidden md:flex items-center gap-3 w-full max-w-[200px] justify-center text-[10px] font-black text-neutral-500 tracking-widest uppercase">
           <span>{formatDuration(progress)}</span>
           <span className="opacity-30">/</span>
           <span>{formatDuration(duration)}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-6 w-[30%]">
-        <div className="flex items-center gap-2 hidden md:flex">
+      <div className="flex items-center justify-end gap-2 md:gap-6 w-[20%] md:w-[30%]">
+        <div className="hidden lg:flex items-center gap-2">
           <Volume2 className="h-4 w-4 text-neutral-500" />
           <Slider
             value={[volume * 100]}
@@ -191,11 +190,11 @@ export function NowPlayingBar() {
             className="w-24"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-neutral-500 hover:text-primary transition-colors lag-free-tap" 
+            className="hidden sm:flex text-neutral-500 hover:text-primary transition-colors lag-free-tap" 
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(handleDownload)}
             onPointerCancel={handlePointerCancel}
@@ -210,7 +209,7 @@ export function NowPlayingBar() {
             onPointerUp={handlePointerUp(() => setIsLyricsOpen(true))}
             onPointerCancel={handlePointerCancel}
           >
-            <Mic2 className="h-6 w-6" />
+            <Mic2 className="h-5 w-5 md:h-6 md:w-6" />
           </Button>
         </div>
       </div>

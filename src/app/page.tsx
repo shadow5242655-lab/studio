@@ -6,7 +6,7 @@ import {
   Heart, Play, Music2, 
   Smartphone, Sliders, Sparkles, 
   Shuffle, Search, Heart as HeartIcon,
-  PartyPopper, Coffee, Dumbbell, Frown, Ghost
+  PartyPopper, Coffee, Dumbbell, Frown, Ghost, Loader2, X
 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -51,10 +51,10 @@ const VibeChips = ({ onVibeClick }: { onVibeClick: (vibe: string) => void }) => 
   );
 };
 
-const SectionHeader = ({ title }: { title: string }) => (
+const SectionHeader = ({ title, showSeeAll = true }: { title: string, showSeeAll?: boolean }) => (
   <div className="flex items-center justify-between px-4 mb-4">
     <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
-    <button className="text-xs font-bold text-neutral-500 uppercase tracking-widest hover:text-white transition-colors">See all</button>
+    {showSeeAll && <button className="text-xs font-bold text-neutral-500 uppercase tracking-widest hover:text-white transition-colors">See all</button>}
   </div>
 );
 
@@ -62,10 +62,13 @@ export default function Home() {
   const { playTrack, toggleLike, isLiked, playRandomTrack, currentTrack } = useMusic();
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
   const [trending, setTrending] = useState<Song[]>([]);
+  const [liveResults, setLiveResults] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
+  // Load initial data
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -80,6 +83,22 @@ export default function Home() {
     loadData();
   }, []);
 
+  // Live Search Logic - Debounced navigation or results
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        setSearching(true);
+        const results = await searchSongs(searchQuery);
+        setLiveResults(results.slice(0, 10));
+        setSearching(false);
+      } else {
+        setLiveResults([]);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleVibeClick = async (query: string) => {
     setLoading(true);
     const results = await searchSongs(query);
@@ -87,15 +106,9 @@ export default function Home() {
     setLoading(false);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    // Prevent accidental clicks during scroll
+  const clearSearch = () => {
+    setSearchQuery('');
+    setLiveResults([]);
   };
 
   return (
@@ -104,15 +117,23 @@ export default function Home() {
         <div className="text-primary hover:scale-110 transition-transform cursor-pointer" onPointerDown={() => router.push('/')}>
           <Music2 className="h-7 w-7" />
         </div>
-        <form onSubmit={handleSearch} className="flex-1 relative group">
+        <div className="flex-1 relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
           <Input 
             placeholder="Search for sounds..." 
-            className="bg-[#1e1e1e] border border-primary/20 rounded-full h-10 pl-10 text-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-white placeholder:text-neutral-600 transition-all"
+            className="bg-[#1e1e1e] border-2 border-primary/20 rounded-full h-10 pl-10 pr-10 text-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-white placeholder:text-neutral-600 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </form>
+          {searchQuery && (
+            <button 
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white hover:bg-white/5">
           <Smartphone className="h-5 w-5" />
         </Button>
@@ -122,47 +143,98 @@ export default function Home() {
       </header>
 
       <main className="space-y-8 py-4">
-        <section className="px-4">
-          <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
-            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-              <Music2 className="h-40 w-40 text-primary rotate-12" />
+        {/* Instant Search Results Section */}
+        {searchQuery.trim().length > 0 && (
+          <section className="animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center justify-between px-4 mb-4">
+               <div className="flex items-center gap-2">
+                 <h2 className="text-xl font-bold tracking-tight text-white italic uppercase">Live Results</h2>
+                 {searching && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+               </div>
+               <button 
+                 onClick={() => router.push(`/search?q=${encodeURIComponent(searchQuery)}`)}
+                 className="text-[10px] font-black text-primary uppercase tracking-widest"
+               >
+                 View All Discovery
+               </button>
             </div>
             
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black tracking-[0.2em] text-primary uppercase">
-              <Sparkles className="h-3 w-3" />
-              No Ads • No Sign-up
+            <div className="px-4 space-y-3">
+              {liveResults.length > 0 ? (
+                liveResults.map((song) => (
+                  <div 
+                    key={`live-${song.id}`} 
+                    className={cn(
+                      "flex items-center justify-between p-3 bg-[#1e1e1e]/60 hover:bg-[#282828] rounded-xl transition-all group cursor-pointer border border-white/5 lag-free-tap",
+                      currentTrack?.id === song.id && "border-primary/50 bg-[#282828]"
+                    )}
+                    onPointerDown={(e) => { e.preventDefault(); playTrack(song, liveResults); }}
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0 border border-white/5">
+                        <img src={song.image[1]?.link || song.image[0]?.link} className="h-full w-full object-cover" alt="" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={cn("font-bold text-sm truncate", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{song.name}</p>
+                        <p className="text-[10px] text-neutral-500 truncate uppercase font-medium">{song.artists.primary.map(a => a.name).join(', ')}</p>
+                      </div>
+                    </div>
+                    <Heart className={cn("h-4 w-4 text-neutral-600", isLiked(song.id) && "fill-primary text-primary")} />
+                  </div>
+                ))
+              ) : !searching && (
+                <p className="px-4 text-neutral-500 text-sm italic">No matching frequencies in orbit...</p>
+              )}
             </div>
-            
-            <div className="space-y-2 relative z-10">
-              <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
-                AYUMUSIC
-              </h1>
-              <p className="text-sm text-neutral-400 font-medium leading-tight max-w-[280px]">
-                Fresh sounds straight from the source — millions of tracks in <span className="text-primary font-bold">320 kbps</span>, synced lyrics, and offline-ready.
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap gap-3 pt-2 relative z-10">
-              <Button 
-                className="bg-primary text-white rounded-full px-6 h-12 font-black gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform lag-free-tap"
-                onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
-              >
-                <Play className="h-5 w-5 fill-current" />
-                Play trending
-              </Button>
-              <Button 
-                variant="outline"
-                className="bg-white/5 border-white/10 text-white rounded-full px-6 h-12 font-black gap-2 hover:bg-white/10 lag-free-tap"
-                onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
-              >
-                <Shuffle className="h-4 w-4" />
-                Shuffle
-              </Button>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <VibeChips onVibeClick={handleVibeClick} />
+        {/* Hero Section - Only show if not searching or if results are sparse */}
+        {searchQuery.trim().length === 0 && (
+          <>
+            <section className="px-4">
+              <div className="relative rounded-[2rem] overflow-hidden p-8 space-y-6 bg-gradient-to-br from-primary/10 via-neutral-900 to-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]">
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                  <Music2 className="h-40 w-40 text-primary rotate-12" />
+                </div>
+                
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black tracking-[0.2em] text-primary uppercase">
+                  <Sparkles className="h-3 w-3" />
+                  No Ads • No Sign-up
+                </div>
+                
+                <div className="space-y-2 relative z-10">
+                  <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
+                    AYUMUSIC
+                  </h1>
+                  <p className="text-sm text-neutral-400 font-medium leading-tight max-w-[280px]">
+                    Fresh sounds straight from the source — millions of tracks in <span className="text-primary font-bold">320 kbps</span>, synced lyrics, and offline-ready.
+                  </p>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 pt-2 relative z-10">
+                  <Button 
+                    className="bg-primary text-white rounded-full px-6 h-12 font-black gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-transform lag-free-tap"
+                    onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+                  >
+                    <Play className="h-5 w-5 fill-current" />
+                    Play trending
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="bg-white/5 border-white/10 text-white rounded-full px-6 h-12 font-black gap-2 hover:bg-white/10 lag-free-tap"
+                    onPointerDown={(e) => { e.preventDefault(); playRandomTrack(); }}
+                  >
+                    <Shuffle className="h-4 w-4" />
+                    Shuffle
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            <VibeChips onVibeClick={handleVibeClick} />
+          </>
+        )}
 
         <section>
           <SectionHeader title="Daily picks" />

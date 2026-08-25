@@ -93,6 +93,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const isCrossfadingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
 
+  // Define core functions before they are used or passed to context
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -149,10 +150,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           triggerMoodMix(song, plain);
         }
       } else {
-        triggerMoodMix(song, "No lyrics found for analysis");
+        triggerMoodMix(song, "No lyrics found");
       }
     } catch (e) {
-      triggerMoodMix(song, "Error fetching lyrics");
+      triggerMoodMix(song, "Error");
     } finally {
       if (currentTrackRef.current?.id === targetId) setLoadingLyrics(false);
     }
@@ -165,7 +166,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       queueRef.current = fromQueue;
     }
     
-    // Reset progress/duration immediately to unlock seek bar
     setProgress(0);
     setDuration(track.duration || 0);
     
@@ -220,7 +220,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrack]);
 
-  // Stable Logic Ref to prevent transition control lock
   const logicRef = useRef({ nextTrack, prevTrack, playTrack });
   useEffect(() => { 
     logicRef.current = { nextTrack, prevTrack, playTrack }; 
@@ -322,7 +321,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const time = audioRef.current.currentTime;
       const now = performance.now();
       
-      // Throttled progress update to ensure seek bar stability
       if (! (window as any).lastProgUpdate || now - (window as any).lastProgUpdate > 250) {
         setProgress(time);
         (window as any).lastProgUpdate = now;
@@ -343,7 +341,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // Throttled persistence and timer update
       if (! (window as any).lastTimerUpdate || now - (window as any).lastTimerUpdate > 5000) {
          setTotalSeconds(prev => prev + 5);
          (window as any).lastTimerUpdate = now;

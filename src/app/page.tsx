@@ -133,7 +133,7 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
         setPage(prev => prev + 1);
       }
     }, {
-      rootMargin: '200px',
+      rootMargin: '400px', // Fetch earlier
       threshold: 0.1
     });
 
@@ -185,50 +185,52 @@ const HorizontalGenreScroll = memo(function HorizontalGenreScroll({
       </div>
       <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
         {songs.length > 0 ? (
-          songs.map((song, idx) => {
-            const img = getBestImage(song);
-            const isLast = idx === songs.length - 1;
-            return (
-              <div 
-                key={`${query}-${song.id}-${idx}`} 
-                ref={isLast ? lastElementRef : null}
-                className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
-                onPointerDown={handlePointerDown}
-                onPointerUp={handleInteraction(song)}
-              >
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
-                  {img ? (
-                    <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
-                      <Play className="h-5 w-5 fill-current" />
+          <>
+            {songs.map((song, idx) => {
+              const img = getBestImage(song);
+              const isLast = idx === songs.length - 1;
+              return (
+                <div 
+                  key={`${query}-${song.id}-${idx}`} 
+                  ref={isLast ? lastElementRef : null}
+                  className="min-w-[140px] max-w-[140px] space-y-2 group cursor-pointer lag-free-tap"
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handleInteraction(song)}
+                >
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 shadow-xl">
+                    {img ? (
+                      <img src={img} className="h-full w-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center"><Music2 className="h-8 w-8 text-neutral-800" /></div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="p-3 bg-primary text-white rounded-full scale-90 group-hover:scale-100 transition-transform shadow-lg shadow-primary/20">
+                        <Play className="h-5 w-5 fill-current" />
+                      </div>
                     </div>
                   </div>
+                  <div className="px-1 min-w-0">
+                    <p className={cn(
+                      "font-bold text-xs truncate font-sans",
+                      currentTrack?.id === song.id ? "text-primary" : "text-white"
+                    )}>
+                      {song.name}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
+                      {song.artists.primary.map(a => a.name).join(', ')}
+                    </p>
+                  </div>
                 </div>
-                <div className="px-1 min-w-0">
-                  <p className={cn(
-                    "font-bold text-xs truncate font-sans",
-                    currentTrack?.id === song.id ? "text-primary" : "text-white"
-                  )}>
-                    {song.name}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 truncate uppercase font-medium font-sans">
-                    {song.artists.primary.map(a => a.name).join(', ')}
-                  </p>
-                </div>
+              );
+            })}
+            {loading && hasMore && (
+              <div className="min-w-[140px] flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
               </div>
-            );
-          })
-        ) : !loading && (
-          <div className="px-4 text-neutral-600 text-[10px] font-bold uppercase tracking-widest italic">
-            Scanning frequencies...
-          </div>
-        )}
-        {loading && (
-          Array(3).fill(0).map((_, i) => (
+            )}
+          </>
+        ) : loading && (
+          Array(4).fill(0).map((_, i) => (
             <div key={`loader-${i}`} className="min-w-[140px] space-y-3 animate-pulse">
               <div className="aspect-square bg-[#1e1e1e] rounded-2xl" />
               <div className="h-3 bg-[#1e1e1e] w-3/4 rounded-full" />
@@ -410,7 +412,7 @@ export default function Home() {
                     <Heart className={cn("h-4 w-4 text-neutral-600", isLiked(song.id) && "fill-primary text-primary")} />
                   </div>
                 );
-              }) : !searching && <p className="px-4 text-neutral-500 text-sm italic font-sans">Scanning frequencies...</p>}
+              }) : !searching && <p className="px-4 text-neutral-500 text-sm italic font-sans">No results found.</p>}
             </div>
           </section>
         )}
@@ -549,19 +551,15 @@ export default function Home() {
         {/* Horizontal Infinite Genre Sections */}
         <HorizontalGenreScroll 
           title="Haryanvi Hits" 
-          query="Trending Haryanvi Hits 2024" 
+          query="Top Haryanvi Hits 2024 Bintu Pabra Raj Mawar" 
         />
         <HorizontalGenreScroll 
           title="Punjabi Bangers" 
-          query="Latest Punjabi Hits Karan Aujla Diljit AP Dhillon" 
+          query="Top Punjabi Hits Karan Aujla Diljit AP Dhillon" 
         />
         <HorizontalGenreScroll 
           title="Desi Beats" 
-          query="Desi Beats Haryanvi Punjabi Hindi" 
-        />
-        <HorizontalGenreScroll 
-          title="Haryanvi Heat" 
-          query="New Haryanvi Songs Weekly" 
+          query="Desi Beats Haryanvi Punjabi Hindi Rap" 
         />
       </main>
     </div>

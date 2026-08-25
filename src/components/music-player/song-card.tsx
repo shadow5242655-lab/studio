@@ -42,7 +42,6 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
-    // Validate interaction threshold (10px/300ms) to distinguish from scroll
     if (dx < 10 && dy < 10 && dt < 300) {
       callback();
     }

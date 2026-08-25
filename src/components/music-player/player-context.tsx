@@ -81,6 +81,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
   const currentTrackRef = useRef<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const isPlayingRef = useRef(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
@@ -97,9 +98,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const repeatModeRef = useRef(repeatMode);
   const [songPopularity, setSongPopularity] = useState<Record<string, number>>({});
   const [totalSeconds, setTotalSeconds] = useState(0);
+  const totalSecondsRef = useRef(0);
   const [lyrics, setLyrics] = useState<{ synced: any[]; plain: string } | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   const [volume, setVolumeState] = useState(0.7);
+  const volumeRef = useRef(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -113,7 +116,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
   useEffect(() => { queueRef.current = queue; }, [queue]);
-  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
+  useEffect(() => { repeatModeRef.current = repeatMode; repeatModeRef.current = repeatMode; }, [repeatMode]);
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
 
   const recordActiveDay = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -180,12 +185,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current && url) {
       if (typeof window !== 'undefined') localStorage.setItem('ayumusics_last_track', JSON.stringify(track));
       audioRef.current.src = url;
-      audioRef.current.volume = volume;
+      audioRef.current.volume = volumeRef.current;
       setCurrentTrack(track);
       fetchLyrics(track);
       audioRef.current.play().catch(() => {});
     }
-  }, [recordActiveDay, volume, fetchLyrics]);
+  }, [recordActiveDay, fetchLyrics]);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -200,13 +205,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     try {
       const results = await searchSongs(artistName);
       const filtered = results.filter(s => s.id !== baseTrack.id);
-      const ranked = applySmartRank3(filtered, songPopularity);
+      // Use ref for popularity to avoid infinite cycle
+      const ranked = applySmartRank3(filtered, {});
       if (ranked.length > 0) playTrack(ranked[0]);
       else await playRandomTrack();
     } catch (e) {
       await playRandomTrack();
     }
-  }, [songPopularity, playTrack, playRandomTrack]);
+  }, [playTrack, playRandomTrack]);
 
   const nextTrack = useCallback(() => {
     const track = currentTrackRef.current;
@@ -255,10 +261,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const togglePlay = useCallback(() => {
     if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
+      if (isPlayingRef.current) audioRef.current.pause();
       else audioRef.current.play().catch(() => {});
     }
-  }, [isPlaying]);
+  }, []);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) audioRef.current.currentTime = time;
@@ -369,27 +375,28 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     secondary.play().then(() => {
       let step = 0;
       const steps = 60;
+      const currentVol = volumeRef.current;
       const fade = setInterval(() => {
         step++;
         const ratio = step / steps;
-        primary.volume = Math.max(0, volume * (1 - ratio));
-        secondary.volume = Math.min(volume, volume * ratio);
+        primary.volume = Math.max(0, currentVol * (1 - ratio));
+        secondary.volume = Math.min(currentVol, currentVol * ratio);
         if (step >= steps) {
           clearInterval(fade);
           primary.pause();
           primary.src = secondary.src;
           primary.currentTime = secondary.currentTime;
-          primary.volume = volume;
+          primary.volume = currentVol;
           setCurrentTrack(nextSong);
           fetchLyrics(nextSong);
           isCrossfadingRef.current = false;
         }
       }, 50);
     }).catch(() => { isCrossfadingRef.current = false; playTrack(nextSong); });
-  }, [volume, playTrack, fetchLyrics]);
+  }, [playTrack, fetchLyrics]);
 
   const updateProgress = useCallback(() => {
-    if (audioRef.current && isPlaying) {
+    if (audioRef.current && isPlayingRef.current) {
       const currentTime = audioRef.current.currentTime;
       const timeLeft = audioRef.current.duration - currentTime;
       const now = performance.now();
@@ -410,8 +417,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         if (diff > 0 && diff < 2) {
           totalSecondsAccumulatorRef.current += diff;
           const currentTotal = Math.floor(totalSecondsAccumulatorRef.current);
-          // Only update totalSeconds state when the rounded integer changes to avoid infinite loop
-          if (currentTotal !== totalSeconds && currentTotal % 5 === 0) {
+          
+          // Use totalSecondsRef.current instead of state for stable loop
+          if (currentTotal !== totalSecondsRef.current && currentTotal % 5 === 0) {
+            totalSecondsRef.current = currentTotal;
             setTotalSeconds(currentTotal);
             if (typeof window !== 'undefined') localStorage.setItem('ayumusics_seconds', currentTotal.toString());
           }
@@ -420,7 +429,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       lastTimeRef.current = currentTime;
       frameRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [isPlaying, performCrossfade, totalSeconds]);
+  }, [performCrossfade]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -435,8 +444,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setExclusionRules(loadSaved('ayumusics_rules') || []);
     setSmartMoodState(loadSaved('ayumusics_smartmood') ?? true);
     setSongPopularity(loadSaved('ayumusics_popularity') || {});
+    
     const s = parseInt(localStorage.getItem('ayumusics_seconds') || '0');
     setTotalSeconds(s); 
+    totalSecondsRef.current = s;
     totalSecondsAccumulatorRef.current = s;
     
     const lastTrack = loadSaved('ayumusics_last_track');

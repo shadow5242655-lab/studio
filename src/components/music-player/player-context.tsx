@@ -93,11 +93,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       const updateProgress = () => {
         if (audioRef.current && !audioRef.current.paused && !isScrubbingRef.current) {
           setProgress(audioRef.current.currentTime);
-          animationFrameRef.current = requestAnimationFrame(updateProgress);
-        } else if (audioRef.current && !audioRef.current.paused) {
-          // Keep updating frame but don't set progress state if scrubbing
-          animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
       };
 
       audio.addEventListener('play', () => {
@@ -110,7 +107,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.addEventListener('pause', () => {
         console.log('AYUMUSIC: Resonance paused');
         setIsPlaying(false);
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       });
 
       audio.addEventListener('waiting', () => setIsBuffering(true));
@@ -139,7 +135,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
-    console.log('AYUMUSIC: playTrack called with:', track);
     
     const audio = audioRef.current;
     if (!audio) return;
@@ -151,7 +146,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log('AYUMUSIC: Loading track src:', url);
     audio.src = url;
     setCurrentTrack(track);
     currentTrackRef.current = track;
@@ -166,7 +160,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
     audio.play().catch(err => {
-      console.error('AYUMUSIC: Play command failed (context blocked?):', err);
+      console.error('AYUMUSIC: Play command failed:', err);
       setIsBuffering(false);
     });
   }, []);

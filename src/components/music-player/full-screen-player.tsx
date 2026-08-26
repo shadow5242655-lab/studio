@@ -1,17 +1,23 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, ChevronDown, Heart, Music2, X } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Heart, Music2, X, MoreHorizontal } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { getBestImage, formatDuration, decodeEntities } from '@/lib/music-api';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview High-fidelity full-screen player view.
+ * The ✕ button in the top right collapses the player to the home view 
+ * without stopping the audio, just like Spotify.
+ */
+
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
-    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, stopTrack
+    togglePlay, nextTrack, prevTrack, toggleLike, isLiked
   } = useMusic();
   const { progress, duration, seek, setIsScrubbing } = useMusicProgress();
 
@@ -25,44 +31,67 @@ export function FullScreenPlayer() {
     <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden text-white">
       {/* High-Fidelity Header */}
       <header className="flex items-center justify-between p-6 shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => setIsPlayerOpen(false)} className="hover:bg-white/5">
-          <ChevronDown className="h-6 w-6" />
+        <Button variant="ghost" size="icon" className="hover:bg-white/5 opacity-0 pointer-events-none">
+          <MoreHorizontal className="h-6 w-6" />
         </Button>
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b3b3b3]">Now Playing</span>
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-500">Playing From</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">AYUMUSIC Lineage</span>
+        </div>
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={(e) => { e.stopPropagation(); stopTrack(); }}
-          className="hover:bg-white/5 text-[#b3b3b3] hover:text-primary"
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            setIsPlayerOpen(false); // Collapses back to home, music continues
+          }}
+          className="hover:bg-white/5 text-neutral-400 hover:text-white transition-colors lag-free-tap"
         >
-          <X className="h-6 w-6" />
+          <X className="h-7 w-7" />
         </Button>
       </header>
 
       {/* Main Resonance View */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 md:px-16 max-w-4xl mx-auto w-full space-y-8 md:space-y-12">
-        {/* Album Art */}
-        <div className="relative aspect-square w-full max-w-[400px] rounded-lg overflow-hidden shadow-2xl bg-[#282828] border border-white/5">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 md:px-16 max-w-4xl mx-auto w-full space-y-12">
+        {/* Album Art with Premium Shadow */}
+        <div className="relative aspect-square w-full max-w-[420px] rounded-3xl overflow-hidden shadow-[0_40px_100px_-15px_rgba(255,0,0,0.15)] bg-neutral-900 border border-white/5 group">
           {imageSrc ? (
-            <img src={imageSrc} className={cn("w-full h-full object-cover", isBuffering && "opacity-50")} alt="" />
+            <img 
+              src={imageSrc} 
+              className={cn(
+                "w-full h-full object-cover transition-all duration-1000",
+                isBuffering ? "opacity-30 blur-sm" : "opacity-100 blur-0"
+              )} 
+              alt="" 
+            />
           ) : (
             <Music2 className="h-24 w-24 text-neutral-800" />
           )}
+          {isBuffering && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
         </div>
 
-        {/* Track Metadata */}
-        <div className="w-full max-w-[400px] flex items-center justify-between">
-          <div className="min-w-0">
-            <h2 className="text-2xl md:text-3xl font-bold truncate italic uppercase tracking-tighter">{trackName}</h2>
-            <p className="text-sm md:text-base text-[#b3b3b3] truncate mt-1 uppercase font-medium">{artistNames}</p>
+        {/* Track Metadata and Like Button */}
+        <div className="w-full max-w-[420px] flex items-center justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-3xl md:text-4xl font-black truncate italic uppercase tracking-tighter leading-tight">{trackName}</h2>
+            <p className="text-sm md:text-base text-neutral-500 truncate mt-1 uppercase font-black tracking-widest">{artistNames}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => toggleLike(currentTrack)} className="text-[#b3b3b3] hover:text-primary">
-            <Heart className={cn("h-7 w-7", isLiked(currentTrack.id) && "fill-primary text-primary")} />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => toggleLike(currentTrack)} 
+            className="text-neutral-500 hover:text-primary transition-colors h-14 w-14"
+          >
+            <Heart className={cn("h-8 w-8 transition-all", isLiked(currentTrack.id) && "fill-primary text-primary scale-110")} />
           </Button>
         </div>
 
-        {/* Functional Spotify-Style Red Seek Bar */}
-        <div className="w-full max-w-[400px] space-y-2">
+        {/* Spotify-Style Functional Red Seek Bar */}
+        <div className="w-full max-w-[420px] space-y-4">
           <Slider 
             value={[progress]} 
             max={duration || 100} 
@@ -75,28 +104,31 @@ export function FullScreenPlayer() {
               setIsScrubbing(false);
             }}
           />
-          <div className="flex justify-between text-[11px] font-medium text-[#b3b3b3] uppercase tracking-widest">
+          <div className="flex justify-between text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">
             <span>{formatDuration(progress)}</span>
             <span>{formatDuration(duration)}</span>
           </div>
         </div>
 
         {/* Playback Controls */}
-        <div className="w-full max-w-[400px] flex items-center justify-between">
-          <Button variant="ghost" size="icon" className="text-[#b3b3b3] hover:text-white h-12 w-12" onClick={prevTrack}>
-            <SkipBack className="h-8 w-8 fill-current" />
+        <div className="w-full max-w-[420px] flex items-center justify-around">
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-14 w-14" onClick={prevTrack}>
+            <SkipBack className="h-10 w-10 fill-current" />
           </Button>
           <Button 
             onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-            className="bg-white text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform shadow-2xl"
+            className="bg-white text-black rounded-full h-20 w-20 p-0 hover:scale-105 active:scale-95 transition-transform shadow-2xl flex items-center justify-center"
           >
-            {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current ml-1" />}
+            {isPlaying ? <Pause className="h-10 w-10 fill-current" /> : <Play className="h-10 w-10 fill-current ml-2" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-[#b3b3b3] hover:text-white h-12 w-12" onClick={nextTrack}>
-            <SkipForward className="h-8 w-8 fill-current" />
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-14 w-14" onClick={nextTrack}>
+            <SkipForward className="h-10 w-10 fill-current" />
           </Button>
         </div>
       </div>
+      
+      {/* Immersive Background Gradient */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 to-black pointer-events-none" />
     </div>
   );
 }

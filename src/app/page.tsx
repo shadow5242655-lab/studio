@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import Recommendations from '@/components/Recommendations';
 
 const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: string, query: string, onClick: (q: string) => void }) => (
   <button 
@@ -231,6 +231,39 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Recommended section user id (tries env var or firebase auth on client)
+  const [recommendUserId, setRecommendUserId] = useState<string | null>(process.env.NEXT_PUBLIC_TEST_USER_ID || null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function initAuth() {
+      if (typeof window === 'undefined') return;
+      try {
+        const firebaseConfig = {
+          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        };
+        const { getApps, initializeApp } = await import('firebase/app');
+        const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+        if (!getApps().length && firebaseConfig.projectId) initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const unsub = onAuthStateChanged(auth, (u) => {
+          if (!mounted) return;
+          if (u) setRecommendUserId(u.uid);
+        });
+        return () => unsub();
+      } catch (e) {
+        // ignore - no firebase available
+      }
+    }
+    void initAuth();
+    return () => { mounted = false; };
+  }, []);
+
   const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
@@ -331,7 +364,7 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-4 md:mx-6 relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0c] p-6 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[280px] md:min-h-[320px] items-center text-center">
+            <div className="mx-4 md:mx-6 relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0c] p-6 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[280px] md[...]
               {/* Neural Note Background */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                 <Music2 className="h-[240px] w-[240px] md:h-[280px] md:w-[280px]" />
@@ -360,13 +393,13 @@ export default function Home() {
               <div className="w-full flex flex-row items-center justify-center gap-2 md:gap-4 mt-8 md:mt-10 relative z-10">
                 <button 
                   onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
-                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 shadow-[0_10px_30px_rgba(225,29,72,0.3)] hover:scale-105 active:scale-95 transition-all text-[10px] md:text-xs flex items-center"
+                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 shadow-[0_10px_30px_rgba(225,29,72,0.3)] ho[...]
                 >
                   <Play className="h-4 w-4 md:h-5 md:w-5 fill-current" /> PLAY TRENDING
                 </button>
                 <button 
                   onClick={handleShuffle}
-                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 border border-white/5 backdrop-blur-sm hover:bg-neutral-800 hover:scale-105 active:scale-95 transition-all text-[10px] md:text-xs flex items-center"
+                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 border border-white/5 backdrop-blur-sm[...]
                 >
                   <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> SHUFFLE
                 </button>
@@ -386,6 +419,14 @@ export default function Home() {
             </section>
 
             <QuickPicksVertical onPlayTrack={playTrack} />
+
+            {/* Recommended for You section */}
+            {recommendUserId && (
+              <div className="px-6">
+                <h2 className="text-xl font-black italic uppercase tracking-tighter mb-3">Recommended for You</h2>
+                <Recommendations userId={recommendUserId} />
+              </div>
+            )}
 
             <div className="space-y-10 md:space-y-12 mt-6 md:mt-8">
               <HorizontalSection title="Punjabi Songs" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
@@ -414,7 +455,7 @@ export default function Home() {
                   <div 
                     key={`${song.id}-${idx}`}
                     onClick={() => playTrack(song, displaySongs)}
-                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-pointer hover:border-primary/30 shadow-xl"
+                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-poi[...]
                   >
                     <div className="flex items-center gap-3 md:gap-4 min-w-0">
                       <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">

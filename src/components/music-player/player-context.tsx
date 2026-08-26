@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -82,36 +83,81 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
 
-  // Stabilize Audio Instance with best practices for mobile/CORS
+  // High-fidelity Audio Engine Initialization
   useEffect(() => {
     if (!audioRef.current && typeof window !== 'undefined') {
+      console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.preload = "auto";
       audioRef.current = audio;
 
-      const hs = {
-        loadedmetadata: () => setDuration(audio.duration),
+      const handlers = {
+        loadedmetadata: () => {
+          console.log('AYUMUSIC: Metadata loaded, duration:', audio.duration);
+          setDuration(audio.duration);
+        },
+        timeupdate: () => {
+          // Fallback for non-rAF browsers
+          if (!frameRef.current) setProgress(audio.currentTime);
+        },
         ended: () => {
+          console.log('AYUMUSIC: Sound lineage reached conclusion, transitioning...');
           if (nextTrackRef.current) nextTrackRef.current();
         },
-        play: () => { setIsPlaying(true); isPlayingRef.current = true; },
-        pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
-        waiting: () => setIsBuffering(true),
-        playing: () => setIsBuffering(false),
-        error: (e: any) => {
-          console.error("Audio engine error:", e);
+        play: () => {
+          console.log('AYUMUSIC: Playback resonance confirmed');
+          setIsPlaying(true);
+          isPlayingRef.current = true;
+        },
+        pause: () => {
+          console.log('AYUMUSIC: Playback resonance suspended');
+          setIsPlaying(false);
+          isPlayingRef.current = false;
+        },
+        waiting: () => {
+          console.log('AYUMUSIC: Buffering frequencies...');
+          setIsBuffering(true);
+        },
+        playing: () => {
+          console.log('AYUMUSIC: Buffering complete, streaming resonance');
           setIsBuffering(false);
+        },
+        error: (e: any) => {
+          console.error('AYUMUSIC: Audio engine resonance failure', e);
+          setIsBuffering(false);
+          toast({ variant: "destructive", title: "Resonance Blocked", description: "The audio stream could not be established." });
         }
       };
 
-      Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
-      
+      Object.entries(handlers).forEach(([event, handler]) => {
+        audio.addEventListener(event, handler);
+      });
+
       return () => {
-        Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
+        Object.entries(handlers).forEach(([event, handler]) => {
+          audio.removeEventListener(event, handler);
+        });
+        if (frameRef.current) cancelAnimationFrame(frameRef.current);
       };
     }
   }, []);
+
+  const updateProgress = useCallback(() => {
+    if (audioRef.current && isPlayingRef.current) {
+      setProgress(audioRef.current.currentTime);
+      frameRef.current = requestAnimationFrame(updateProgress);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      frameRef.current = requestAnimationFrame(updateProgress);
+    } else if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  }, [isPlaying, updateProgress]);
 
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
@@ -126,15 +172,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track || !audioRef.current) return;
     
+    console.log('AYUMUSIC: Initiating discovery for:', decodeEntities(track.name));
     const audio = audioRef.current;
     const url = getBestDownload(track);
     
     if (!url) {
+      console.warn('AYUMUSIC: No valid download frequency found for track');
       toast({ variant: "destructive", title: "Resonance Blocked", description: "This frequency is currently unavailable." });
       return;
     }
 
-    // Immediate state feedback
+    // High-fidelity state preparation
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -146,10 +194,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       queueRef.current = fromQueue;
     }
     
-    // Update history lineage
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    // Playback execution
+    // Execute stream resonance
     audio.pause();
     audio.src = url;
     audio.volume = volumeRef.current;
@@ -158,48 +205,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch(e => {
-        console.error("Playback start failed:", e);
+        console.error("AYUMUSIC: Playback initiation blocked:", e);
         setIsBuffering(false);
-        // Silent failure handling for autoplay blocks
+        if (e.name === 'NotAllowedError') {
+          toast({ title: "Action Required", description: "Please tap anywhere to enable playback." });
+        }
       });
     }
   }, []);
 
-  // Neural Auto-Mix Architecting
-  useEffect(() => {
-    if (smartMood && currentTrack) {
-      const architectAutoMix = async () => {
-        try {
-          const analysis = await analyzeMood({ 
-            songName: currentTrack.name, 
-            artistName: currentTrack.artists.primary[0]?.name || 'Unknown' 
-          });
-          
-          const searchPromises = analysis.nextQueries.map(q => searchSongs(q, 1));
-          const searchResults = await Promise.all(searchPromises);
-          const newSongs = searchResults.flatMap(r => r).filter(s => s.id !== currentTrack.id);
-          
-          const uniqueSongs = Array.from(new Map(newSongs.map(s => [s.id, s])).values());
-          const mix = uniqueSongs.slice(0, 10);
-          setAutoMixQueue(mix);
-          autoMixQueueRef.current = mix;
-        } catch (e) {
-          console.error("Neural architect failed", e);
-        }
-      };
-      architectAutoMix();
-    }
-  }, [currentTrack, smartMood]);
-
   const playRandomTrack = useCallback(async () => {
     try {
+      console.log('AYUMUSIC: Shuffling trending soundscapes...');
       const trending = await getTrending();
       if (trending.length > 0) {
         const rand = trending[Math.floor(Math.random() * trending.length)];
         playTrack(rand, trending);
       }
     } catch (e) {
-      console.error("Shuffle failed", e);
+      console.error("AYUMUSIC: Shuffle architecting failed", e);
     }
   }, [playTrack]);
 
@@ -207,32 +231,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const currentQueue = queueRef.current;
     const currentMix = autoMixQueueRef.current;
 
-    if (currentQueue.length === 0) {
-      if (currentMix.length > 0) {
-        const next = currentMix[0];
-        autoMixQueueRef.current = currentMix.slice(1);
-        setAutoMixQueue(autoMixQueueRef.current);
-        playTrack(next, [next]);
-      } else {
-        playRandomTrack();
-      }
-      return;
-    }
+    console.log('AYUMUSIC: Transitioning to next sound frequency...');
     
-    const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
-    if (idx !== -1 && idx < currentQueue.length - 1) {
-      playTrack(currentQueue[idx + 1]);
-    } else if (currentMix.length > 0) {
+    if (currentQueue.length > 0) {
+      const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
+      if (idx !== -1 && idx < currentQueue.length - 1) {
+        playTrack(currentQueue[idx + 1]);
+        return;
+      }
+    }
+
+    if (currentMix.length > 0) {
       const next = currentMix[0];
       autoMixQueueRef.current = currentMix.slice(1);
       setAutoMixQueue(autoMixQueueRef.current);
-      const newQueue = [...currentQueue, next];
-      setQueue(newQueue);
-      queueRef.current = newQueue;
       playTrack(next);
-    } else {
-      playRandomTrack();
+      return;
     }
+    
+    playRandomTrack();
   }, [playTrack, playRandomTrack]);
 
   const prevTrack = useCallback(() => {
@@ -261,22 +278,32 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     nextTrackRef.current = nextTrack;
   }, [nextTrack]);
 
-  const updateProgress = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio && isPlayingRef.current) {
-      setProgress(audio.currentTime);
-      frameRef.current = requestAnimationFrame(updateProgress);
-    }
-  }, []);
-
+  // Neural Auto-Mix Intelligence (Default ON)
   useEffect(() => {
-    if (isPlaying) {
-      frameRef.current = requestAnimationFrame(updateProgress);
-    } else if (frameRef.current) {
-      cancelAnimationFrame(frameRef.current);
+    if (smartMood && currentTrack) {
+      const architectAutoMix = async () => {
+        try {
+          const analysis = await analyzeMood({ 
+            songName: currentTrack.name, 
+            artistName: currentTrack.artists.primary[0]?.name || 'Unknown' 
+          });
+          
+          const searchPromises = analysis.nextQueries.map(q => searchSongs(q, 1));
+          const searchResults = await Promise.all(searchPromises);
+          const newSongs = searchResults.flatMap(r => r).filter(s => s.id !== currentTrack.id);
+          
+          const uniqueSongs = Array.from(new Map(newSongs.map(s => [s.id, s])).values());
+          const mix = uniqueSongs.slice(0, 10);
+          setAutoMixQueue(mix);
+          autoMixQueueRef.current = mix;
+          console.log('AYUMUSIC: Neural auto-mix architected with', mix.length, 'tracks');
+        } catch (e) {
+          console.error("AYUMUSIC: Neural architecting failure", e);
+        }
+      };
+      architectAutoMix();
     }
-    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [isPlaying, updateProgress]);
+  }, [currentTrack, smartMood]);
 
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
@@ -334,8 +361,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume,
-    seek: (t: number) => { if (audioRef.current) audioRef.current.currentTime = t; setProgress(t); }, 
-    setVolume: (v: number) => { setVolumeState(v); volumeRef.current = v; if (audioRef.current) audioRef.current.volume = v; } 
+    seek: (t: number) => { 
+      if (audioRef.current) {
+        audioRef.current.currentTime = t;
+        setProgress(t);
+        console.log('AYUMUSIC: Seeking resonance to', t);
+      }
+    }, 
+    setVolume: (v: number) => { 
+      setVolumeState(v); 
+      volumeRef.current = v; 
+      if (audioRef.current) audioRef.current.volume = v; 
+    } 
   }), [progress, duration, volume]);
 
   return (

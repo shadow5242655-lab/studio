@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -28,19 +29,26 @@ export function NowPlayingBar() {
       "fixed left-0 right-0 h-20 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex items-center justify-between z-50 transition-all duration-300",
       "bottom-16" // Fixed above BottomNav for both mobile and web
     )}>
+      {/* High-fidelity Seek Bar */}
       <div className="absolute top-0 left-0 right-0 h-[2px]">
         <Slider
           value={[progress]}
           max={duration || 100}
           step={0.1}
-          onValueChange={(vals) => seek(vals[0])}
+          onValueChange={(vals) => {
+            console.log('AYUMUSIC: User seeking resonance to', vals[0]);
+            seek(vals[0]);
+          }}
           className="w-full absolute -top-[5px] cursor-pointer"
         />
       </div>
 
       <div 
         className="flex items-center gap-3 w-[50%] min-w-0 cursor-pointer lag-free-tap"
-        onClick={() => setIsPlayerOpen(true)}
+        onClick={() => {
+          console.log('AYUMUSIC: Opening full-screen player experience');
+          setIsPlayerOpen(true);
+        }}
       >
         <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/5 shadow-lg">
           {imageSrc ? (
@@ -61,7 +69,7 @@ export function NowPlayingBar() {
             {decodeEntities(currentTrack.name)}
           </span>
           <span className="text-[9px] text-neutral-500 truncate uppercase font-bold tracking-widest mt-0.5">
-            {currentTrack.artists.primary.map(a => a.name).join(', ')}
+            {currentTrack.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
           </span>
         </div>
       </div>
@@ -76,14 +84,22 @@ export function NowPlayingBar() {
             variant="ghost" 
             size="icon" 
             className="text-white lag-free-tap w-8 h-8" 
-            onClick={(e) => { e.stopPropagation(); prevTrack(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              console.log('AYUMUSIC: Skipping back to previous resonance');
+              prevTrack(); 
+            }}
           >
             <SkipBack className="h-4 w-4 fill-current" />
           </Button>
 
           <Button 
             className="bg-white text-black rounded-full h-10 w-10 p-0 shadow-lg lag-free-tap hover:scale-105"
-            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              console.log('AYUMUSIC: Toggling play/pause resonance');
+              togglePlay(); 
+            }}
           >
             {isBuffering ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -98,7 +114,11 @@ export function NowPlayingBar() {
             variant="ghost" 
             size="icon" 
             className="text-white lag-free-tap w-8 h-8" 
-            onClick={(e) => { e.stopPropagation(); nextTrack(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              console.log('AYUMUSIC: Skipping forward to next resonance');
+              nextTrack(); 
+            }}
           >
             <SkipForward className="h-4 w-4 fill-current" />
           </Button>
@@ -111,7 +131,10 @@ export function NowPlayingBar() {
           onClick={(e) => {
             e.stopPropagation();
             const u = getBestDownload(currentTrack);
-            if (u) window.open(u, '_blank');
+            if (u) {
+              console.log('AYUMUSIC: Initiating secure sound download');
+              window.open(u, '_blank');
+            }
           }}
         >
           <Download className="h-5 w-5" />

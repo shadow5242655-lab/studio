@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { memo, useRef } from 'react';
 import { Play, Music2, Pause, MoreVertical, Forward, ListMusic, PlusCircle, Download } from 'lucide-react';
-import { Song, getBestImage, getBestDownload } from '@/lib/music-api';
+import { Song, getBestImage, getBestDownload, decodeEntities } from '@/lib/music-api';
 import { useMusic } from './player-context';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -42,8 +43,9 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
-    // Increased threshold for high-DPI reliability
+    // Hardware-calibrated interaction threshold for high-DPI reliability
     if (dx < 30 && dy < 30 && dt < 450) {
+      console.log('AYUMUSIC: Valid tap detected for', decodeEntities(song.name));
       callback();
     }
     startPos.current = null;
@@ -90,8 +92,13 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp((e?: any) => {
               if (e) e.stopPropagation();
-              if (isActive) togglePlay();
-              else playTrack(song, playlist);
+              if (isActive) {
+                console.log('AYUMUSIC: Toggling play/pause for active track');
+                togglePlay();
+              } else {
+                console.log('AYUMUSIC: Initiating playback from overlay button');
+                playTrack(song, playlist);
+              }
             })}
             onPointerCancel={handlePointerCancel}
             className={cn(
@@ -148,7 +155,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           "font-bold text-sm truncate uppercase tracking-tight italic",
           isActive ? "text-primary" : "text-white"
         )}>
-          {song.name}
+          {decodeEntities(song.name)}
         </h3>
         <p className="text-[10px] text-neutral-400 truncate uppercase font-medium">
           {song.artists.primary.map((artist, index) => (
@@ -158,7 +165,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
                 onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
                 className="hover:text-white hover:underline cursor-pointer"
               >
-                {artist.name}
+                {decodeEntities(artist.name)}
               </span>
               {index < song.artists.primary.length - 1 ? ', ' : ''}
             </span>

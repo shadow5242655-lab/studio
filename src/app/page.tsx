@@ -39,6 +39,7 @@ const HorizontalSection = memo(({
   currentTrackId?: string
 }) => {
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -57,7 +58,7 @@ const HorizontalSection = memo(({
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    if (target.scrollLeft + target.clientWidth >= target.scrollWidth - 400) {
+    if (target.scrollLeft + target.clientWidth >= target.scrollWidth - 600) {
       onLoadMore(type);
     }
   };
@@ -76,6 +77,7 @@ const HorizontalSection = memo(({
         </Button>
       </div>
       <div 
+        ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 scroll-smooth"
       >
@@ -145,6 +147,7 @@ export default function Home() {
   
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -283,7 +286,7 @@ export default function Home() {
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
         
         {/* Unified Brand-Search-Menu Header */}
-        <header className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
+        <header className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl sticky top-2 z-50">
           <div className="flex items-center gap-2 ml-4 shrink-0">
             <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
               <Music2 className="h-5 w-5 text-white" />
@@ -294,6 +297,7 @@ export default function Home() {
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
             <Input 
+              ref={searchInputRef}
               placeholder="Search frequencies..." 
               className="pl-11 pr-10 bg-transparent border-none text-sm md:text-base h-12 focus-visible:ring-0 placeholder:text-neutral-600"
               value={searchQuery}
@@ -308,23 +312,26 @@ export default function Home() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full">
-                <MoreHorizontal className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full h-10 w-10">
+                <MoreHorizontal className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-48" align="end">
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/library')}>
-                <Library className="mr-2 h-4 w-4" /> My Library
+            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl" align="end">
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => searchInputRef.current?.focus()}>
+                <Search className="mr-3 h-5 w-5 text-primary" /> Search
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/genres')}>
-                <Compass className="mr-2 h-4 w-4" /> Genres
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/library')}>
+                <Library className="mr-3 h-5 w-5 text-neutral-400" /> My Library
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/insights')}>
-                <BarChart3 className="mr-2 h-4 w-4" /> Insights
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/genres')}>
+                <Compass className="mr-3 h-5 w-5 text-neutral-400" /> Genres
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary" onClick={() => playRandomTrack()}>
-                <Shuffle className="mr-2 h-4 w-4" /> Shuffle All
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/insights')}>
+                <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Insights
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/5 my-2" />
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onClick={() => playRandomTrack()}>
+                <Shuffle className="mr-3 h-5 w-5" /> Shuffle All
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

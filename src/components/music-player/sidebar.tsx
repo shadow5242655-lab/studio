@@ -36,26 +36,26 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
   };
 
   return (
-    <div className="flex flex-col gap-2 h-full bg-black">
-      <div className="p-6 mb-2 hidden md:block">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-primary p-1.5 rounded-lg group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,0,0,0.3)]">
-            <Music2 className="h-6 w-6 text-white" />
+    <div className="flex flex-col gap-2 h-full bg-black pb-10">
+      <div className="p-8 mb-4">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="bg-primary p-2 rounded-xl group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
+            <Music2 className="h-7 w-7 text-white" />
           </div>
           <span className="font-black text-2xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-1 px-4">
+      <nav className="flex flex-col gap-2 px-6">
         {navItems.map((item) => (
           <Link
             key={item.name}
             href={item.href}
             onClick={onNavItemClick}
             className={cn(
-              "flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all group",
+              "flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-bold transition-all group border border-transparent",
               pathname === item.href 
-                ? "text-white bg-white/10" 
+                ? "text-white bg-white/10 border-white/5" 
                 : "text-neutral-500 hover:text-white hover:bg-white/5"
             )}
           >
@@ -68,13 +68,13 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
         ))}
       </nav>
 
-      <div className="mt-8 flex flex-col gap-1 px-4">
+      <div className="mt-8 flex flex-col gap-2 px-6">
         <button 
           onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-neutral-500 hover:text-white hover:bg-white/5 transition-all group"
+          className="flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-bold text-neutral-500 hover:text-white hover:bg-white/5 transition-all group"
         >
-          <div className="bg-neutral-800 text-white p-1 rounded-sm group-hover:bg-neutral-700">
-            <PlusSquare className="h-4 w-4" />
+          <div className="bg-neutral-800 text-white p-1 rounded-md group-hover:bg-neutral-700">
+            <PlusSquare className="h-5 w-5" />
           </div>
           Create Playlist
         </button>
@@ -82,31 +82,31 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
           href="/liked"
           onClick={onNavItemClick}
           className={cn(
-            "flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all group",
-            pathname === '/liked' ? "text-white bg-white/10" : "text-neutral-500 hover:text-white hover:bg-white/5"
+            "flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-bold transition-all group border border-transparent",
+            pathname === '/liked' ? "text-white bg-white/10 border-white/5" : "text-neutral-500 hover:text-white hover:bg-white/5"
           )}
         >
-          <div className="bg-gradient-to-br from-primary to-red-600 text-white p-1 rounded-sm">
-            <Heart className="h-4 w-4 fill-white" />
+          <div className="bg-gradient-to-br from-primary to-red-600 text-white p-1 rounded-md">
+            <Heart className="h-5 w-5 fill-white" />
           </div>
           <span className="flex-1">Liked Songs</span>
           {likedSongs.length > 0 && (
-            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-black">
               {likedSongs.length}
             </span>
           )}
         </Link>
       </div>
 
-      <div className="mt-4 px-8 overflow-y-auto custom-scrollbar flex-1">
+      <div className="mt-4 px-10 overflow-y-auto custom-scrollbar flex-1">
         <p className="text-[10px] text-neutral-600 uppercase font-black tracking-widest mb-4 opacity-50">Playlists</p>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {playlists.map(p => (
             <Link 
               key={p.id} 
               href={`/playlists?id=${p.id}`}
               onClick={onNavItemClick}
-              className="block text-sm text-neutral-500 hover:text-white py-2 truncate transition-colors"
+              className="block text-sm font-bold text-neutral-500 hover:text-white py-2 truncate transition-colors italic uppercase tracking-tight"
             >
               {p.name}
             </Link>
@@ -149,18 +149,18 @@ export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="flex md:hidden items-center justify-between p-4 bg-black/80 backdrop-blur-lg border-b border-white/5 sticky top-0 z-[55]">
+    <header className="flex md:hidden items-center justify-between p-5 bg-black/90 backdrop-blur-xl border-b border-white/5 sticky top-0 z-[55]">
       <Link href="/" className="flex items-center gap-2 group shrink-0">
-        <div className="bg-primary p-1 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
-          <Music2 className="h-5 w-5 text-white" />
+        <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_15px_rgba(255,0,0,0.3)]">
+          <Music2 className="h-6 w-6 text-white" />
         </div>
-        <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+        <span className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
       </Link>
       
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Menu className="h-6 w-6" />
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/5 rounded-xl h-12 w-12">
+            <Menu className="h-7 w-7" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-[300px] p-0 bg-black border-r border-white/10">

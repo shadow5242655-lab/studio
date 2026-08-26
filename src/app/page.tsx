@@ -1,30 +1,39 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Menu, Loader2, Smartphone, Settings2, Sparkles, Shuffle, X,
-  ChevronRight
+  Heart, Play, Music2, Search, Menu, Loader2, Smartphone, Settings2, Sparkles, Shuffle, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, playRandomTrack } = useMusic();
   
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
+  
+  // Regional Section States
   const [punjabiSongs, setPunjabiSongs] = useState<Song[]>([]);
   const [haryanviSongs, setHaryanviSongs] = useState<Song[]>([]);
   const [bhojpuriSongs, setBhojpuriSongs] = useState<Song[]>([]);
   const [lofiSongs, setLofiSongs] = useState<Song[]>([]);
-  
-  const [listTitle, setListTitle] = useState('Daily Picks');
+
+  // Pagination States
+  const [punjabiPage, setPunjabiPage] = useState(1);
+  const [haryanviPage, setHaryanviPage] = useState(1);
+  const [bhojpuriPage, setBhojpuriPage] = useState(1);
+  const [lofiPage, setLofiPage] = useState(1);
+
+  // Loading States
   const [loading, setLoading] = useState(true);
   const [vibeLoading, setVibeLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState<Record<string, boolean>>({});
+  
+  const [listTitle, setListTitle] = useState('Daily Picks');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
@@ -57,7 +66,6 @@ export default function Home() {
   async function loadInitialData() {
     setLoading(true);
     try {
-      // 1. Daily Picks
       const dailyTerms = [
         "Sheesha Aakhya Mai Aakh Ghali",
         "Bairan Banjaare",
@@ -71,22 +79,21 @@ export default function Home() {
       const dailyResults = await Promise.all(dailyTerms.map(t => searchSongs(t).then(r => r[0])));
       setDisplaySongs(dailyResults.filter(Boolean));
 
-      // 2. Trending Now
       const trending = await getTrending();
       setTrendingSongs(trending.slice(0, 10));
 
-      // 3. Regional Sections
+      // Initial page fetch for regional sections
       const [punjabi, haryanvi, bhojpuri, lofi] = await Promise.all([
-        searchSongs("Punjabi Top Hits 2024"),
-        searchSongs("Haryanvi Latest Hits"),
-        searchSongs("Bhojpuri Superhits"),
-        searchSongs("Lofi Hip Hop Chill")
+        searchSongs("Punjabi Top Hits 2024", 1),
+        searchSongs("Haryanvi Latest Hits", 1),
+        searchSongs("Bhojpuri Superhits", 1),
+        searchSongs("Lofi Hip Hop Chill", 1)
       ]);
 
-      setPunjabiSongs(punjabi.slice(0, 20));
-      setHaryanviSongs(haryanvi.slice(0, 20));
-      setBhojpuriSongs(bhojpuri.slice(0, 20));
-      setLofiSongs(lofi.slice(0, 20));
+      setPunjabiSongs(punjabi);
+      setHaryanviSongs(haryanvi);
+      setBhojpuriSongs(bhojpuri);
+      setLofiSongs(lofi);
 
       setListTitle('Daily Picks');
       setIsSearching(false);
@@ -96,6 +103,61 @@ export default function Home() {
       setLoading(false);
     }
   }
+
+  const loadMoreRegional = useCallback(async (type: 'punjabi' | 'haryanvi' | 'bhojpuri' | 'lofi') => {
+    if (loadingMore[type]) return;
+
+    setLoadingMore(prev => ({ ...prev, [type]: true }));
+    try {
+      let nextPage = 1;
+      let query = "";
+      let setter: any = null;
+      let currentSongs: Song[] = [];
+
+      switch (type) {
+        case 'punjabi':
+          nextPage = punjabiPage + 1;
+          query = "Punjabi Top Hits 2024";
+          setter = setPunjabiSongs;
+          currentSongs = punjabiSongs;
+          setPunjabiPage(nextPage);
+          break;
+        case 'haryanvi':
+          nextPage = haryanviPage + 1;
+          query = "Haryanvi Latest Hits";
+          setter = setHaryanviSongs;
+          currentSongs = haryanviSongs;
+          setHaryanviPage(nextPage);
+          break;
+        case 'bhojpuri':
+          nextPage = bhojpuriPage + 1;
+          query = "Bhojpuri Superhits";
+          setter = setBhojpuriSongs;
+          currentSongs = bhojpuriSongs;
+          setBhojpuriPage(nextPage);
+          break;
+        case 'lofi':
+          nextPage = lofiPage + 1;
+          query = "Lofi Hip Hop Chill";
+          setter = setLofiSongs;
+          currentSongs = lofiSongs;
+          setLofiPage(nextPage);
+          break;
+      }
+
+      const newSongs = await searchSongs(query, nextPage);
+      if (newSongs.length > 0) {
+        // Deduplicate
+        const combined = [...currentSongs, ...newSongs];
+        const unique = Array.from(new Map(combined.map(s => [s.id, s])).values());
+        setter(unique);
+      }
+    } catch (e) {
+      console.error(`Load more ${type} failed`, e);
+    } finally {
+      setLoadingMore(prev => ({ ...prev, [type]: false }));
+    }
+  }, [punjabiPage, haryanviPage, bhojpuriPage, lofiPage, punjabiSongs, haryanviSongs, bhojpuriSongs, lofiSongs, loadingMore]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -132,6 +194,65 @@ export default function Home() {
     loadInitialData();
   };
 
+  const HorizontalSection = ({ title, songs, type }: { title: string, songs: Song[], type: 'punjabi' | 'haryanvi' | 'bhojpuri' | 'lofi' }) => {
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.currentTarget;
+      // Trigger load more when 20% from the end
+      if (target.scrollLeft + target.clientWidth >= target.scrollWidth - 400) {
+        loadMoreRegional(type);
+      }
+    };
+
+    return (
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">{title}</h2>
+          <Button 
+            variant="ghost" 
+            className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2"
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp(() => songs.length > 0 && playTrack(songs[0], songs))}
+          >
+            <Play className="h-3 w-3 fill-current" /> Play all
+          </Button>
+        </div>
+        <div 
+          onScroll={handleScroll}
+          className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 scroll-smooth"
+        >
+          {songs.map((song) => (
+            <div 
+              key={`${type}-${song.id}`}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp(() => playTrack(song, songs))}
+              className="flex-shrink-0 w-36 lag-free-tap group cursor-pointer"
+            >
+              <div className="relative aspect-square rounded-[1.5rem] overflow-hidden bg-neutral-900 border border-white/5 shadow-xl mb-3">
+                <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                {currentTrack?.id === song.id && (
+                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  </div>
+                )}
+              </div>
+              <p className="font-bold text-[10px] text-white italic uppercase tracking-tight truncate px-1">
+                {decodeEntities(song.name)}
+              </p>
+              <p className="text-[8px] text-neutral-500 uppercase font-black tracking-widest truncate px-1 mt-0.5">
+                {song.artists.primary[0]?.name}
+              </p>
+            </div>
+          ))}
+          {loadingMore[type] && (
+            <div className="flex-shrink-0 w-36 aspect-square flex items-center justify-center bg-white/5 rounded-[1.5rem]">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0a0a0a]">
@@ -139,47 +260,6 @@ export default function Home() {
       </div>
     );
   }
-
-  const HorizontalSection = ({ title, songs }: { title: string, songs: Song[] }) => (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">{title}</h2>
-        <Button 
-          variant="ghost" 
-          className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2"
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp(() => songs.length > 0 && playTrack(songs[0], songs))}
-        >
-          <Play className="h-3 w-3 fill-current" /> Play all
-        </Button>
-      </div>
-      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
-        {songs.map((song) => (
-          <div 
-            key={`${title}-${song.id}`}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp(() => playTrack(song, songs))}
-            className="flex-shrink-0 w-36 lag-free-tap group cursor-pointer"
-          >
-            <div className="relative aspect-square rounded-[1.5rem] overflow-hidden bg-neutral-900 border border-white/5 shadow-xl mb-3">
-              <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
-              {currentTrack?.id === song.id && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                </div>
-              )}
-            </div>
-            <p className="font-bold text-[10px] text-white italic uppercase tracking-tight truncate px-1">
-              {decodeEntities(song.name)}
-            </p>
-            <p className="text-[8px] text-neutral-500 uppercase font-black tracking-widest truncate px-1 mt-0.5">
-              {song.artists.primary[0]?.name}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden font-sans text-white selection:bg-primary/30">
@@ -400,10 +480,10 @@ export default function Home() {
               </div>
             </section>
 
-            <HorizontalSection title="Punjabi Hits" songs={punjabiSongs} />
-            <HorizontalSection title="Haryanvi Heart" songs={haryanviSongs} />
-            <HorizontalSection title="Bhojpuri Beats" songs={bhojpuriSongs} />
-            <HorizontalSection title="Lofi Resonance" songs={lofiSongs} />
+            <HorizontalSection title="Punjabi Hits" songs={punjabiSongs} type="punjabi" />
+            <HorizontalSection title="Haryanvi Heart" songs={haryanviSongs} type="haryanvi" />
+            <HorizontalSection title="Bhojpuri Beats" songs={bhojpuriSongs} type="bhojpuri" />
+            <HorizontalSection title="Lofi Resonance" songs={lofiSongs} type="lofi" />
           </>
         )}
       </main>

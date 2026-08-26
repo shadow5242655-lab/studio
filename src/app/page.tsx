@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -26,7 +27,7 @@ const HorizontalSection = memo(({
   type: string,
   onPlayAll: (songs: Song[]) => void,
   onPlayTrack: (song: Song, playlist: Song[]) => void,
-  onLoadMore: (type: any) => void,
+  onLoadMore: (type: string) => void,
   loadingMore: boolean,
   currentTrackId?: string
 }) => {
@@ -76,7 +77,7 @@ const HorizontalSection = memo(({
             key={`${type}-${song.id}`}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp(() => onPlayTrack(song, songs))}
-            className="flex-shrink-0 w-36 md:w-48 lg:w-56 lag-free-tap group cursor-pointer"
+            className="flex-shrink-0 w-36 md:w-48 lag-free-tap group cursor-pointer"
           >
             <div className="relative aspect-square rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-neutral-900 border border-white/5 shadow-xl mb-3">
               <img 
@@ -267,15 +268,16 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full max-w-[480px] md:max-w-7xl mx-auto px-6 md:px-10 lg:px-12 font-sans text-white selection:bg-primary/30 animate-in fade-in duration-700">
-      <main className="py-8 space-y-12">
-        {/* Unified Search & Brand Header */}
-        <section className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
+    <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-700 flex flex-col items-center">
+      <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
+        
+        {/* Unified Brand-Search Header */}
+        <header className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
           <div className="flex items-center gap-2 ml-4 shrink-0">
             <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
               <Music2 className="h-5 w-5 text-white" />
             </div>
-            <span className="hidden sm:block font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+            <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
           </div>
           
           <div className="flex-1 relative">
@@ -292,12 +294,7 @@ export default function Home() {
               </button>
             )}
           </div>
-          
-          <div className="hidden sm:flex gap-6 shrink-0 mr-6">
-            <Smartphone className="h-5 w-5 text-neutral-500 hover:text-white transition-colors cursor-pointer" />
-            <Settings2 className="h-5 w-5 text-neutral-500 hover:text-white transition-colors cursor-pointer" />
-          </div>
-        </section>
+        </header>
 
         {/* Vibe Chips */}
         <section className="space-y-6">

@@ -123,7 +123,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.addEventListener('ended', () => {
-        console.log('AYUMUSIC: Resonance cycle complete. Initiating neural mood transition.');
+        console.log('AYUMUSIC: Sound cycle complete. Initiating auto-recommendation.');
         nextTrackInternalRef.current();
       });
 
@@ -149,6 +149,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (text.includes('love') || text.includes('romance') || text.includes('ishq') || text.includes('dil') || text.includes('pyar') || text.includes('aashiqui') || text.includes('arijit')) return 'romance';
     if (text.includes('party') || text.includes('dance') || text.includes('dj') || text.includes('club') || text.includes('hip hop') || text.includes('rap') || text.includes('badshah') || text.includes('honey singh')) return 'party';
     if (text.includes('lofi') || text.includes('chill') || text.includes('sleep') || text.includes('relax') || text.includes('rain') || text.includes('ambient')) return 'lofi';
+    if (text.includes('bhajan') || text.includes('krishna') || text.includes('devotional') || text.includes('ram')) return 'bhajan';
+    if (text.includes('rock') || text.includes('metal') || text.includes('guitar')) return 'rock';
     
     return 'trending';
   }, []);
@@ -156,11 +158,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const fetchMoodLineage = useCallback(async (mood: string) => {
     if (!smartMood) return;
     try {
-      console.log(`AYUMUSIC: Fetching mood resonance lineage for: "${mood}"`);
       const resonance = await fetchAudiusMoodTracks(mood);
       if (resonance.length > 0) {
         setAutoMixQueue(resonance);
-        console.log(`AYUMUSIC: Neural lineage established with ${resonance.length} frequencies.`);
+        console.log(`AYUMUSIC: Neural lineage established for mood: ${mood}`);
       }
     } catch (e) {
       console.warn('AYUMUSIC: Failed to fetch mood resonance');
@@ -232,6 +233,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setProgress(0);
     setDuration(0);
     setIsPlayerOpen(false);
+    setAutoMixQueue([]);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   }, []);
 
@@ -247,35 +249,28 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(() => {
     const currentQueue = queueRef.current;
-    const currentMood = currentTrackRef.current ? inferMoodFromTrack(currentTrackRef.current) : null;
-
+    
+    // 1. Check if we are in the middle of a queue
     if (currentQueue.length > 0) {
       const currentIdx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
-      
-      // Try finding next same-mood track in queue
-      const nextSameMood = currentQueue.slice(currentIdx + 1).find(s => inferMoodFromTrack(s) === currentMood);
-      if (nextSameMood) {
-        playTrack(nextSameMood);
-        return;
-      }
-
-      // Default to next in queue if no mood match
       if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
         playTrack(currentQueue[currentIdx + 1]);
         return;
       }
     }
 
+    // 2. Queue ended: Start Spotify-style auto-recommendation
     if (smartMood && autoMixQueueRef.current.length > 0) {
       const nextMoodSong = autoMixQueueRef.current[0];
       setAutoMixQueue(prev => prev.slice(1));
-      console.log('AYUMUSIC: Transitioning to infinite mood resonance');
+      console.log('AYUMUSIC: Transitioning to infinite auto-recommendation resonance');
       playTrack(nextMoodSong);
       return;
     }
 
+    // 3. Last fallback
     playRandomTrack();
-  }, [playTrack, playRandomTrack, smartMood, inferMoodFromTrack]);
+  }, [playTrack, playRandomTrack, smartMood]);
 
   const prevTrack = useCallback(() => {
     const currentQueue = queueRef.current;

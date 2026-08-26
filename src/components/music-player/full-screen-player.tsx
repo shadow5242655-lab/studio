@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -12,6 +11,7 @@ import { cn } from '@/lib/utils';
 /**
  * @fileOverview High-fidelity full-screen player view.
  * Responsive architecture ensuring bottom controls are never hidden on short viewports.
+ * Hardware-stabilized triggers for immersive layers (Lyrics/Queue).
  */
 
 export function FullScreenPlayer() {
@@ -87,7 +87,7 @@ export function FullScreenPlayer() {
             variant="ghost" 
             size="icon" 
             onClick={() => toggleLike(currentTrack)} 
-            className="text-neutral-500 hover:text-primary transition-colors h-12 w-12"
+            className="text-neutral-500 hover:text-primary transition-colors h-12 w-12 lag-free-tap"
           >
             <Heart className={cn("h-7 w-7 transition-all", isLiked(currentTrack.id) && "fill-primary text-primary scale-110")} />
           </Button>
@@ -115,16 +115,16 @@ export function FullScreenPlayer() {
 
         {/* Playback Controls */}
         <div className="w-full max-w-[400px] flex items-center justify-around shrink-0 py-2">
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12" onClick={prevTrack}>
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12 lag-free-tap" onClick={prevTrack}>
             <SkipBack className="h-8 w-8 fill-current" />
           </Button>
           <Button 
             onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-            className="bg-primary text-white rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform shadow-[0_0_30px_rgba(255,0,0,0.3)] flex items-center justify-center"
+            className="bg-primary text-white rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform shadow-[0_0_30px_rgba(255,0,0,0.3)] flex items-center justify-center lag-free-tap"
           >
             {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current ml-1.5" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12" onClick={nextTrack}>
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12 lag-free-tap" onClick={nextTrack}>
             <SkipForward className="h-8 w-8 fill-current" />
           </Button>
         </div>
@@ -133,12 +133,12 @@ export function FullScreenPlayer() {
         <div className="w-full max-w-[400px] flex items-center justify-between pt-2 shrink-0 border-t border-white/5">
           <Button 
             variant="ghost" 
-            className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-primary transition-colors" 
+            className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-primary transition-colors lag-free-tap" 
             onClick={() => setIsLyricsOpen(true)}
           >
             <Music2 className="h-4 w-4" /> Lyrics
           </Button>
-          <Button variant="ghost" className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white">
+          <Button variant="ghost" className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white lag-free-tap">
             <ListMusic className="h-4 w-4" /> Queue
           </Button>
         </div>

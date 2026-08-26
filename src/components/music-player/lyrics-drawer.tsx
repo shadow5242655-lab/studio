@@ -6,6 +6,11 @@ import { useMusic, useMusicProgress } from './player-context';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview High-fidelity lyrics drawer with frame-perfect synced highlighting.
+ * Hardware-stabilized z-index anchored at the pinnacle of the playback stack.
+ */
+
 export function LyricsDrawer() {
   const { isLyricsOpen, setIsLyricsOpen, lyrics, loadingLyrics, currentTrack } = useMusic();
   const { progress } = useMusicProgress();
@@ -16,9 +21,6 @@ export function LyricsDrawer() {
   // High-fidelity highlighting and debug logging
   useEffect(() => {
     if (lyrics?.synced.length) {
-      // Debug log as requested to verify progress resonance
-      console.log('Updating lyrics at:', progress);
-
       let currentIndex = -1;
       for (let i = 0; i < lyrics.synced.length; i++) {
         if (lyrics.synced[i].time <= progress) {
@@ -43,16 +45,16 @@ export function LyricsDrawer() {
   if (!isLyricsOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end">
+    <div className="fixed inset-0 z-[300] flex items-end">
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-xl"
         onPointerDown={() => setIsLyricsOpen(false)}
       />
       
-      <div className="relative w-full h-[85vh] bg-neutral-900/90 border-t border-white/10 rounded-t-[2.5rem] flex flex-col p-8 animate-in slide-in-from-bottom duration-500 overflow-hidden backdrop-blur-2xl">
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/10 rounded-full" />
+      <div className="relative w-full h-[85vh] bg-neutral-900/90 border-t border-white/10 rounded-t-[2.5rem] flex flex-col p-8 animate-in slide-in-from-bottom duration-500 overflow-hidden backdrop-blur-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/20 rounded-full" />
         
-        <header className="flex items-center justify-between mb-8 shrink-0">
+        <header className="flex items-center justify-between mb-8 shrink-0 mt-2">
           <div className="flex items-center gap-4">
             <div className="bg-primary/20 p-2 rounded-xl">
               <Music2 className="h-6 w-6 text-primary" />
@@ -62,7 +64,7 @@ export function LyricsDrawer() {
               <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest truncate max-w-[200px]">{currentTrack?.name}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onPointerDown={() => setIsLyricsOpen(false)} className="rounded-full bg-white/5 hover:bg-white/10 text-white">
+          <Button variant="ghost" size="icon" onClick={() => setIsLyricsOpen(false)} className="rounded-full bg-white/5 hover:bg-white/10 text-white lag-free-tap">
             <X className="h-6 w-6" />
           </Button>
         </header>

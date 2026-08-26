@@ -39,6 +39,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'audius.zeogrid.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.audius.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.audius.org',
+      },
     ],
   },
 };

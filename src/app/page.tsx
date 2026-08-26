@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, playRandomTrack } = useMusic();
@@ -72,7 +73,6 @@ export default function Home() {
       // Fetch distinct trending songs
       const trending = await getTrending();
       const dailyIds = new Set(filteredDaily.map(s => s.id));
-      // Ensure trending songs are not duplicates of daily picks
       const filteredTrending = trending.filter(s => !dailyIds.has(s.id)).slice(0, 10);
       setTrendingSongs(filteredTrending);
 
@@ -110,6 +110,21 @@ export default function Home() {
       setDisplaySongs(results);
     } catch (e) {
       console.error("Search failed", e);
+    } finally {
+      setVibeLoading(false);
+    }
+  };
+
+  const handleCategoryPlay = async (category: string, query: string) => {
+    setVibeLoading(true);
+    try {
+      const results = await searchSongs(query);
+      if (results.length > 0) {
+        playTrack(results[0], results);
+        toast({ title: `Playing ${category}`, description: `Resonating ${results.length} tracks.` });
+      }
+    } catch (e) {
+      console.error("Category resonance failed", e);
     } finally {
       setVibeLoading(false);
     }
@@ -372,26 +387,75 @@ export default function Home() {
           </section>
         )}
 
-        {/* 7. TOP CHARTS / FRESH PLAYLISTS (HORIZONTAL SCROLL) */}
+        {/* 7. TOP CHARTS (HORIZONTAL SCROLL WITH PHOTOS) */}
         {!isSearching && (
           <section className="space-y-6">
             <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Top Charts</h2>
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
-              {['INDIA TOP 50', 'GLOBAL TOP 50', 'INDIE HITS', 'BENGALI BEATS'].map((chart, idx) => (
+              {[
+                { name: 'INDIA TOP 50', query: 'India Top 50 2024', seed: 'chart-india' },
+                { name: 'GLOBAL TOP 50', query: 'Global Top 50 2024', seed: 'chart-global' },
+                { name: 'INDIE HITS', query: 'Indian Indie Hits', seed: 'chart-indie' },
+                { name: 'BENGALI BEATS', query: 'Bengali Hits 2024', seed: 'chart-bengali' },
+              ].map((chart) => (
                 <div 
-                  key={chart} 
-                  className="h-40 w-40 rounded-[2rem] bg-gradient-to-br from-primary/20 to-black border border-white/5 flex flex-col justify-end p-6 shrink-0 group hover:scale-105 transition-transform cursor-pointer"
+                  key={chart.name} 
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handlePointerUp(() => handleCategoryPlay(chart.name, chart.query))}
+                  className="h-44 w-40 rounded-[2rem] relative overflow-hidden border border-white/5 shrink-0 group hover:scale-105 transition-transform cursor-pointer shadow-2xl"
                 >
-                  <Music2 className="h-8 w-8 text-primary mb-2" />
-                  <p className="font-black italic uppercase tracking-tighter text-sm leading-none">{chart}</p>
-                  <p className="text-[8px] text-neutral-500 uppercase tracking-widest mt-1">Updated Daily</p>
+                  <img 
+                    src={`https://picsum.photos/seed/${chart.seed}/400/400`} 
+                    alt={chart.name} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    data-ai-hint="music album cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-6">
+                    <Music2 className="h-6 w-6 text-primary mb-2 shadow-lg" />
+                    <p className="font-black italic uppercase tracking-tighter text-sm leading-none drop-shadow-md">{chart.name}</p>
+                    <p className="text-[8px] text-neutral-400 uppercase tracking-widest mt-1 font-bold">Updated Daily</p>
+                  </div>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* 8. NEW RELEASES / BUZZING ALBUMS */}
+        {/* 8. FRESH PLAYLISTS (HORIZONTAL SCROLL WITH PHOTOS) */}
+        {!isSearching && (
+          <section className="space-y-6">
+            <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Fresh Playlists</h2>
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+              {[
+                { name: 'Morning Vibes', query: 'Soft Morning Acoustic', seed: 'play-morning' },
+                { name: 'Late Night Lofi', query: 'Lofi Hip Hop Sleep', seed: 'play-lofi' },
+                { name: 'Gym Motivation', query: 'Workout Bass Boost', seed: 'play-gym' },
+                { name: 'Relaxing Rain', query: 'Nature Rain Sounds', seed: 'play-rain' },
+              ].map((playlist) => (
+                <div 
+                  key={playlist.name} 
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handlePointerUp(() => handleCategoryPlay(playlist.name, playlist.query))}
+                  className="h-44 w-40 rounded-[2rem] relative overflow-hidden border border-white/5 shrink-0 group hover:scale-105 transition-transform cursor-pointer shadow-2xl"
+                >
+                  <img 
+                    src={`https://picsum.photos/seed/${playlist.seed}/400/400`} 
+                    alt={playlist.name} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    data-ai-hint="lifestyle playlist cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent flex flex-col justify-end p-6">
+                    <Sparkles className="h-5 w-5 text-primary mb-2" />
+                    <p className="font-black italic uppercase tracking-tighter text-sm leading-none drop-shadow-md">{playlist.name}</p>
+                    <p className="text-[8px] text-neutral-400 uppercase tracking-widest mt-1 font-bold">Curated for you</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 9. BUZZING ALBUMS */}
         {!isSearching && (
           <section className="space-y-6">
             <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Buzzing Albums</h2>
@@ -401,7 +465,7 @@ export default function Home() {
                   key={`album-${song.id}`}
                   onPointerDown={handlePointerDown}
                   onPointerUp={handlePointerUp(() => playTrack(song, trendingSongs))}
-                  className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer border border-white/5"
+                  className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer border border-white/5 shadow-xl"
                 >
                   <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">

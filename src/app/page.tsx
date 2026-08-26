@@ -145,12 +145,26 @@ export default function Home() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [daily, trending] = await Promise.all([
+      // Fetch Barian, Top Hits, and Trending
+      const [barianResults, dailyResults, trending] = await Promise.all([
+        searchSongs("Barian Bilal Saeed", 1),
         searchSongs("Latest Top Hits 2024", 1),
         getTrending(1)
       ]);
       
-      setDisplaySongs(daily.slice(0, 10));
+      // Filter out 'banali' and ensure 'Barian' is at the top
+      const filteredDaily = dailyResults.filter(s => 
+        !s.name.toLowerCase().includes('banali') && 
+        !s.name.toLowerCase().includes('banalli')
+      );
+
+      // Prepend the most likely 'Barian' song
+      const barian = barianResults[0];
+      const combinedDaily = barian 
+        ? [barian, ...filteredDaily.filter(s => s.id !== barian.id)]
+        : filteredDaily;
+
+      setDisplaySongs(combinedDaily.slice(0, 10));
       setTrendingSongs(trending.slice(0, 10));
 
       searchSongs("Punjabi Top Hits 2024", 1).then(songs => 
@@ -214,6 +228,13 @@ export default function Home() {
       console.error("Search failed", e);
     } finally {
       setVibeLoading(false);
+    }
+  };
+
+  const handlePlayAll = () => {
+    if (displaySongs.length > 0) {
+      console.log('AYUMUSIC: Play All triggered with', displaySongs.length, 'tracks');
+      playTrack(displaySongs[0], displaySongs);
     }
   };
 
@@ -342,7 +363,7 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"
-                onClick={() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs)}
+                onClick={handlePlayAll}
               >
                 <Play className="h-3 w-3 fill-current" /> Play all
               </Button>

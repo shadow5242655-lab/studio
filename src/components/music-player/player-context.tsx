@@ -123,7 +123,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.addEventListener('ended', () => {
-        console.log('AYUMUSIC: Sound cycle complete. Initiating auto-recommendation.');
+        console.log('AYUMUSIC: Sound cycle complete. Transitioning lineage.');
         nextTrackInternalRef.current();
       });
 
@@ -151,6 +151,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (text.includes('lofi') || text.includes('chill') || text.includes('sleep') || text.includes('relax') || text.includes('rain') || text.includes('ambient')) return 'lofi';
     if (text.includes('bhajan') || text.includes('krishna') || text.includes('devotional') || text.includes('ram')) return 'bhajan';
     if (text.includes('rock') || text.includes('metal') || text.includes('guitar')) return 'rock';
+    if (text.includes('pop') || text.includes('indie') || text.includes('sufi')) return 'pop';
     
     return 'trending';
   }, []);
@@ -250,7 +251,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const nextTrack = useCallback(() => {
     const currentQueue = queueRef.current;
     
-    // 1. Check if we are in the middle of a queue
     if (currentQueue.length > 0) {
       const currentIdx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
       if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
@@ -259,7 +259,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 2. Queue ended: Start Spotify-style auto-recommendation
     if (smartMood && autoMixQueueRef.current.length > 0) {
       const nextMoodSong = autoMixQueueRef.current[0];
       setAutoMixQueue(prev => prev.slice(1));
@@ -268,7 +267,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 3. Last fallback
     playRandomTrack();
   }, [playTrack, playRandomTrack, smartMood]);
 

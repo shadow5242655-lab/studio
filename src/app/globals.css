@@ -90,7 +90,6 @@
   text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.5);
 }
 
-/* Hardened tap area for mobile controls */
 .lag-free-tap {
   -webkit-tap-highlight-color: transparent;
   user-select: none;

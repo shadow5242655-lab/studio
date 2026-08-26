@@ -1,54 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Song, searchSongs, formatDuration, getBestImage, decodeEntities } from '@/lib/music-api';
+import { Song, searchSongs, getBestImage, decodeEntities } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, 
-  Search, TrendingUp, ListMusic
+  Heart, Play, Music2, Search, Smartphone, Settings2, 
+  Sparkles, Shuffle, Menu, Heart as HeartIcon, 
+  Coffee, Dumbbell, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
-
-const TopChips = () => {
-  const chips = ["Songs", "Artists", "Albums", "Playlists", "Genres", "Podcasts"];
-  return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-4">
-      {chips.map((chip) => (
-        <button
-          key={chip}
-          className="flex-shrink-0 px-5 py-2 rounded-full bg-[#1e1e1e] border border-white/5 text-xs font-bold text-neutral-400 hover:text-white hover:bg-[#282828] transition-all lag-free-tap"
-        >
-          {chip}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-const SectionHeader = ({ title, showPlayAll, onPlayAll }: { title: string, showPlayAll?: boolean, onPlayAll?: () => void }) => (
-  <div className="flex items-center justify-between px-4 mb-4">
-    <h2 className="text-xl font-bold tracking-tight text-white uppercase">{title}</h2>
-    {showPlayAll && (
-      <button 
-        onPointerDown={(e) => { e.preventDefault(); onPlayAll?.(); }}
-        className="flex items-center gap-1.5 text-[10px] font-black text-white bg-white/5 px-3 py-1.5 rounded-full lag-free-tap active:scale-95"
-      >
-        <Play className="h-3 w-3 fill-current" /> PLAY ALL
-      </button>
-    )}
-  </div>
-);
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack } = useMusic();
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
-  const [trending, setTrending] = useState<Song[]>([]);
-  const [charts, setCharts] = useState<any[]>([]);
-  const [playlists, setPlaylists] = useState<any[]>([]);
-  const [releases, setReleases] = useState<any[]>([]);
-  const [albums, setAlbums] = useState<any[]>([]);
-  const [featured, setFeatured] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,54 +22,18 @@ export default function Home() {
       setLoading(true);
       try {
         const dailyTerms = [
-          "Barsaat Banjaare",
+          "Sheesha Aakhya Mai Aakh",
           "Bairan Banjaare",
-          "Sheesha Mitta Ror",
           "Fortuner Raj Mawar",
           "Kamar DJ Pe Manish",
           "80 Lakh D Naveen",
           "Kabze Bintu Pabra",
           "Mithe Tere Bol Masoom"
         ];
-        const trendingTerms = [
-          "Sohniye Tu Zubeen Garg",
-          "Bhalolaage Tomake Arijit Singh",
-          "Akasheo Alpo Neel Arijit Singh",
-          "Dandelions Ruth B",
-          "Boom Shaka Dhanda Nyoliwala"
-        ];
-        
-        const [dailyRes, trendingRes, featuredRes] = await Promise.all([
-          Promise.all(dailyTerms.map(t => searchSongs(t).then(r => r[0]))),
-          Promise.all(trendingTerms.map(t => searchSongs(t).then(r => r[0]))),
-          searchSongs("Jamaican Bam Bam Hugel").then(r => r[0])
-        ]);
-
+        const dailyRes = await Promise.all(
+          dailyTerms.map(t => searchSongs(t).then(r => r[0]))
+        );
         setDailyPicks(dailyRes.filter(Boolean));
-        setTrending(trendingRes.filter(Boolean));
-        setFeatured(featuredRes || null);
-        
-        setCharts([
-          { name: "INDIA SUPERHITS TOP 50", sub: "Hindi", duration: "2h 45m" },
-          { name: "GLOBAL TOP 50", sub: "International", duration: "3h 10m" },
-          { name: "BENGALI BEATS", sub: "Bengali", duration: "1h 50m" },
-          { name: "INDIE ROCK", sub: "Indie", duration: "2h 15m" },
-          { name: "BHAJAN", sub: "Bhajan", duration: "4h 00m" },
-          { name: "SUFI", sub: "Sufi", duration: "3h 20m" }
-        ]);
-
-        setPlaylists([
-          { name: "Chartbusters 2026 - B...", songs: 50, saves: 109 },
-          { name: "Chartbusters 2026 - In...", songs: 45, saves: 88 },
-          { name: "Viral Nation", songs: 60, saves: 245 }
-        ]);
-
-        const releaseRes = await searchSongs("Latest Releases 2024", 1);
-        setReleases(releaseRes.slice(0, 6));
-
-        const albumRes = await searchSongs("Buzzing Albums", 1);
-        setAlbums(albumRes.slice(0, 6));
-
       } catch (e) {
         console.error("Data load failed", e);
       } finally {
@@ -118,174 +48,132 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl">
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-30 border-b border-white/5">
+    <div className="bg-black min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl">
+      {/* Header */}
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-md z-30">
         <div className="flex items-center gap-2">
-          <div className="bg-primary p-1 rounded-lg"><Music2 className="h-5 w-5 text-white" /></div>
-          <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+          <div className="bg-primary p-1 rounded-full">
+            <Music2 className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Search className="h-5 w-5 text-neutral-400" />
-          <div className="h-8 w-8 rounded-full bg-neutral-800 border border-white/10" />
-        </div>
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+          <Menu className="h-6 w-6" />
+        </Button>
       </header>
 
-      <main className="space-y-10 py-4">
-        {/* 1. Top Navigation Chips */}
-        <TopChips />
+      <main className="py-4">
+        {/* Search Bar */}
+        <div className="px-4 flex items-center gap-3 mb-8">
+          <Music2 className="h-6 w-6 text-primary" />
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+            <Input 
+              placeholder="Search for sounds..." 
+              className="pl-9 bg-[#1a1a1a] border-none text-sm h-11 rounded-xl focus-visible:ring-primary/50" 
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
+              <Smartphone className="h-4 w-4 text-neutral-500" />
+              <Settings2 className="h-4 w-4 text-neutral-500" />
+            </div>
+          </div>
+        </div>
 
-        {/* 2. Daily picks */}
+        {/* Hero Card */}
+        <div className="px-4 mb-10">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#2a1a1a] via-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl">
+            <div className="absolute top-8 right-8 text-primary/5 -rotate-12 pointer-events-none">
+              <Music2 className="h-40 w-40" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10 text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                <Sparkles className="h-3 w-3 text-primary" /> NO ADS • NO SIGN-UP
+              </div>
+              <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">AYUMUSIC</h1>
+              <p className="text-sm text-neutral-400 max-w-[260px] leading-relaxed font-medium">
+                High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary font-bold">320 kbps</span>.
+              </p>
+              <div className="flex gap-3">
+                <Button className="rounded-full bg-primary hover:bg-primary/90 text-white font-black uppercase italic tracking-tight gap-2 h-12 px-8 lag-free-tap shadow-lg shadow-primary/20">
+                  <Play className="h-4 w-4 fill-current" /> Play Trending
+                </Button>
+                <Button variant="secondary" className="rounded-full bg-white/5 hover:bg-white/10 text-white font-black uppercase italic tracking-tight gap-2 h-12 px-8 border border-white/5 lag-free-tap">
+                  <Shuffle className="h-4 w-4" /> Shuffle
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Vibe Chips */}
+        <section className="px-4 mb-10">
+          <h2 className="text-lg font-black italic uppercase text-white tracking-tighter mb-4">PICK A VIBE</h2>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            {[
+              { name: 'Romance', icon: HeartIcon },
+              { name: 'Party', icon: Star },
+              { name: 'Lo-fi', icon: Coffee },
+              { name: 'Workout', icon: Dumbbell }
+            ].map((vibe) => (
+              <Button 
+                key={vibe.name}
+                variant="secondary" 
+                className="rounded-2xl bg-[#1a1a1a] text-white border border-white/5 px-6 h-12 gap-3 font-bold uppercase italic tracking-tighter lag-free-tap shrink-0"
+              >
+                <vibe.icon className="h-4 w-4 text-neutral-400" /> {vibe.name}
+              </Button>
+            ))}
+          </div>
+        </section>
+
+        {/* Daily Picks */}
         <section>
-          <SectionHeader title="Daily picks" showPlayAll onPlayAll={() => dailyPicks.length > 0 && handleSongPlay(dailyPicks[0], dailyPicks)} />
-          <div className="px-4 space-y-2">
-            {dailyPicks.map((song) => (
+          <div className="flex items-center justify-between px-4 mb-6">
+            <h2 className="text-xl font-black italic uppercase text-white tracking-tighter">DAILY PICKS</h2>
+            <button 
+              onPointerDown={(e) => { e.preventDefault(); dailyPicks.length > 0 && handleSongPlay(dailyPicks[0], dailyPicks); }}
+              className="flex items-center gap-1.5 text-[10px] font-black text-white bg-white/5 px-4 py-2 rounded-xl lag-free-tap active:scale-95"
+            >
+              <Play className="h-3 w-3 fill-current" /> PLAY ALL
+            </button>
+          </div>
+          
+          <div className="px-4 space-y-3">
+            {loading ? (
+              Array(6).fill(0).map((_, i) => (
+                <div key={`daily-skeleton-${i}`} className="h-20 bg-[#1a1a1a] rounded-2xl animate-pulse" />
+              ))
+            ) : dailyPicks.map((song) => (
               <div 
                 key={song.id} 
                 onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, dailyPicks); }}
-                className="flex items-center justify-between p-3 bg-[#1e1e1e] rounded-xl border border-white/5 lag-free-tap cursor-pointer active:scale-[0.98] transition-transform"
+                className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-[1.25rem] border border-white/5 lag-free-tap cursor-pointer active:scale-[0.98] transition-transform group"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
-                    <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
+                  <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg border border-white/5">
+                    <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                   </div>
                   <div className="min-w-0">
-                    <p className={cn("font-bold text-sm truncate", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{decodeEntities(song.name)}</p>
-                    <p className="text-[10px] text-neutral-500 truncate uppercase">{song.artists.primary.map(a => a.name).join(', ')}</p>
+                    <p className={cn(
+                      "font-bold text-sm leading-tight italic uppercase tracking-tight", 
+                      currentTrack?.id === song.id ? "text-primary" : "text-white"
+                    )}>
+                      {decodeEntities(song.name)}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 truncate uppercase mt-1 font-bold tracking-widest">
+                      {song.artists.primary.map(a => a.name).join(', ')}
+                    </p>
                   </div>
                 </div>
                 <button 
                   onPointerDown={(e) => { e.stopPropagation(); toggleLike(song); }}
-                  className="p-2 text-neutral-600 hover:text-primary transition-colors"
+                  className="p-2 text-neutral-700 hover:text-primary transition-colors lag-free-tap"
                 >
                   <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
                 </button>
               </div>
             ))}
           </div>
-        </section>
-
-        {/* 3. Trending now */}
-        <section>
-          <SectionHeader title="Trending now" />
-          <div className="px-4 space-y-2">
-            {trending.map((song, idx) => (
-              <div 
-                key={song.id} 
-                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, trending); }}
-                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-xl transition-all lag-free-tap cursor-pointer active:scale-[0.98]"
-              >
-                <span className="text-sm font-bold text-neutral-600 min-w-[20px] text-center">{idx + 1}</span>
-                <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
-                  <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("font-bold text-sm truncate", currentTrack?.id === song.id ? "text-primary" : "text-white")}>{decodeEntities(song.name)}</p>
-                  <p className="text-[10px] text-neutral-500 truncate uppercase">{song.artists.primary.map(a => a.name).join(', ')}</p>
-                </div>
-                <span className="text-[10px] font-medium text-neutral-500 font-mono">{formatDuration(song.duration)}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 4. Top charts */}
-        <section>
-          <SectionHeader title="Top charts" />
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-            {charts.map((chart) => (
-              <div key={chart.name} className="min-w-[160px] p-4 bg-[#1e1e1e] rounded-xl border border-white/5 space-y-3">
-                <div className="aspect-square bg-neutral-800 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-10 w-10 text-neutral-700" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white leading-tight">{chart.name}</h3>
-                  <p className="text-[9px] text-neutral-500 uppercase font-medium mt-1">{chart.sub} • {chart.duration}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 5. Fresh playlists */}
-        <section>
-          <SectionHeader title="Fresh playlists" />
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-            {playlists.map((pl) => (
-              <div key={pl.name} className="min-w-[140px] space-y-2">
-                <div className="aspect-square bg-[#1e1e1e] rounded-xl border border-white/5 flex items-center justify-center">
-                  <ListMusic className="h-12 w-12 text-neutral-800" />
-                </div>
-                <div className="px-1">
-                  <h3 className="text-[11px] font-bold text-white truncate">{pl.name}</h3>
-                  <p className="text-[9px] text-neutral-500 uppercase">{pl.songs} Songs • {pl.saves} Saves</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 6. New releases */}
-        <section>
-          <SectionHeader title="New releases" />
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-            {releases.map((song) => (
-              <div 
-                key={song.id} 
-                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, releases); }}
-                className="min-w-[140px] space-y-2 cursor-pointer lag-free-tap active:scale-95"
-              >
-                <div className="aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
-                  <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
-                </div>
-                <div className="px-1">
-                  <h3 className="text-[11px] font-bold text-white truncate">{decodeEntities(song.name)}</h3>
-                  <p className="text-[9px] text-neutral-500 truncate uppercase">{song.artists.primary[0].name}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 7. Buzzing albums */}
-        <section>
-          <SectionHeader title="Buzzing albums" />
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
-            {albums.map((song) => (
-              <div 
-                key={song.id} 
-                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, albums); }}
-                className="min-w-[140px] space-y-2 cursor-pointer lag-free-tap active:scale-95"
-              >
-                <div className="aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
-                  <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
-                </div>
-                <div className="px-1">
-                  <h3 className="text-[11px] font-bold text-white truncate">{decodeEntities(song.name)}</h3>
-                  <p className="text-[9px] text-neutral-500 truncate uppercase">Featured Artist</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 8. Main Release Highlight */}
-        <section className="px-4 pb-12">
-          {featured && (
-            <div 
-              onPointerDown={(e) => { e.preventDefault(); handleSongPlay(featured, [featured]); }}
-              className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#282828] to-[#121212] p-6 border border-white/5 flex items-center gap-6 cursor-pointer lag-free-tap active:scale-[0.98]"
-            >
-              <div className="h-24 w-24 rounded-lg bg-neutral-800 overflow-hidden shrink-0 shadow-2xl">
-                <img src={getBestImage(featured) || ''} className="h-full w-full object-cover" alt="" />
-              </div>
-              <div className="flex-1 space-y-2">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Featured Release</span>
-                <h3 className="text-lg font-black text-white italic leading-tight">{decodeEntities(featured.name)}</h3>
-                <p className="text-xs text-neutral-500 uppercase font-bold">{featured.artists.primary[0].name}</p>
-                <Button size="sm" className="rounded-full bg-white text-black font-black mt-2 lag-free-tap">PLAY NOW</Button>
-              </div>
-            </div>
-          )}
         </section>
       </main>
     </div>

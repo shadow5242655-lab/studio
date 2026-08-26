@@ -1,3 +1,4 @@
+
 export interface Song {
   id: string;
   name: string;
@@ -24,7 +25,6 @@ export function decodeEntities(text: string): string {
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    console.log(`AYUMUSIC API: Searching for "${query}" (Page: ${page})`);
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
@@ -36,7 +36,6 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    console.log(`AYUMUSIC API: Fetching trending hits (Page: ${page})`);
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
@@ -47,24 +46,24 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
 }
 
 /**
- * Fetches tracks from Audius based on a mood or keyword.
+ * Fetches tracks from Audius based on a mood or keyword for Auto-Play Lineage.
  * Normalizes the response to match the AYUMUSIC Song interface.
  */
 export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
   try {
-    console.log(`AYUMUSIC API: Fetching Audius resonance for mood: "${mood}"`);
+    console.log(`AYUMUSIC API: Fetching Audius resonance for: "${mood}"`);
     const res = await fetch(`${AUDIUS_API_BASE}/tracks/search?query=${encodeURIComponent(mood)}&limit=20`);
     const data = await res.json();
     
     if (!data.data) return [];
 
     return data.data.map((track: any) => ({
-      id: track.id,
+      id: String(track.id),
       name: track.title,
       artists: { primary: [{ name: track.user.name, id: track.user.id }] },
-      image: [{ link: track.artwork?.['480x480'] || track.artwork?.['150x150'] || '', quality: 'high' }],
+      image: [{ link: track.artwork?.['480x480'] || track.artwork?.['150x150'] || 'https://picsum.photos/seed/audius/400/400', quality: 'high' }],
       downloadUrl: [{ link: `${AUDIUS_API_BASE}/tracks/${track.id}/stream`, quality: 'high' }],
-      duration: track.duration,
+      duration: Math.floor(track.duration),
     }));
   } catch (error) {
     console.error('AYUMUSIC API: Audius resonance failed:', error);
@@ -87,13 +86,9 @@ export function getBestImage(item: any): string | null {
 
 export function getBestDownload(song: Song): string {
   if (!song?.downloadUrl?.length) {
-    console.warn('AYUMUSIC API: No download URLs available for song:', song.id);
     return '';
   }
+  // Select highest quality download URL
   const best = song.downloadUrl[song.downloadUrl.length - 1];
-  const url = best?.link || best?.url || '';
-  if (!url) {
-    console.warn('AYUMUSIC API: Best download object contains no valid link:', best);
-  }
-  return url;
+  return best?.link || best?.url || '';
 }

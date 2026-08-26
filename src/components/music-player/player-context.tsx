@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -105,11 +106,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const fetchMoodLineage = useCallback(async (mood: string) => {
     if (!smartMood) return;
     try {
-      console.log('AYUMUSIC NEURAL: Architecting next resonance for mood:', mood);
+      console.log('AYUMUSIC NEURAL: Fetching background resonance for mood:', mood);
       const resonance = await fetchAudiusMoodTracks(mood);
       if (resonance.length > 0) {
-        setAutoMixQueue(resonance);
-        autoMixQueueRef.current = resonance;
+        // We append to the queue to ensure infinite flow
+        setAutoMixQueue(prev => {
+          const combined = [...prev, ...resonance];
+          const unique = Array.from(new Map(combined.map(s => [s.id, s])).values());
+          autoMixQueueRef.current = unique;
+          return unique;
+        });
       }
     } catch (e) {
       console.warn('AYUMUSIC NEURAL: Resonance fetch failed');
@@ -149,7 +155,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setIsBuffering(false);
     });
 
-    // Neural: Initiate background fetching for auto-recommendation immediately
+    // Neural: Pre-fetch next recommendations immediately
     if (track.mood) {
       fetchMoodLineage(track.mood);
     }
@@ -165,38 +171,34 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
   }, [playTrackInternal]);
 
-  /**
-   * handleSongEnd Logic:
-   * 1. Check if playlist has more songs.
-   * 2. If playlist ends or it was a single song, trigger startAutoRecommendation.
-   */
   const startAutoRecommendation = useCallback(async () => {
     const lastSong = currentTrackRef.current;
     const mood = lastSong?.mood || 'pop';
     
-    console.log('AYUMUSIC NEURAL: Song ended. Starting auto-recommendation with mood:', mood);
+    console.log('AYUMUSIC NEURAL: Queue ended. Starting auto-recommendation with mood:', mood);
 
-    // Use pre-fetched autoMixQueue if available
+    // 1. Try pre-fetched queue
     if (autoMixQueueRef.current.length > 0) {
       const nextSong = autoMixQueueRef.current[0];
+      const newAutoQueue = autoMixQueueRef.current.slice(1);
+      autoMixQueueRef.current = newAutoQueue;
+      setAutoMixQueue(newAutoQueue);
       console.log('AYUMUSIC NEURAL: Playing from pre-fetched mood queue:', nextSong.name);
-      setAutoMixQueue(prev => prev.slice(1));
-      autoMixQueueRef.current = autoMixQueueRef.current.slice(1);
       playTrackInternal(nextSong);
       return;
     }
 
-    // Fallback: Fetch mood-matched tracks on the fly
+    // 2. Fetch fresh resonance if queue is empty
     try {
       const resonance = await fetchAudiusMoodTracks(mood);
       const filtered = resonance.filter(s => s.id !== lastSong?.id);
       
       if (filtered.length > 0) {
-        console.log('AYUMUSIC NEURAL: Found mood-matched resonance:', filtered.length, 'tracks');
+        console.log('AYUMUSIC NEURAL: Found fresh mood-matched resonance:', filtered[0].name);
         playTrackInternal(filtered[0], filtered.slice(1));
       } else {
-        // Ultimate Fallback: Random shuffle all trending
-        console.log('AYUMUSIC NEURAL: No mood matches. Falling back to random shuffle.');
+        // 3. Ultimate Fallback: Trending
+        console.log('AYUMUSIC NEURAL: No matches. Falling back to Trending.');
         playRandomTrackInternal();
       }
     } catch (e) {
@@ -208,17 +210,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const currentQueue = queueRef.current;
     const currentSong = currentTrackRef.current;
     
-    // Check if there's a manual playlist/queue and more songs to play
+    // Play next in manual queue/playlist
     if (currentQueue.length > 0) {
       const currentIdx = currentQueue.findIndex(s => s.id === currentSong?.id);
       if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
-        console.log('AYUMUSIC: Playing next in playlist/queue');
+        console.log('AYUMUSIC: Playing next in manual lineage');
         playTrackInternal(currentQueue[currentIdx + 1]);
         return;
       }
     }
 
-    // Playlist ended or single song: start auto-recommendation
+    // Otherwise, transition to Neural Auto-Recommendation
     startAutoRecommendation();
   }, [playTrackInternal, startAutoRecommendation]);
 
@@ -254,9 +256,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setDuration(audio.duration);
       });
 
-      // Hardware-Stabilized onended event
       audio.onended = () => {
-        console.log('AYUMUSIC NEURAL: onended event triggered.');
+        console.log('AYUMUSIC NEURAL: Track ended. Initiating next resonance...');
         nextTrackInternal();
       };
     }

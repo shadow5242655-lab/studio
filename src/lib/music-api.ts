@@ -6,6 +6,7 @@ export interface Song {
   image: { link: string; url?: string; quality: string }[];
   downloadUrl: { link: string; url?: string; quality: string }[];
   duration: number;
+  mood?: string;
 }
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
@@ -64,6 +65,7 @@ export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
       image: [{ link: track.artwork?.['480x480'] || track.artwork?.['150x150'] || 'https://picsum.photos/seed/audius/400/400', quality: 'high' }],
       downloadUrl: [{ link: `${AUDIUS_API_BASE}/tracks/${track.id}/stream`, quality: 'high' }],
       duration: Math.floor(track.duration),
+      mood: mood
     }));
   } catch (error) {
     console.error('AYUMUSIC API: Audius resonance failed:', error);

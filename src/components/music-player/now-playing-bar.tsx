@@ -29,7 +29,7 @@ export function NowPlayingBar() {
       "fixed left-0 right-0 h-24 bg-black border-t border-white/5 px-4 flex items-center z-50",
       "bottom-16" 
     )}>
-      {/* Spotify Close Button - Top Right */}
+      {/* Spotify-Style Close Button - Top Right */}
       <button 
         onClick={(e) => {
           e.stopPropagation();
@@ -82,7 +82,7 @@ export function NowPlayingBar() {
             </Button>
             <Button 
               className="bg-white text-black rounded-full h-8 w-8 p-0 hover:scale-105 transition-transform"
-              onClick={togglePlay}
+              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             >
               {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
             </Button>
@@ -110,7 +110,7 @@ export function NowPlayingBar() {
           </div>
         </div>
 
-        {/* Volume alignment */}
+        {/* volume alignment */}
         <div className="w-1/3 hidden md:block" />
       </div>
     </div>

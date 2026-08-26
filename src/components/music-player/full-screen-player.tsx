@@ -33,7 +33,7 @@ export function FullScreenPlayer() {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={stopTrack}
+          onClick={(e) => { e.stopPropagation(); stopTrack(); }}
           className="hover:bg-white/5 text-[#b3b3b3] hover:text-primary"
         >
           <X className="h-6 w-6" />
@@ -62,7 +62,7 @@ export function FullScreenPlayer() {
           </Button>
         </div>
 
-        {/* Seek Bar */}
+        {/* Functional Red Seek Bar */}
         <div className="w-full max-w-[400px] space-y-2">
           <Slider 
             value={[progress]} 
@@ -88,7 +88,7 @@ export function FullScreenPlayer() {
             <SkipBack className="h-8 w-8 fill-current" />
           </Button>
           <Button 
-            onClick={togglePlay} 
+            onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
             className="bg-white text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform"
           >
             {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current ml-1" />}

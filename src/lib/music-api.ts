@@ -23,7 +23,7 @@ export function decodeEntities(text: string): string {
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=50`);
+    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
@@ -34,7 +34,7 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=50`);
+    const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {

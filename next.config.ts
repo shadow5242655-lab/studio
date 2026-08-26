@@ -58,6 +58,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.stuffisup.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'v.monophonic.digital',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.monophonic.digital',
+      },
     ],
   },
 };

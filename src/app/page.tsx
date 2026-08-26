@@ -269,9 +269,15 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full max-w-[480px] md:max-w-7xl mx-auto px-6 md:px-10 lg:px-12 font-sans text-white selection:bg-primary/30 animate-in fade-in duration-700">
       <main className="py-8 space-y-12">
-        {/* Search & Meta Section */}
+        {/* Unified Search & Brand Header */}
         <section className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
-          <Music2 className="h-6 w-6 text-primary shrink-0 ml-4" />
+          <div className="flex items-center gap-2 ml-4 shrink-0">
+            <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
+              <Music2 className="h-5 w-5 text-white" />
+            </div>
+            <span className="hidden sm:block font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+          </div>
+          
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
             <Input 
@@ -286,6 +292,7 @@ export default function Home() {
               </button>
             )}
           </div>
+          
           <div className="hidden sm:flex gap-6 shrink-0 mr-6">
             <Smartphone className="h-5 w-5 text-neutral-500 hover:text-white transition-colors cursor-pointer" />
             <Settings2 className="h-5 w-5 text-neutral-500 hover:text-white transition-colors cursor-pointer" />

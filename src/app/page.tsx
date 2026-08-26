@@ -44,8 +44,8 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
       } else {
         setSongs(prev => {
           const combined = [...prev, ...data];
-          const uniqueMap = new Map();
-          combined.forEach(s => uniqueMap.set(s.id, s));
+          const uniqueMap = new Map<string, Song>();
+          combined.forEach((s) => uniqueMap.set(s.id, s));
           return Array.from(uniqueMap.values());
         });
         setPage(nextPage);
@@ -69,6 +69,12 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
     searchSongs(query, 1).then(data => {
       if (mounted) {
         setSongs(data);
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
+    }).catch((e) => {
+      console.error('AYUMUSIC: initial fetch failed', e);
+      if (mounted) {
         setLoading(false);
         isFetchingRef.current = false;
       }
@@ -158,7 +164,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
       
       try {
         const results = await Promise.all(queries.map(q => searchSongs(q, 1)));
-        const flatSongs = results.map(res => res[0]).filter(Boolean);
+        const flatSongs = results.map(res => res[0]).filter(Boolean) as Song[];
         setSongs(flatSongs);
       } catch (e) {
         console.error("AYUMUSIC: QuickPicks failed", e);
@@ -278,7 +284,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    loadInitialData();
+    void loadInitialData();
   }, [loadInitialData]);
 
   const handleVibeClick = useCallback((vibe: string) => {
@@ -364,7 +370,7 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-4 md:mx-6 relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0c] p-6 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[280px] md[...]
+            <div className="mx-4 md:mx-6 relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0c] p-6 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[280px]">
               {/* Neural Note Background */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                 <Music2 className="h-[240px] w-[240px] md:h-[280px] md:w-[280px]" />
@@ -393,13 +399,13 @@ export default function Home() {
               <div className="w-full flex flex-row items-center justify-center gap-2 md:gap-4 mt-8 md:mt-10 relative z-10">
                 <button 
                   onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
-                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 shadow-[0_10px_30px_rgba(225,29,72,0.3)] ho[...]
+                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 shadow-[0_10px_30px_rgba(225,29,72,0.3)] hover:brightness-105"
                 >
                   <Play className="h-4 w-4 md:h-5 md:w-5 fill-current" /> PLAY TRENDING
                 </button>
                 <button 
                   onClick={handleShuffle}
-                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 border border-white/5 backdrop-blur-sm[...]
+                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 border border-white/5 backdrop-blur-sm"
                 >
                   <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> SHUFFLE
                 </button>
@@ -455,7 +461,7 @@ export default function Home() {
                   <div 
                     key={`${song.id}-${idx}`}
                     onClick={() => playTrack(song, displaySongs)}
-                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-poi[...]
+                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-95 group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 md:gap-4 min-w-0">
                       <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">

@@ -49,7 +49,6 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const handleScroll = () => {
     if (!scrollRef.current || isFetching || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    // Trigger fetch when 200px from the end
     if (scrollLeft + clientWidth >= scrollWidth - 200) {
       const nextPage = page + 1;
       setPage(nextPage);
@@ -74,7 +73,7 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
     <section className="space-y-4 pt-4">
       <div className="flex items-center justify-between px-6">
         <h2 className="text-lg font-black italic uppercase tracking-tighter text-white">{title}</h2>
-        <span className="text-[9px] font-black text-primary uppercase tracking-widest">Resonance Lineage</span>
+        <span className="text-[9px] font-black text-primary uppercase tracking-widest">Neural Resonance</span>
       </div>
       <div 
         ref={scrollRef}
@@ -112,18 +111,14 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
 };
 
 export default function Home() {
-  const { playTrack, toggleLike, isLiked, currentTrack, isPlaying, togglePlay } = useMusic();
+  const { playTrack, toggleLike, isLiked, currentTrack, isPlaying } = useMusic();
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
       const results = await getTrending();
@@ -133,7 +128,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
   const handleVibeClick = async (vibe: string) => {
     setLoading(true);
@@ -150,6 +149,7 @@ export default function Home() {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (!searchQuery.trim()) {
       if (isSearching) loadInitialData();
+      setIsSearching(false);
       return;
     }
     searchTimeoutRef.current = setTimeout(async () => {
@@ -160,7 +160,7 @@ export default function Home() {
       setLoading(false);
     }, 500);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-  }, [searchQuery]);
+  }, [searchQuery, isSearching, loadInitialData]);
 
   if (loading && !isSearching) {
     return (
@@ -255,6 +255,7 @@ export default function Home() {
         {/* Neural Categories - Horizontally Infinite */}
         {!isSearching && (
           <div className="space-y-6">
+            <HorizontalSection title="Quick Picks" query="Top Trending Music 2024" onPlayTrack={playTrack} />
             <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Hits 2024" onPlayTrack={playTrack} />
             <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Songs" onPlayTrack={playTrack} />
             <HorizontalSection title="Bhojpuri Soul" query="New Bhojpuri Hit Songs" onPlayTrack={playTrack} />
@@ -262,7 +263,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Daily Picks / Search Results */}
+        {/* Search Results / Daily Picks */}
         <section className="space-y-6 pb-12">
           <div className="flex items-center justify-between px-6">
             <h2 className="text-xl font-black italic uppercase tracking-tighter">{isSearching ? 'Search Results' : 'Daily Picks'}</h2>

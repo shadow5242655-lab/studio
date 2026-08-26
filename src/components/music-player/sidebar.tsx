@@ -36,9 +36,9 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
   };
 
   return (
-    <div className="flex flex-col gap-2 h-full bg-black pb-10">
+    <div className="flex flex-col gap-2 h-full bg-black pb-10 overflow-y-auto no-scrollbar">
       <div className="p-8 mb-4">
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/" onClick={onNavItemClick} className="flex items-center gap-3 group">
           <div className="bg-primary p-2 rounded-xl group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
             <Music2 className="h-7 w-7 text-white" />
           </div>
@@ -98,7 +98,7 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
         </Link>
       </div>
 
-      <div className="mt-4 px-10 overflow-y-auto custom-scrollbar flex-1">
+      <div className="mt-4 px-10 flex-1">
         <p className="text-[10px] text-neutral-600 uppercase font-black tracking-widest mb-4 opacity-50">Playlists</p>
         <div className="space-y-2">
           {playlists.map(p => (

@@ -127,11 +127,9 @@ export default function Home() {
   
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
-  
   const [regionalSongs, setRegionalSongs] = useState<Record<string, Song[]>>({
     punjabi: [], haryanvi: [], bhojpuri: [], lofi: []
   });
-
   const [pages, setPages] = useState<Record<string, number>>({
     punjabi: 1, haryanvi: 1, bhojpuri: 1, lofi: 1
   });
@@ -169,7 +167,7 @@ export default function Home() {
     setLoading(true);
     try {
       const [daily, trending] = await Promise.all([
-        searchSongs("Bairan Banjaare Fortuner Raj Mawar Kabze Bintu Pabra", 1),
+        searchSongs("Latest Top Hits 2024", 1),
         getTrending(1)
       ]);
       
@@ -312,12 +310,25 @@ export default function Home() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full h-10 w-10">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full h-10 w-10 lag-free-tap"
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+              >
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl" align="end">
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => searchInputRef.current?.focus()}>
+            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl z-[60]" align="end">
+              <DropdownMenuItem 
+                className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" 
+                onClick={() => {
+                  searchInputRef.current?.focus();
+                  // For mobile, scroll to top when focusing
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
                 <Search className="mr-3 h-5 w-5 text-primary" /> Search
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/library')}>
@@ -527,7 +538,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Regional Infinite Scrolls */}
             <HorizontalSection 
               title="Punjabi Hits" songs={regionalSongs.punjabi} type="punjabi" 
               onPlayAll={(songs) => playTrack(songs[0], songs)} onPlayTrack={playTrack}

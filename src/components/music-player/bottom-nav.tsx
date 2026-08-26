@@ -7,8 +7,8 @@ import { Home, Search, History, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * @fileOverview High-fidelity navigation bar optimized for mobile compatibility.
- * Spreads 4 options evenly across the viewport.
+ * @fileOverview High-fidelity 4-option navigation bar optimized for mobile resonance.
+ * No extra symbols, strictly the Home, Explore, Echoes, and Library lineage.
  */
 
 export function BottomNav() {

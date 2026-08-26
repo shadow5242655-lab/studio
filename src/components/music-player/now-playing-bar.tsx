@@ -13,8 +13,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /**
- * @fileOverview High-fidelity Spotify-style Bar Player.
- * Re-architected to match the pixel-perfect layout from the user screenshot.
+ * @fileOverview Pixel-perfect Now Playing Bar matching user screenshot.
+ * Metadata on the left, controls shifted right, red seek bar below.
  */
 
 export function NowPlayingBar() {
@@ -29,14 +29,14 @@ export function NowPlayingBar() {
   const imageSrc = getBestImage(currentTrack);
 
   return (
-    <div className="bg-black border-t border-white/5 px-4 pt-4 pb-2 animate-in slide-in-from-bottom duration-500 z-[70]">
+    <div className="bg-black border-t border-white/5 px-4 pt-3 pb-3 animate-in slide-in-from-bottom duration-500 z-[70]">
       <div className="max-w-7xl mx-auto flex flex-col gap-3">
         
-        {/* Top Row: Info, Controls, and Dismissal */}
-        <div className="flex items-center justify-between relative">
+        {/* Top Row: Metadata (Left) and Controls (Right Shifted) */}
+        <div className="flex items-center justify-between">
           
           {/* Left: Metadata & Heart */}
-          <div className="flex items-center gap-3 min-w-0 max-w-[35%] md:max-w-[40%]">
+          <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
             <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-[#282828] shrink-0 border border-white/5">
               {imageSrc ? (
                 <Image 
@@ -53,10 +53,10 @@ export function NowPlayingBar() {
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-black text-white truncate italic uppercase tracking-tighter leading-none max-w-[80px] sm:max-w-[120px]">
+              <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter leading-none">
                 {decodeEntities(currentTrack.name)}
               </span>
-              <span className="text-[9px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1 max-w-[60px] sm:max-w-[100px]">
+              <span className="text-[10px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1">
                 {currentTrack.artists.primary[0]?.name}
               </span>
             </div>
@@ -71,37 +71,38 @@ export function NowPlayingBar() {
             </button>
           </div>
 
-          {/* Center: Playback Controls */}
-          <div className="flex items-center gap-4 sm:gap-6 absolute left-1/2 -translate-x-1/2">
-            <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={prevTrack}>
-              <SkipBack className="h-5 w-5 fill-current" />
-            </button>
+          {/* Right: Playback Controls & Dismissal */}
+          <div className="flex items-center gap-6 shrink-0">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={prevTrack}>
+                <SkipBack className="h-5 w-5 fill-current" />
+              </button>
+              <button 
+                onClick={togglePlay} 
+                className="bg-primary text-black rounded-full h-11 w-11 sm:h-12 sm:w-12 p-0 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,0,0.3)] shrink-0 transition-transform active:scale-95 lag-free-tap"
+              >
+                {isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />}
+              </button>
+              <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={nextTrack}>
+                <SkipForward className="h-5 w-5 fill-current" />
+              </button>
+            </div>
+            
             <button 
-              onClick={togglePlay} 
-              className="bg-primary text-black rounded-full h-11 w-11 sm:h-12 sm:w-12 p-0 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,0,0.3)] shrink-0 transition-transform active:scale-95 lag-free-tap"
+              className="text-neutral-800 hover:text-primary transition-colors h-10 w-10 flex justify-end items-center lag-free-tap"
+              onClick={(e) => {
+                e.stopPropagation();
+                stopTrack();
+              }}
             >
-              {isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />}
-            </button>
-            <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={nextTrack}>
-              <SkipForward className="h-5 w-5 fill-current" />
+              <X className="h-5 w-5" />
             </button>
           </div>
-
-          {/* Right: X Button */}
-          <button 
-            className="text-neutral-800 hover:text-primary transition-colors h-10 w-10 flex justify-end items-center lag-free-tap"
-            onClick={(e) => {
-              e.stopPropagation();
-              stopTrack();
-            }}
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        {/* Bottom Row: Seek Bar with Flanking Timestamps */}
-        <div className="flex items-center justify-center w-full px-2 sm:px-8 pb-1">
-          <div className="flex items-center gap-3 w-full max-w-[320px]">
+        {/* Bottom Row: Red Seek Bar with Flanking Timestamps */}
+        <div className="flex items-center justify-center w-full px-1">
+          <div className="flex items-center gap-3 w-full max-w-full">
             <span className="text-[9px] font-black text-neutral-600 w-8 text-right tabular-nums">
               {formatDuration(progress)}
             </span>

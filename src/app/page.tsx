@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, Menu, Smartphone, ListFilter, Coffee, HeartIcon, Zap
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, HeartIcon, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: s
     className="flex items-center gap-2 px-5 py-2.5 bg-[#1a1a1a] rounded-xl border border-white/5 whitespace-nowrap hover:bg-white/10 transition-all active:scale-95"
   >
     <Icon className="h-4 w-4 text-neutral-400" />
-    <span className="text-xs font-bold text-white uppercase tracking-tight">{label}</span>
+    <span className="text-xs font-bold text-white uppercase tracking-tight italic">{label}</span>
   </button>
 );
 
@@ -80,7 +80,7 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500">
+    <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500 pb-44">
       
       {/* Top Header Branding */}
       <header className="px-6 py-5 flex items-center justify-between">
@@ -161,10 +161,10 @@ export default function Home() {
            </div>
         </section>
 
-        {/* Daily Picks Section */}
-        <section className="space-y-6 pb-20">
+        {/* Daily Picks / Trending Section */}
+        <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter">Daily Picks</h2>
+            <h2 className="text-xl font-black italic uppercase tracking-tighter">{isSearching ? 'Search Results' : 'Daily Picks'}</h2>
             <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => playTrack(displaySongs[0], displaySongs)}>
               <Play className="h-3 w-3 fill-current" /> Play all
             </Button>

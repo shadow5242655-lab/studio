@@ -24,30 +24,23 @@ export default function RootLayout({
       <body className="antialiased bg-black text-white h-svh overflow-hidden flex flex-col font-sans relative">
         <FirebaseClientProvider>
           <MusicProvider>
-            {/* Desktop Sidebar (Left) */}
             <div className="flex flex-1 overflow-hidden relative">
               <Sidebar />
               
               <div className="flex-1 flex flex-col overflow-hidden relative">
-                {/* Mobile/Global Header */}
                 <Header />
-                
                 <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black pb-44">
                   {children}
                 </main>
               </div>
             </div>
             
-            {/* Playback & Navigation Stack */}
-            <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col">
-               {/* Global Music Player (Spotify-Style Bar) */}
+            {/* Playback & Navigation Stack - Anchored at absolute bottom */}
+            <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col bg-black">
                <NowPlayingBar />
-               
-               {/* Bottom Navigation */}
                <BottomNav />
             </div>
             
-            {/* Immersive Player Layers */}
             <FullScreenPlayer />
             <LyricsDrawer />
             

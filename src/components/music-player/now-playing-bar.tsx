@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Play, Pause, SkipForward, SkipBack, 
-  Music2, Heart, X, Download, Music
+  Music2, Heart, Download, Music
 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
@@ -29,7 +29,7 @@ export function NowPlayingBar() {
   };
 
   return (
-    <div className="bg-black border-t border-white/5 px-4 pt-3 pb-2 animate-in slide-in-from-bottom duration-500 relative">
+    <div className="bg-[#121212] border-t border-white/5 px-4 pt-3 pb-2 animate-in slide-in-from-bottom duration-500 relative">
       <div className="max-w-7xl mx-auto flex flex-col gap-2">
         
         {/* Metadata and Controls Container */}
@@ -62,24 +62,25 @@ export function NowPlayingBar() {
             </button>
           </div>
 
-          {/* Right: Playback Controls */}
+          {/* Right: Playback Controls - Spotify Style Shifted Right */}
           <div className="flex items-center gap-5 shrink-0">
              <button className="text-neutral-500" onClick={prevTrack}><SkipBack className="h-5 w-5 fill-current" /></button>
              <button 
                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-               className="bg-white text-black rounded-full h-11 w-11 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+               className="bg-primary text-black rounded-full h-11 w-11 flex items-center justify-center shadow-lg shadow-primary/20 active:scale-90 transition-transform"
              >
                {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
              </button>
              <button className="text-neutral-500" onClick={nextTrack}><SkipForward className="h-5 w-5 fill-current" /></button>
              
-             <button className="text-neutral-700 p-1" onClick={handleDownload}><Download className="h-4 w-4" /></button>
-             <button className="text-primary p-1" onClick={stopTrack}><Music className="h-4 w-4" /></button>
+             <button className="hidden sm:block text-neutral-700 p-1" onClick={handleDownload}><Download className="h-4 w-4" /></button>
+             <button className="text-neutral-600 p-1" onClick={stopTrack}><Music className="h-4 w-4" /></button>
           </div>
         </div>
 
-        {/* Bottom Row: Red Seek Line */}
-        <div className="w-full flex items-center gap-3 h-1 opacity-60 hover:opacity-100 transition-opacity">
+        {/* Bottom Row: Red Seek Line with Timestamps */}
+        <div className="w-full flex items-center gap-3 h-1 mt-1">
+           <span className="text-[8px] font-black text-neutral-600 w-8">{formatDuration(progress)}</span>
            <div className="flex-1 relative">
              <Slider
                 value={[progress]}
@@ -93,6 +94,7 @@ export function NowPlayingBar() {
                 className="h-1"
               />
            </div>
+           <span className="text-[8px] font-black text-neutral-600 w-8 text-right">{formatDuration(duration)}</span>
         </div>
       </div>
     </div>

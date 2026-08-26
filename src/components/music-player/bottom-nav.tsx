@@ -17,8 +17,8 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="h-16 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-2">
-      <div className="flex w-full items-center justify-around">
+    <nav className="h-16 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-2 px-4">
+      <div className="flex w-full items-center justify-between gap-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -32,7 +32,7 @@ export function BottomNav() {
             >
               <item.icon className={cn("h-5 w-5", isActive && "text-primary")} />
               <span className={cn(
-                "text-[8px] font-black uppercase tracking-tight italic text-center",
+                "text-[9px] font-black uppercase tracking-tight italic text-center",
                 isActive ? "text-primary" : "text-neutral-500"
               )}>
                 {item.name}

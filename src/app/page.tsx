@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Song, searchSongs, formatDuration, getBestImage, decodeEntities } from '@/lib/music-api';
 import { 
   Heart, Play, Music2, 
-  Search, X, Heart as HeartIcon,
-  ListMusic, Bookmark, TrendingUp
+  Search, TrendingUp, ListMusic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 
 const TopChips = () => {
   const chips = ["Songs", "Artists", "Albums", "Playlists", "Genres", "Podcasts"];
@@ -33,8 +31,8 @@ const SectionHeader = ({ title, showPlayAll, onPlayAll }: { title: string, showP
     <h2 className="text-xl font-bold tracking-tight text-white uppercase">{title}</h2>
     {showPlayAll && (
       <button 
-        onClick={onPlayAll}
-        className="flex items-center gap-1.5 text-[10px] font-black text-white bg-white/5 px-3 py-1.5 rounded-full lag-free-tap"
+        onPointerDown={(e) => { e.preventDefault(); onPlayAll?.(); }}
+        className="flex items-center gap-1.5 text-[10px] font-black text-white bg-white/5 px-3 py-1.5 rounded-full lag-free-tap active:scale-95"
       >
         <Play className="h-3 w-3 fill-current" /> PLAY ALL
       </button>
@@ -50,6 +48,7 @@ export default function Home() {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [releases, setReleases] = useState<any[]>([]);
   const [albums, setAlbums] = useState<any[]>([]);
+  const [featured, setFeatured] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,11 +56,11 @@ export default function Home() {
       setLoading(true);
       try {
         const dailyTerms = [
-          "Barsaat Banjaare Roni",
+          "Barsaat Banjaare",
           "Bairan Banjaare",
           "Sheesha Mitta Ror",
           "Fortuner Raj Mawar",
-          "Kamar DJ Pe मनीष",
+          "Kamar DJ Pe Manish",
           "80 Lakh D Naveen",
           "Kabze Bintu Pabra",
           "Mithe Tere Bol Masoom"
@@ -74,21 +73,23 @@ export default function Home() {
           "Boom Shaka Dhanda Nyoliwala"
         ];
         
-        const [dailyRes, trendingRes] = await Promise.all([
+        const [dailyRes, trendingRes, featuredRes] = await Promise.all([
           Promise.all(dailyTerms.map(t => searchSongs(t).then(r => r[0]))),
-          Promise.all(trendingTerms.map(t => searchSongs(t).then(r => r[0])))
+          Promise.all(trendingTerms.map(t => searchSongs(t).then(r => r[0]))),
+          searchSongs("Jamaican Bam Bam Hugel").then(r => r[0])
         ]);
 
         setDailyPicks(dailyRes.filter(Boolean));
         setTrending(trendingRes.filter(Boolean));
+        setFeatured(featuredRes || null);
         
         setCharts([
-          { name: "INDIA SUPERHITS TOP 50", sub: "Hindi Hits", duration: "2h 45m" },
+          { name: "INDIA SUPERHITS TOP 50", sub: "Hindi", duration: "2h 45m" },
           { name: "GLOBAL TOP 50", sub: "International", duration: "3h 10m" },
-          { name: "BENGALI BEATS", sub: "Regional", duration: "1h 50m" },
-          { name: "INDIE ROCK", sub: "Alternative", duration: "2h 15m" },
-          { name: "BHAJAN", sub: "Devotional", duration: "4h 00m" },
-          { name: "SUFI", sub: "Traditional", duration: "3h 20m" }
+          { name: "BENGALI BEATS", sub: "Bengali", duration: "1h 50m" },
+          { name: "INDIE ROCK", sub: "Indie", duration: "2h 15m" },
+          { name: "BHAJAN", sub: "Bhajan", duration: "4h 00m" },
+          { name: "SUFI", sub: "Sufi", duration: "3h 20m" }
         ]);
 
         setPlaylists([
@@ -97,10 +98,10 @@ export default function Home() {
           { name: "Viral Nation", songs: 60, saves: 245 }
         ]);
 
-        const releaseRes = await searchSongs("Latest Hits 2024", 1);
+        const releaseRes = await searchSongs("Latest Releases 2024", 1);
         setReleases(releaseRes.slice(0, 6));
 
-        const albumRes = await searchSongs("Popular Albums", 1);
+        const albumRes = await searchSongs("Buzzing Albums", 1);
         setAlbums(albumRes.slice(0, 6));
 
       } catch (e) {
@@ -111,6 +112,10 @@ export default function Home() {
     }
     loadData();
   }, []);
+
+  const handleSongPlay = (song: Song, list: Song[]) => {
+    playTrack(song, list);
+  };
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl">
@@ -126,17 +131,18 @@ export default function Home() {
       </header>
 
       <main className="space-y-10 py-4">
+        {/* 1. Top Navigation Chips */}
         <TopChips />
 
-        {/* 2. Daily Picks */}
+        {/* 2. Daily picks */}
         <section>
-          <SectionHeader title="Daily picks" showPlayAll onPlayAll={() => dailyPicks.length > 0 && playTrack(dailyPicks[0], dailyPicks)} />
+          <SectionHeader title="Daily picks" showPlayAll onPlayAll={() => dailyPicks.length > 0 && handleSongPlay(dailyPicks[0], dailyPicks)} />
           <div className="px-4 space-y-2">
             {dailyPicks.map((song) => (
               <div 
                 key={song.id} 
-                onClick={() => playTrack(song, dailyPicks)}
-                className="flex items-center justify-between p-3 bg-[#1e1e1e] rounded-xl border border-white/5 lag-free-tap"
+                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, dailyPicks); }}
+                className="flex items-center justify-between p-3 bg-[#1e1e1e] rounded-xl border border-white/5 lag-free-tap cursor-pointer active:scale-[0.98] transition-transform"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
@@ -148,7 +154,7 @@ export default function Home() {
                   </div>
                 </div>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
+                  onPointerDown={(e) => { e.stopPropagation(); toggleLike(song); }}
                   className="p-2 text-neutral-600 hover:text-primary transition-colors"
                 >
                   <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
@@ -158,15 +164,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 3. Trending Now */}
+        {/* 3. Trending now */}
         <section>
           <SectionHeader title="Trending now" />
           <div className="px-4 space-y-2">
             {trending.map((song, idx) => (
               <div 
                 key={song.id} 
-                onClick={() => playTrack(song, trending)}
-                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-xl transition-all lag-free-tap"
+                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, trending); }}
+                className="flex items-center gap-4 p-2 hover:bg-white/5 rounded-xl transition-all lag-free-tap cursor-pointer active:scale-[0.98]"
               >
                 <span className="text-sm font-bold text-neutral-600 min-w-[20px] text-center">{idx + 1}</span>
                 <div className="h-10 w-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
@@ -182,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. Top Charts */}
+        {/* 4. Top charts */}
         <section>
           <SectionHeader title="Top charts" />
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
@@ -200,7 +206,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 5. Fresh Playlists */}
+        {/* 5. Fresh playlists */}
         <section>
           <SectionHeader title="Fresh playlists" />
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
@@ -218,12 +224,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 6. New Releases */}
+        {/* 6. New releases */}
         <section>
           <SectionHeader title="New releases" />
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
             {releases.map((song) => (
-              <div key={song.id} onClick={() => playTrack(song)} className="min-w-[140px] space-y-2 cursor-pointer">
+              <div 
+                key={song.id} 
+                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, releases); }}
+                className="min-w-[140px] space-y-2 cursor-pointer lag-free-tap active:scale-95"
+              >
                 <div className="aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
                   <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
                 </div>
@@ -236,12 +246,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 7. Buzzing Albums */}
+        {/* 7. Buzzing albums */}
         <section>
           <SectionHeader title="Buzzing albums" />
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-4">
             {albums.map((song) => (
-              <div key={song.id} onClick={() => playTrack(song)} className="min-w-[140px] space-y-2 cursor-pointer">
+              <div 
+                key={song.id} 
+                onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, albums); }}
+                className="min-w-[140px] space-y-2 cursor-pointer lag-free-tap active:scale-95"
+              >
                 <div className="aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/5">
                   <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
                 </div>
@@ -255,18 +269,23 @@ export default function Home() {
         </section>
 
         {/* 8. Main Release Highlight */}
-        <section className="px-4">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#282828] to-[#121212] p-6 border border-white/5 flex items-center gap-6">
-            <div className="h-24 w-24 rounded-lg bg-neutral-800 overflow-hidden shrink-0 shadow-2xl">
-              <img src="https://picsum.photos/seed/highlight/200/200" className="h-full w-full object-cover" alt="" />
+        <section className="px-4 pb-12">
+          {featured && (
+            <div 
+              onPointerDown={(e) => { e.preventDefault(); handleSongPlay(featured, [featured]); }}
+              className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#282828] to-[#121212] p-6 border border-white/5 flex items-center gap-6 cursor-pointer lag-free-tap active:scale-[0.98]"
+            >
+              <div className="h-24 w-24 rounded-lg bg-neutral-800 overflow-hidden shrink-0 shadow-2xl">
+                <img src={getBestImage(featured) || ''} className="h-full w-full object-cover" alt="" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Featured Release</span>
+                <h3 className="text-lg font-black text-white italic leading-tight">{decodeEntities(featured.name)}</h3>
+                <p className="text-xs text-neutral-500 uppercase font-bold">{featured.artists.primary[0].name}</p>
+                <Button size="sm" className="rounded-full bg-white text-black font-black mt-2 lag-free-tap">PLAY NOW</Button>
+              </div>
             </div>
-            <div className="flex-1 space-y-2">
-              <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Featured Release</span>
-              <h3 className="text-lg font-black text-white italic leading-tight">Jamaican (Bam Bam)</h3>
-              <p className="text-xs text-neutral-500 uppercase font-bold">Hugel, SOLTO (FR)</p>
-              <Button size="sm" className="rounded-full bg-white text-black font-black mt-2 lag-free-tap">PLAY NOW</Button>
-            </div>
-          </div>
+          )}
         </section>
       </main>
     </div>

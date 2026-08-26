@@ -79,10 +79,18 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
     setIsPlaying(false);
     isPlayingRef.current = false;
+    setProgress(0);
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    stopTrack();
+    if (!track) return;
+    
+    // Stop current resonance
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+
     if (fromQueue) {
       setQueue(fromQueue);
       queueRef.current = fromQueue;
@@ -90,17 +98,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setProgress(0);
     setDuration(track.duration || 0);
+    setCurrentTrack(track);
+    currentTrackRef.current = track;
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
+    
     const url = getBestDownload(track);
     if (audioRef.current && url) {
       audioRef.current.src = url;
       audioRef.current.volume = volumeRef.current;
-      setCurrentTrack(track);
-      currentTrackRef.current = track;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(e => {
+        console.error("Playback failed:", e);
+        toast({ variant: "destructive", title: "Playback Error", description: "Could not stream the selected track." });
+      });
     }
-  }, [stopTrack]);
+  }, []);
 
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
@@ -180,7 +192,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
     Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
     
-    return () => Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
+    return () => {
+      Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
+      audio.pause();
+      audio.src = "";
+    };
   }, [nextTrack]);
 
   useEffect(() => {

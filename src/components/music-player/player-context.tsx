@@ -83,7 +83,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
 
-  // High-fidelity Audio Engine Initialization
+  // Hardware-stabilized audio instance initialization
   useEffect(() => {
     if (!audioRef.current && typeof window !== 'undefined') {
       console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
@@ -102,12 +102,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         },
         ended: () => {
           console.log('AYUMUSIC: Sound lineage reached conclusion, transitioning...');
-          if (nextTrackRef.current) nextTrackRef.current();
+          if (nextTrackInternalRef.current) nextTrackInternalRef.current();
         },
         play: () => {
           console.log('AYUMUSIC: Playback resonance confirmed');
           setIsPlaying(true);
           isPlayingRef.current = true;
+          setIsBuffering(false);
         },
         pause: () => {
           console.log('AYUMUSIC: Playback resonance suspended');
@@ -142,7 +143,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         Object.entries(handlers).forEach(([event, handler]) => {
           audio.removeEventListener(event, handler);
         });
-        if (frameRef.current) cancelAnimationFrame(frameRef.current);
       };
     }
   }, []);
@@ -174,30 +174,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    if (!track) {
-      console.warn('AYUMUSIC: Cannot play null track');
-      return;
-    }
+    if (!track) return;
     if (!audioRef.current) {
-      console.error('AYUMUSIC: Audio engine not initialized');
+      console.error('AYUMUSIC: Audio engine not ready.');
       return;
     }
     
     const trackName = decodeEntities(track.name);
-    console.log(`AYUMUSIC: Initiating discovery for: "${trackName}" (ID: ${track.id})`);
+    console.log(`AYUMUSIC: Initiating playback for "${trackName}"`);
     
     const audio = audioRef.current;
     const url = getBestDownload(track);
     
-    console.log('AYUMUSIC: Resolved frequency URL:', url);
-
     if (!url) {
-      console.warn('AYUMUSIC: No valid download frequency found for track');
-      toast({ variant: "destructive", title: "Resonance Blocked", description: "This frequency is currently unavailable." });
+      console.error('AYUMUSIC: No valid download URL found.');
+      toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
       return;
     }
 
-    // High-fidelity state preparation
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -205,52 +199,40 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setDuration(track.duration || 0);
 
     if (fromQueue) {
-      console.log('AYUMUSIC: Architecting queue with', fromQueue.length, 'tracks');
       setQueue(fromQueue);
       queueRef.current = fromQueue;
     }
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    // Execute stream resonance
     try {
       audio.pause();
       audio.src = url;
       audio.volume = volumeRef.current;
       audio.load();
       
-      console.log('AYUMUSIC: Requesting stream playback...');
       const playPromise = audio.play();
-      
       if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('AYUMUSIC: Playback successfully initiated for:', trackName);
-          })
-          .catch(e => {
-            console.error("AYUMUSIC: Playback initiation blocked by browser:", e);
-            setIsBuffering(false);
-            if (e.name === 'NotAllowedError') {
-              toast({ title: "Action Required", description: "Please tap anywhere to enable sound resonance." });
-            }
-          });
+        playPromise.catch(e => {
+          console.error("AYUMUSIC: Playback failed:", e);
+          setIsBuffering(false);
+        });
       }
     } catch (err) {
-      console.error('AYUMUSIC: Fatal playback architecting error:', err);
+      console.error('AYUMUSIC: Audio error:', err);
       setIsBuffering(false);
     }
   }, []);
 
   const playRandomTrack = useCallback(async () => {
     try {
-      console.log('AYUMUSIC: Shuffling trending soundscapes...');
       const trending = await getTrending();
       if (trending.length > 0) {
         const rand = trending[Math.floor(Math.random() * trending.length)];
         playTrack(rand, trending);
       }
     } catch (e) {
-      console.error("AYUMUSIC: Shuffle architecting failed", e);
+      console.error("AYUMUSIC: Random play failed", e);
     }
   }, [playTrack]);
 
@@ -258,8 +240,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const currentQueue = queueRef.current;
     const currentMix = autoMixQueueRef.current;
 
-    console.log('AYUMUSIC: Transitioning to next sound frequency...');
-    
     if (currentQueue.length > 0) {
       const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
       if (idx !== -1 && idx < currentQueue.length - 1) {
@@ -291,46 +271,42 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (audio) {
-      console.log('AYUMUSIC: Toggling resonance. Current state:', isPlayingRef.current ? 'Playing' : 'Paused');
       if (isPlayingRef.current) {
         audio.pause();
       } else {
         const p = audio.play();
-        if (p) p.catch((e) => console.error('AYUMUSIC: Toggle play failed:', e));
+        if (p) p.catch(e => console.error('AYUMUSIC: Play failed:', e));
       }
     }
   }, []);
 
-  const nextTrackRef = useRef(nextTrack);
+  const nextTrackInternalRef = useRef(nextTrack);
   useEffect(() => {
-    nextTrackRef.current = nextTrack;
+    nextTrackInternalRef.current = nextTrack;
   }, [nextTrack]);
 
-  // Neural Auto-Mix Intelligence (Default ON)
+  // Infinite mood sync architect
   useEffect(() => {
     if (smartMood && currentTrack) {
-      const architectAutoMix = async () => {
+      const architectMood = async () => {
         try {
-          console.log('AYUMUSIC: Neural Architect analyzing resonance for:', currentTrack.name);
+          console.log('AYUMUSIC: Architecting mood lineage for:', currentTrack.name);
           const analysis = await analyzeMood({ 
             songName: currentTrack.name, 
             artistName: currentTrack.artists.primary[0]?.name || 'Unknown' 
           });
           
-          const searchPromises = analysis.nextQueries.map(q => searchSongs(q, 1));
-          const searchResults = await Promise.all(searchPromises);
-          const newSongs = searchResults.flatMap(r => r).filter(s => s.id !== currentTrack.id);
+          const results = await Promise.all(analysis.nextQueries.map(q => searchSongs(q, 1)));
+          const flat = results.flatMap(r => r).filter(s => s.id !== currentTrack.id);
+          const unique = Array.from(new Map(flat.map(s => [s.id, s])).values()).slice(0, 10);
           
-          const uniqueSongs = Array.from(new Map(newSongs.map(s => [s.id, s])).values());
-          const mix = uniqueSongs.slice(0, 10);
-          setAutoMixQueue(mix);
-          autoMixQueueRef.current = mix;
-          console.log('AYUMUSIC: Neural auto-mix architected with', mix.length, 'tracks');
+          setAutoMixQueue(unique);
+          autoMixQueueRef.current = unique;
         } catch (e) {
-          console.error("AYUMUSIC: Neural architecting failure", e);
+          console.error("AYUMUSIC: Mood architecting failed", e);
         }
       };
-      architectAutoMix();
+      architectMood();
     }
   }, [currentTrack, smartMood]);
 
@@ -352,7 +328,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const addToPlaylist = useCallback((playlistId: string, track: Song) => {
     setPlaylists(prev => prev.map(p => p.id === playlistId ? { ...p, songs: [...p.songs.filter(s => s.id !== track.id), track] } : p));
-    toast({ title: 'Collection Updated', description: `Track added to your playlist.` });
   }, []);
 
   const removeFromHistory = useCallback((id: string) => {
@@ -373,7 +348,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         queueRef.current = next;
         return next;
       });
-      toast({ title: 'Ordered', description: `"${decodeEntities(t.name)}" is next.` });
+      toast({ title: 'Resonance Buffered', description: `${decodeEntities(t.name)} is next.` });
     }, 
     addToQueue: (t: Song) => {
       setQueue(prev => {
@@ -381,7 +356,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         queueRef.current = next;
         return next;
       });
-      toast({ title: 'Buffered', description: `"${decodeEntities(t.name)}" added to queue.` });
+      toast({ title: 'Resonance Added', description: `${decodeEntities(t.name)} in queue.` });
     },
     playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
     isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist,
@@ -394,7 +369,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       if (audioRef.current) {
         audioRef.current.currentTime = t;
         setProgress(t);
-        console.log('AYUMUSIC: Seeking resonance to:', t);
       }
     }, 
     setVolume: (v: number) => { 

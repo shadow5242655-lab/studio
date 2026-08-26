@@ -45,10 +45,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     
     // Hardware-calibrated interaction threshold for high-DPI reliability
     if (dx < 30 && dy < 30 && dt < 450) {
-      console.log('AYUMUSIC: Valid tap detected for:', decodeEntities(song.name));
+      console.log('AYUMUSIC: Valid resonance tap for:', decodeEntities(song.name));
       callback();
-    } else {
-      console.log('AYUMUSIC: Tap rejected (threshold exceeded):', { dx, dy, dt });
     }
     startPos.current = null;
   };
@@ -72,10 +70,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     <div 
       className="group glass-card p-4 rounded-2xl transition-all hover:bg-white/10 cursor-pointer relative lag-free-tap"
       onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp(() => {
-        console.log('AYUMUSIC: Initiating playback from SongCard tap');
-        playTrack(song, playlist);
-      })}
+      onPointerUp={handlePointerUp(() => playTrack(song, playlist))}
       onPointerCancel={handlePointerCancel}
       style={{ touchAction: 'manipulation' }}
     >
@@ -98,10 +93,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
             onPointerUp={handlePointerUp((e?: any) => {
               if (e) e.stopPropagation();
               if (isActive) {
-                console.log('AYUMUSIC: Toggling play/pause for active track');
                 togglePlay();
               } else {
-                console.log('AYUMUSIC: Initiating playback from overlay button');
                 playTrack(song, playlist);
               }
             })}

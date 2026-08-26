@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -49,7 +50,6 @@ const HorizontalSection = memo(({
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    // Increased threshold to 30px for better mobile reliability
     if (dx < 30 && dy < 30 && dt < 450) {
       callback();
     }
@@ -206,6 +206,7 @@ export default function Home() {
     try {
       const results = await searchSongs(vibeName);
       setDisplaySongs(results.slice(0, 10));
+      if (results.length > 0) playTrack(results[0], results);
     } catch (e) {
       console.error("Vibe fetch failed", e);
     } finally {
@@ -282,7 +283,7 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
       
-      {/* Unified Brand-Search-Menu Header */}
+      {/* Unified Resonance Header */}
       <header className="w-full bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-[100] border-b border-white/5">
         <div className="max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
@@ -348,9 +349,9 @@ export default function Home() {
       </header>
 
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
-        {/* Vibe Chips */}
+        {/* Vibe Chips (Mood Feature) */}
         <section className="space-y-6">
-          <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white">Pick a Vibe</h2>
+          <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white">Select Mood</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
             {[
               { name: 'Romance', icon: Heart },
@@ -416,7 +417,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Dynamic List Section */}
+        {/* Dynamic Resonance List */}
         <section className="space-y-8 min-h-[400px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">{listTitle}</h2>

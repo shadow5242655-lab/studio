@@ -25,48 +25,61 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const isFetchingRef = useRef(false);
+  const [isFetchingState, setIsFetchingState] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchSongs = useCallback(async (p: number) => {
-    // Avoid re-fetching if already in progress or no more tracks
-    setIsFetching(true);
+  const fetchNextPage = useCallback(async () => {
+    if (isFetchingRef.current || !hasMore) return;
+    
+    const nextPage = page + 1;
+    isFetchingRef.current = true;
+    setIsFetchingState(true);
+    
     try {
-      const data = await searchSongs(query, p);
-      if (data.length === 0) {
+      const data = await searchSongs(query, nextPage);
+      if (!data || data.length === 0) {
         setHasMore(false);
       } else {
         setSongs(prev => {
-          const combined = p === 1 ? data : [...prev, ...data];
+          const combined = [...prev, ...data];
           const uniqueMap = new Map();
           combined.forEach(s => uniqueMap.set(s.id, s));
           return Array.from(uniqueMap.values());
         });
+        setPage(nextPage);
       }
     } catch (e) {
       console.error("AYUMUSIC: Resonance fetch failed", e);
     } finally {
-      setIsFetching(false);
-      setLoading(false);
+      isFetchingRef.current = false;
+      setIsFetchingState(false);
     }
-  }, [query]);
+  }, [query, page, hasMore]);
 
-  // Handle initial load
   useEffect(() => {
+    let mounted = true;
     setSongs([]);
     setPage(1);
     setHasMore(true);
     setLoading(true);
-    fetchSongs(1);
-  }, [query, fetchSongs]);
+    isFetchingRef.current = true;
+    
+    searchSongs(query, 1).then(data => {
+      if (mounted) {
+        setSongs(data);
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
+    });
+    return () => { mounted = false; };
+  }, [query]);
 
-  const handleScroll = () => {
-    if (!scrollRef.current || isFetching || !hasMore) return;
+  const onScroll = () => {
+    if (!scrollRef.current || isFetchingRef.current || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    if (scrollLeft + clientWidth >= scrollWidth - 600) {
-      const next = page + 1;
-      setPage(next);
-      fetchSongs(next);
+    if (scrollLeft + clientWidth >= scrollWidth - 400) {
+      fetchNextPage();
     }
   };
 
@@ -91,7 +104,7 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
       </div>
       <div 
         ref={scrollRef}
-        onScroll={handleScroll}
+        onScroll={onScroll}
         className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-4 scroll-smooth"
       >
         {songs.map((song, idx) => (
@@ -114,8 +127,8 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
             <p className="text-[8px] text-neutral-500 truncate uppercase font-black tracking-widest">{song.artists.primary[0]?.name}</p>
           </div>
         ))}
-        {isFetching && (
-          <div className="flex-shrink-0 w-36 flex items-center justify-center">
+        {isFetchingState && (
+          <div className="flex-shrink-0 w-36 flex items-center justify-center h-36">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>
         )}
@@ -212,6 +225,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, isPlaying } = useMusic();
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -221,6 +235,7 @@ export default function Home() {
     setLoading(true);
     try {
       const results = await getTrending();
+      setTrendingSongs(results.slice(0, 15));
       setDisplaySongs(results.slice(0, 15));
     } catch (e) {
       console.error("AYUMUSIC: Load failed", e);
@@ -238,8 +253,9 @@ export default function Home() {
   }, []);
 
   const handleShuffle = () => {
-    if (displaySongs.length > 0) {
-      const shuffled = [...displaySongs].sort(() => Math.random() - 0.5);
+    const listToShuffle = isSearching ? displaySongs : trendingSongs;
+    if (listToShuffle.length > 0) {
+      const shuffled = [...listToShuffle].sort(() => Math.random() - 0.5);
       playTrack(shuffled[0], shuffled);
     }
   };
@@ -247,14 +263,13 @@ export default function Home() {
   const clearSearch = () => {
     setSearchQuery('');
     setIsSearching(false);
-    loadInitialData();
+    setDisplaySongs(trendingSongs);
   };
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (!searchQuery.trim()) {
-      if (isSearching) loadInitialData();
-      setIsSearching(false);
+      if (isSearching) clearSearch();
       return;
     }
     searchTimeoutRef.current = setTimeout(async () => {
@@ -265,9 +280,9 @@ export default function Home() {
       setLoading(false);
     }, 500);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-  }, [searchQuery, isSearching, loadInitialData]);
+  }, [searchQuery, isSearching]);
 
-  if (loading && !isSearching) {
+  if (loading && !isSearching && trendingSongs.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-black">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -319,7 +334,7 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] items-center text-center">
+            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 border border-white/5 shadow-2xl flex flex-col group min-h-[260px] items-center text-center">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                 <Music2 className="h-[200px] w-[200px]" />
               </div>
@@ -339,7 +354,7 @@ export default function Home() {
 
               <div className="w-full flex flex-wrap items-center justify-center gap-2 mt-4 relative z-10">
                 <Button 
-                  onClick={() => playTrack(displaySongs[0], displaySongs)}
+                  onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
                   className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-10 px-5 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[9px]"
                 >
                   <Play className="h-3 w-3 fill-current" /> Play Trending
@@ -368,7 +383,7 @@ export default function Home() {
 
             <QuickPicksVertical onPlayTrack={playTrack} />
 
-            <div className="space-y-12">
+            <div className="space-y-12 mt-8">
               <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Bhojpuri Soul" query="Trending Bhojpuri Hit Music" onPlayTrack={playTrack} />
@@ -384,7 +399,7 @@ export default function Home() {
                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">Resonance Found</span>
                 <h2 className="text-2xl font-black italic uppercase tracking-tighter truncate max-w-[200px]">"{searchQuery}"</h2>
               </div>
-              <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => playTrack(displaySongs[0], displaySongs)}>
+              <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs)}>
                 <Play className="h-3 w-3 fill-current" /> Play all
               </Button>
             </div>

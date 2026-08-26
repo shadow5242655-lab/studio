@@ -7,7 +7,7 @@ import { Home, Search, History, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * @fileOverview High-fidelity mobile navigation bar.
+ * @fileOverview High-fidelity navigation bar for both Mobile and Web.
  * Provides quick access to Home, Explore, Echoes, and Library.
  */
 
@@ -22,25 +22,27 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-black/95 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-2 z-[60] md:hidden">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center gap-1.5 px-4 py-1.5 rounded-2xl transition-all duration-300 lag-free-tap",
-              isActive ? "text-primary scale-105" : "text-neutral-500 hover:text-white"
-            )}
-          >
-            <item.icon className={cn("h-5 w-5 transition-transform", isActive && "fill-primary/10")} />
-            <span className="text-[9px] font-black uppercase tracking-[0.1em] italic text-center leading-none">
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-black/95 backdrop-blur-xl border-t border-white/5 flex items-center z-[60]">
+      <div className="flex w-full max-w-7xl mx-auto justify-around px-2">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1.5 px-4 py-1.5 rounded-2xl transition-all duration-300 lag-free-tap",
+                isActive ? "text-primary scale-105" : "text-neutral-500 hover:text-white"
+              )}
+            >
+              <item.icon className={cn("h-5 w-5 transition-transform", isActive && "fill-primary/10")} />
+              <span className="text-[9px] font-black uppercase tracking-[0.1em] italic text-center leading-none">
+                {item.name}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

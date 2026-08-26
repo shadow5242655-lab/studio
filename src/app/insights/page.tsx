@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -8,16 +7,16 @@ import { Activity, Clock, Music, Heart, History, TrendingUp, BarChart3, Zap, Cal
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function InsightsPage() {
-  const { totalMinutes, playedHistory, likedSongs, activeDays = [] } = useMusic();
+  const { totalMinutes = 0, playedHistory = [], likedSongs = [], activeDays = [] } = useMusic();
 
   return (
-    <div className="p-8 pb-32 max-w-6xl mx-auto space-y-12 animate-in fade-in duration-700">
+    <div className="p-8 pb-48 max-w-6xl mx-auto space-y-12 animate-in fade-in duration-700">
       <header className="space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-[0.2em] uppercase">
-          <BarChart3 className="h-3 w-3" />
+          <History className="h-3 w-3" />
           Verified Resonance
         </div>
-        <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white uppercase italic leading-none">Your Insights</h1>
+        <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white uppercase italic leading-none">Echoes</h1>
         <p className="text-neutral-400 max-w-xl text-lg font-medium">A definitive breakdown of your sound resonance and listening lineage.</p>
       </header>
 
@@ -130,7 +129,7 @@ export default function InsightsPage() {
         <div className="lg:col-span-4 space-y-6">
            <Card className="bg-neutral-900 border-white/5 shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-xl font-black italic uppercase italic tracking-tighter flex items-center gap-2 text-primary">
+                <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-2 text-primary">
                   <Activity className="h-5 w-5" />
                   Activity Density
                 </CardTitle>

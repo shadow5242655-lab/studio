@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { useState, memo } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, BarChart3 } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, History } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -20,10 +19,9 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
 
   const navItems = [
     { name: 'Home', icon: Home, href: '/' },
-    { name: 'Search', icon: Search, href: '/search' },
+    { name: 'Explore', icon: Search, href: '/genres' },
+    { name: 'Echoes', icon: History, href: '/insights' },
     { name: 'Library', icon: Library, href: '/library' },
-    { name: 'Insights', icon: BarChart3, href: '/insights' },
-    { name: 'Browse Genres', icon: Compass, href: '/genres' },
   ];
 
   const handleCreatePlaylist = () => {
@@ -36,7 +34,7 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
   };
 
   return (
-    <div className="flex flex-col gap-2 h-full bg-black pb-10 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col gap-2 h-full bg-black pb-20 overflow-y-auto no-scrollbar">
       <div className="p-8 mb-4">
         <Link href="/" onClick={onNavItemClick} className="flex items-center gap-3 group">
           <div className="bg-primary p-2 rounded-xl group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
@@ -149,7 +147,7 @@ export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Hide global mobile header on home page to avoid double-sticky bars
+  // Unified sticky header serves home, mobile header for others
   if (pathname === '/') return null;
 
   return (

@@ -26,7 +26,7 @@ export function NowPlayingBar() {
   return (
     <div className={cn(
       "fixed left-0 right-0 h-20 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex items-center justify-between z-50 transition-all duration-300",
-      "bottom-16 md:bottom-0" // Shift up on mobile to accommodate BottomNav
+      "bottom-16" // Fixed above BottomNav for both mobile and web
     )}>
       <div className="absolute top-0 left-0 right-0 h-[2px]">
         <Slider

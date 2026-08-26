@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -90,6 +89,56 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     isScrubbingRef.current = isScrubbing;
   }, [isScrubbing]);
 
+  const playTrackInternal = useCallback((track: Song, fromQueue?: Song[]) => {
+    if (!track) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const url = getBestDownload(track);
+    if (!url) {
+      toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
+      return;
+    }
+
+    // High-fidelity reset of current stream
+    audio.pause();
+    audio.src = url;
+    audio.load();
+
+    console.log('AYUMUSIC: Initiating playback for:', track.name);
+    setCurrentTrack(track);
+    currentTrackRef.current = track;
+    setIsBuffering(true);
+    setProgress(0);
+
+    if (fromQueue) {
+      setQueue(fromQueue);
+      queueRef.current = fromQueue;
+    }
+    
+    setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
+    
+    audio.play().catch((err) => {
+      console.warn('AYUMUSIC: Playback interrupted', err);
+      setIsBuffering(false);
+    });
+
+    if (smartMood) {
+      const mood = inferMoodFromTrack(track);
+      fetchMoodLineage(mood);
+    }
+  }, [smartMood]);
+
+  const playRandomTrackInternal = useCallback(async () => {
+    try {
+      const trending = await getTrending();
+      if (trending.length > 0) {
+        const rand = trending[Math.floor(Math.random() * trending.length)];
+        playTrackInternal(rand, trending);
+      }
+    } catch (e) {}
+  }, [playTrackInternal]);
+
   const nextTrackInternal = useCallback(() => {
     const currentQueue = queueRef.current;
     
@@ -115,57 +164,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     // 3. Fallback to random discovery
     console.log('AYUMUSIC: Queue exhausted. Falling back to random discovery.');
     playRandomTrackInternal();
-  }, [smartMood]);
-
-  const playTrackInternal = useCallback((track: Song, fromQueue?: Song[]) => {
-    if (!track) return;
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const url = getBestDownload(track);
-    if (!url) {
-      toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
-      return;
-    }
-
-    // Flush current stream
-    audio.pause();
-    audio.src = "";
-    audio.load();
-
-    console.log('AYUMUSIC: Initiating high-velocity resonance for:', track.name);
-    audio.src = url;
-    setCurrentTrack(track);
-    currentTrackRef.current = track;
-    setIsBuffering(true);
-    setProgress(0);
-
-    if (fromQueue) {
-      setQueue(fromQueue);
-      queueRef.current = fromQueue;
-    }
-    
-    setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
-    
-    audio.play().catch((err) => {
-      setIsBuffering(false);
-    });
-
-    if (smartMood) {
-      const mood = inferMoodFromTrack(track);
-      fetchMoodLineage(mood);
-    }
-  }, [smartMood]);
-
-  const playRandomTrackInternal = useCallback(async () => {
-    try {
-      const trending = await getTrending();
-      if (trending.length > 0) {
-        const rand = trending[Math.floor(Math.random() * trending.length)];
-        playTrackInternal(rand, trending);
-      }
-    } catch (e) {}
-  }, [playTrackInternal]);
+  }, [smartMood, playTrackInternal, playRandomTrackInternal]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
@@ -201,10 +200,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
       audio.addEventListener('ended', () => {
         nextTrackInternal();
-      });
-
-      audio.addEventListener('error', () => {
-        setIsBuffering(false);
       });
     }
 
@@ -282,7 +277,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setDuration(0);
       setIsPlayerOpen(false);
       setAutoMixQueue([]);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     }, 
     togglePlay: () => {
       const audio = audioRef.current;

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -29,7 +28,7 @@ export function NowPlayingBar() {
       "fixed left-0 right-0 h-24 bg-black border-t border-white/5 px-4 flex items-center z-50",
       "bottom-16" 
     )}>
-      {/* Spotify-Style Close Button - Top Right */}
+      {/* High-Fidelity Dismissal Control */}
       <button 
         onClick={(e) => {
           e.stopPropagation();
@@ -74,14 +73,14 @@ export function NowPlayingBar() {
           </Button>
         </div>
 
-        {/* Center Controls & Progress (Center) */}
+        {/* Spotify-Style Scrubbing Resonance (Center) */}
         <div className="flex flex-col items-center flex-1 max-w-[40%]">
           <div className="flex items-center gap-6 mb-2">
             <Button variant="ghost" size="icon" className="text-[#b3b3b3] hover:text-white h-8 w-8" onClick={prevTrack}>
               <SkipBack className="h-4 w-4 fill-current" />
             </Button>
             <Button 
-              className="bg-white text-black rounded-full h-8 w-8 p-0 hover:scale-105 transition-transform"
+              className="bg-white text-black rounded-full h-8 w-8 p-0 hover:scale-105 active:scale-95 transition-transform"
               onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             >
               {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
@@ -110,7 +109,7 @@ export function NowPlayingBar() {
           </div>
         </div>
 
-        {/* volume alignment */}
+        {/* Alignment spacer */}
         <div className="w-1/3 hidden md:block" />
       </div>
     </div>

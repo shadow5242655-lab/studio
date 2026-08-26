@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -24,7 +23,7 @@ export function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden text-white">
-      {/* Header */}
+      {/* High-Fidelity Header */}
       <header className="flex items-center justify-between p-6 shrink-0">
         <Button variant="ghost" size="icon" onClick={() => setIsPlayerOpen(false)} className="hover:bg-white/5">
           <ChevronDown className="h-6 w-6" />
@@ -40,10 +39,10 @@ export function FullScreenPlayer() {
         </Button>
       </header>
 
-      {/* Main View */}
+      {/* Main Resonance View */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 md:px-16 max-w-4xl mx-auto w-full space-y-8 md:space-y-12">
         {/* Album Art */}
-        <div className="relative aspect-square w-full max-w-[400px] rounded-lg overflow-hidden shadow-2xl bg-[#282828]">
+        <div className="relative aspect-square w-full max-w-[400px] rounded-lg overflow-hidden shadow-2xl bg-[#282828] border border-white/5">
           {imageSrc ? (
             <img src={imageSrc} className={cn("w-full h-full object-cover", isBuffering && "opacity-50")} alt="" />
           ) : (
@@ -51,18 +50,18 @@ export function FullScreenPlayer() {
           )}
         </div>
 
-        {/* Track Info */}
+        {/* Track Metadata */}
         <div className="w-full max-w-[400px] flex items-center justify-between">
           <div className="min-w-0">
-            <h2 className="text-2xl md:text-3xl font-bold truncate">{trackName}</h2>
-            <p className="text-sm md:text-base text-[#b3b3b3] truncate mt-1">{artistNames}</p>
+            <h2 className="text-2xl md:text-3xl font-bold truncate italic uppercase tracking-tighter">{trackName}</h2>
+            <p className="text-sm md:text-base text-[#b3b3b3] truncate mt-1 uppercase font-medium">{artistNames}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={() => toggleLike(currentTrack)} className="text-[#b3b3b3] hover:text-primary">
             <Heart className={cn("h-7 w-7", isLiked(currentTrack.id) && "fill-primary text-primary")} />
           </Button>
         </div>
 
-        {/* Functional Red Seek Bar */}
+        {/* Functional Spotify-Style Red Seek Bar */}
         <div className="w-full max-w-[400px] space-y-2">
           <Slider 
             value={[progress]} 
@@ -76,20 +75,20 @@ export function FullScreenPlayer() {
               setIsScrubbing(false);
             }}
           />
-          <div className="flex justify-between text-[11px] font-medium text-[#b3b3b3]">
+          <div className="flex justify-between text-[11px] font-medium text-[#b3b3b3] uppercase tracking-widest">
             <span>{formatDuration(progress)}</span>
             <span>{formatDuration(duration)}</span>
           </div>
         </div>
 
-        {/* Controls */}
+        {/* Playback Controls */}
         <div className="w-full max-w-[400px] flex items-center justify-between">
           <Button variant="ghost" size="icon" className="text-[#b3b3b3] hover:text-white h-12 w-12" onClick={prevTrack}>
             <SkipBack className="h-8 w-8 fill-current" />
           </Button>
           <Button 
             onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-            className="bg-white text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform"
+            className="bg-white text-black rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform shadow-2xl"
           >
             {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current ml-1" />}
           </Button>

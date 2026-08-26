@@ -1,4 +1,3 @@
-
 export interface Song {
   id: string;
   name: string;
@@ -24,11 +23,35 @@ export function decodeEntities(text: string): string {
     .replace(/&reg;/gi, '®');
 }
 
+/**
+ * Assigns a mood to a song based on its metadata or the context of the search.
+ * Mandatory moods: punjabi, romance, party, lofi, chill, energetic, haryanvi, desi, bhajan, sufi, pop, indie, rock.
+ */
+export function attachMood(song: Song, context?: string): Song {
+  const text = (song.name + ' ' + (song.artists.primary[0]?.name || '') + ' ' + (context || '')).toLowerCase();
+  
+  let mood = 'pop';
+  if (text.includes('punjabi') || text.includes('diljit') || text.includes('sidhu')) mood = 'punjabi';
+  else if (text.includes('haryanvi') || text.includes('dhanda')) mood = 'haryanvi';
+  else if (text.includes('love') || text.includes('romance') || text.includes('arijit')) mood = 'romance';
+  else if (text.includes('lofi') || text.includes('chill') || text.includes('relax')) mood = 'lofi';
+  else if (text.includes('bhajan') || text.includes('devotional')) mood = 'bhajan';
+  else if (text.includes('sufi') || text.includes('nusrat')) mood = 'sufi';
+  else if (text.includes('party') || text.includes('dance') || text.includes('club')) mood = 'party';
+  else if (text.includes('gym') || text.includes('workout') || text.includes('energy')) mood = 'energetic';
+  else if (text.includes('indie') || text.includes('local')) mood = 'indie';
+  else if (text.includes('rock') || text.includes('metal')) mood = 'rock';
+  else if (text.includes('desi')) mood = 'desi';
+  
+  return { ...song, mood };
+}
+
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return results.map((s: Song) => attachMood(s, query));
   } catch (error) {
     console.error('AYUMUSIC API: Search failed:', error);
     return [];
@@ -72,7 +95,8 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=20`);
     const data = await res.json();
-    return data.data?.results || data.data || [];
+    const results = data.data?.results || data.data || [];
+    return results.map((s: Song) => attachMood(s, 'trending'));
   } catch (error) {
     console.error('AYUMUSIC API: Trending fetch failed:', error);
     return [];
@@ -87,15 +111,14 @@ export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
     
     if (!data.data) return [];
 
-    return data.data.map((track: any) => ({
+    return data.data.map((track: any) => attachMood({
       id: String(track.id),
       name: track.title,
       artists: { primary: [{ name: track.user.name, id: track.user.id }] },
       image: [{ link: track.artwork?.['480x480'] || track.artwork?.['150x150'] || 'https://picsum.photos/seed/audius/400/400', quality: 'high' }],
       downloadUrl: [{ link: `${AUDIUS_API_BASE}/tracks/${track.id}/stream`, quality: 'high' }],
       duration: Math.floor(track.duration),
-      mood: mood
-    }));
+    }, mood));
   } catch (error) {
     console.error('AYUMUSIC API: Audius resonance failed:', error);
     return [];

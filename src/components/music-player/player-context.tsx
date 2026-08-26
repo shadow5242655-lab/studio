@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -103,35 +102,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     isScrubbingRef.current = isScrubbing;
   }, [isScrubbing]);
 
-  /**
-   * Infer mood based on song metadata for better auto-recommendation.
-   */
-  const inferMoodFromTrack = useCallback((track: Song): string => {
-    const text = (track.name + ' ' + (track.artists.primary[0]?.name || '')).toLowerCase();
-    
-    if (text.includes('punjabi') || text.includes('diljit') || text.includes('sidhu') || text.includes('shubh')) return 'punjabi';
-    if (text.includes('haryanvi') || text.includes('dhanda') || text.includes('sapna')) return 'haryanvi';
-    if (text.includes('love') || text.includes('romance') || text.includes('arijit')) return 'romance';
-    if (text.includes('lofi') || text.includes('chill') || text.includes('relax')) return 'lofi';
-    if (text.includes('bhajan') || text.includes('krishna') || text.includes('devotional')) return 'bhajan';
-    if (text.includes('sufi') || text.includes('nusrat') || text.includes('rahat')) return 'sufi';
-    if (text.includes('party') || text.includes('dance') || text.includes('club')) return 'party';
-    if (text.includes('indie') || text.includes('local') || text.includes('underground')) return 'indie';
-    if (text.includes('rock') || text.includes('metal') || text.includes('guitar')) return 'rock';
-    
-    return 'pop';
-  }, []);
-
   const fetchMoodLineage = useCallback(async (mood: string) => {
     if (!smartMood) return;
     try {
+      console.log('AYUMUSIC NEURAL: Architecting next resonance for mood:', mood);
       const resonance = await fetchAudiusMoodTracks(mood);
       if (resonance.length > 0) {
         setAutoMixQueue(resonance);
         autoMixQueueRef.current = resonance;
       }
     } catch (e) {
-      console.warn('AYUMUSIC: Failed to fetch neural resonance');
+      console.warn('AYUMUSIC NEURAL: Resonance fetch failed');
     }
   }, [smartMood]);
 
@@ -150,7 +131,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     audio.src = url;
     audio.load();
 
-    console.log('AYUMUSIC: Initiating playback for:', track.name);
+    console.log('AYUMUSIC: Playing:', track.name, '| Mood:', track.mood);
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -164,26 +145,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
     audio.play().catch((err) => {
-      console.warn('AYUMUSIC: Playback interrupted', err);
+      console.warn('AYUMUSIC: Playback failed', err);
       setIsBuffering(false);
     });
 
-    // Start auto-recommendation fetch immediately for the next song
-    const mood = track.mood || inferMoodFromTrack(track);
-    fetchMoodLineage(mood);
-  }, [inferMoodFromTrack, fetchMoodLineage]);
-
-  useEffect(() => {
-    if (currentTrack) {
-      setLoadingLyrics(true);
-      getLyrics(currentTrack.id).then(res => {
-        setLyrics(res);
-        setLoadingLyrics(false);
-      });
-    } else {
-      setLyrics(null);
+    // Neural: Initiate background fetching for auto-recommendation immediately
+    if (track.mood) {
+      fetchMoodLineage(track.mood);
     }
-  }, [currentTrack]);
+  }, [fetchMoodLineage]);
 
   const playRandomTrackInternal = useCallback(async () => {
     try {
@@ -196,33 +166,61 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playTrackInternal]);
 
   /**
-   * Neural Next Track Logic: Handles Queue, Playlist, and Auto-Recommendation
+   * handleSongEnd Logic:
+   * 1. Check if playlist has more songs.
+   * 2. If playlist ends or it was a single song, trigger startAutoRecommendation.
    */
+  const startAutoRecommendation = useCallback(async () => {
+    const lastSong = currentTrackRef.current;
+    const mood = lastSong?.mood || 'pop';
+    
+    console.log('AYUMUSIC NEURAL: Song ended. Starting auto-recommendation with mood:', mood);
+
+    // Use pre-fetched autoMixQueue if available
+    if (autoMixQueueRef.current.length > 0) {
+      const nextSong = autoMixQueueRef.current[0];
+      console.log('AYUMUSIC NEURAL: Playing from pre-fetched mood queue:', nextSong.name);
+      setAutoMixQueue(prev => prev.slice(1));
+      autoMixQueueRef.current = autoMixQueueRef.current.slice(1);
+      playTrackInternal(nextSong);
+      return;
+    }
+
+    // Fallback: Fetch mood-matched tracks on the fly
+    try {
+      const resonance = await fetchAudiusMoodTracks(mood);
+      const filtered = resonance.filter(s => s.id !== lastSong?.id);
+      
+      if (filtered.length > 0) {
+        console.log('AYUMUSIC NEURAL: Found mood-matched resonance:', filtered.length, 'tracks');
+        playTrackInternal(filtered[0], filtered.slice(1));
+      } else {
+        // Ultimate Fallback: Random shuffle all trending
+        console.log('AYUMUSIC NEURAL: No mood matches. Falling back to random shuffle.');
+        playRandomTrackInternal();
+      }
+    } catch (e) {
+      playRandomTrackInternal();
+    }
+  }, [playTrackInternal, playRandomTrackInternal]);
+
   const nextTrackInternal = useCallback(() => {
     const currentQueue = queueRef.current;
     const currentSong = currentTrackRef.current;
     
-    // 1. Check if there's a manual queue and more songs to play
+    // Check if there's a manual playlist/queue and more songs to play
     if (currentQueue.length > 0) {
       const currentIdx = currentQueue.findIndex(s => s.id === currentSong?.id);
       if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
+        console.log('AYUMUSIC: Playing next in playlist/queue');
         playTrackInternal(currentQueue[currentIdx + 1]);
         return;
       }
     }
 
-    // 2. Playlist/Manual Queue ended OR single song played: Trigger Auto-Recommendation
-    if (smartMood && autoMixQueueRef.current.length > 0) {
-      const nextMoodSong = autoMixQueueRef.current[0];
-      setAutoMixQueue(prev => prev.slice(1));
-      autoMixQueueRef.current = autoMixQueueRef.current.slice(1);
-      playTrackInternal(nextMoodSong);
-      return;
-    }
-
-    // 3. Fallback to random discovery if no specific mood matches
-    playRandomTrackInternal();
-  }, [smartMood, playTrackInternal, playRandomTrackInternal]);
+    // Playlist ended or single song: start auto-recommendation
+    startAutoRecommendation();
+  }, [playTrackInternal, startAutoRecommendation]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
@@ -256,16 +254,29 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setDuration(audio.duration);
       });
 
-      audio.addEventListener('ended', () => {
-        console.log('AYUMUSIC: Song ended. Architecting next resonance...');
+      // Hardware-Stabilized onended event
+      audio.onended = () => {
+        console.log('AYUMUSIC NEURAL: onended event triggered.');
         nextTrackInternal();
-      });
+      };
     }
 
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, [nextTrackInternal]);
+
+  useEffect(() => {
+    if (currentTrack) {
+      setLoadingLyrics(true);
+      getLyrics(currentTrack.id).then(res => {
+        setLyrics(res);
+        setLoadingLyrics(false);
+      });
+    } else {
+      setLyrics(null);
+    }
+  }, [currentTrack]);
 
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, loadingLyrics, lyrics,

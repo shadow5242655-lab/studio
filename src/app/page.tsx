@@ -49,7 +49,8 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const handleScroll = () => {
     if (!scrollRef.current || isFetching || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    if (scrollLeft + clientWidth >= scrollWidth - 200) {
+    // Threshold detection for infinite scroll
+    if (scrollLeft + clientWidth >= scrollWidth - 300) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchSongs(nextPage);
@@ -264,7 +265,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-neutral-900 border border-white/5 overflow-hidden">
             <div className="absolute inset-0 bg-primary/20 blur-md" />
-            <span className="relative z-10 text-lg font-black italic text-white">N</span>
+            <span className="relative z-10 text-lg font-black italic text-white">A</span>
           </div>
           <span className="text-3xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
         </div>
@@ -297,28 +298,32 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            {/* Hero Card - RESOUND Style (Exact Screenshot Match) */}
-            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0a0a0a] via-black to-black p-10 border border-white/5 shadow-2xl space-y-10 group">
-              {/* Large Abstract Background Music Node */}
-              <div className="absolute top-0 right-0 p-10 text-white/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-96 w-96" />
+            {/* Hero Card - RESOUND Style (Precision Centering & Scaling) */}
+            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0a0a0a] via-black to-black p-8 border border-white/5 shadow-2xl flex flex-col group min-h-[460px] md:min-h-[600px]">
+              {/* Abstract Background Icon */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                <Music2 className="h-[300px] w-[300px] md:h-[500px] md:w-[500px]" />
               </div>
               
-              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
-                 NO ADS • NO SIGN-UP
+              {/* Badge - Centered at top */}
+              <div className="w-full flex justify-center mb-10 relative z-10">
+                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
+                   NO ADS • NO SIGN-UP
+                </div>
               </div>
               
-              <div className="space-y-6 relative z-10">
-                <h1 className="text-8xl font-black italic tracking-tighter uppercase leading-[0.75] neon-glow">RESOUND</h1>
-                <p className="text-xl font-bold text-neutral-400 leading-tight max-w-[260px] opacity-80">
+              <div className="flex-1 flex flex-col justify-center relative z-10 px-4">
+                <h1 className="text-7xl sm:text-8xl md:text-9xl font-black italic tracking-tighter uppercase leading-[0.7] neon-glow mb-6">RESOUND</h1>
+                <p className="text-lg md:text-2xl font-bold text-neutral-400 leading-tight max-w-[280px] opacity-80">
                   High-fidelity sound resonance straight from the source.
                 </p>
               </div>
 
-              <div className="flex gap-4 pt-4 relative z-10">
+              {/* Button - Centered at bottom */}
+              <div className="w-full flex justify-center mt-10 relative z-10 pb-4">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-16 px-12 shadow-[0_15px_45px_rgba(255,0,0,0.4)] hover:scale-105 active:scale-95 transition-transform text-xl"
+                  className="rounded-[2.5rem] bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-20 px-16 shadow-[0_15px_45px_rgba(255,0,0,0.5)] hover:scale-105 active:scale-95 transition-transform text-2xl w-full sm:w-auto min-w-[240px]"
                 >
                   <Play className="h-6 w-6 fill-current" /> PLAY NOW
                 </Button>

@@ -22,7 +22,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="h-18 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-6 px-6 select-none safe-area-bottom">
+    <nav className="h-20 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-6 px-6 select-none safe-area-bottom">
       <div className="flex w-full items-center justify-between gap-2 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -31,7 +31,7 @@ export function BottomNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1.5 transition-all duration-300 flex-1 py-2",
+                "flex flex-col items-center gap-1.5 transition-all duration-300 flex-1 py-2 lag-free-tap",
                 isActive ? "text-primary" : "text-neutral-500 hover:text-neutral-300"
               )}
             >

@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { getBestImage, getBestDownload, decodeEntities } from '@/lib/music-api';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 export function NowPlayingBar() {
   const { 
@@ -23,7 +24,10 @@ export function NowPlayingBar() {
   const imageSrc = getBestImage(currentTrack);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-20 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex items-center justify-between z-50">
+    <div className={cn(
+      "fixed left-0 right-0 h-20 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex items-center justify-between z-50 transition-all duration-300",
+      "bottom-16 md:bottom-0" // Shift up on mobile to accommodate BottomNav
+    )}>
       <div className="absolute top-0 left-0 right-0 h-[2px]">
         <Slider
           value={[progress]}
@@ -103,7 +107,7 @@ export function NowPlayingBar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-neutral-500 hover:text-white lag-free-tap"
+          className="text-neutral-500 hover:text-white lag-free-tap hidden sm:flex"
           onClick={(e) => {
             e.stopPropagation();
             const u = getBestDownload(currentTrack);

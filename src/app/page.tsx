@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending, formatDuration } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, HeartIcon, Zap, Pause, MoreVertical
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, Zap, Pause, MoreVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,7 +56,7 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
     setPage(1);
     setHasMore(true);
     fetchSongs(1);
-  }, [query]);
+  }, [query, fetchSongs]);
 
   const handleScroll = () => {
     if (!scrollRef.current || isFetching || !hasMore) return;
@@ -233,16 +233,9 @@ export default function Home() {
     loadInitialData();
   }, [loadInitialData]);
 
-  const handleVibeClick = async (vibe: string) => {
-    setLoading(true);
-    setIsSearching(true);
-    try {
-      const results = await searchSongs(vibe);
-      setDisplaySongs(results);
-    } catch (e) {} finally {
-      setLoading(false);
-    }
-  };
+  const handleVibeClick = useCallback((vibe: string) => {
+    setSearchQuery(vibe);
+  }, []);
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -305,34 +298,34 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-6 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] md:min-h-[360px]">
+            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 md:p-6 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] md:min-h-[360px] items-center text-center">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[260px] w-[260px] md:h-[300px] md:w-[300px]" />
+                <Music2 className="h-[200px] w-[200px] md:h-[300px] md:w-[300px]" />
               </div>
               
-              <div className="w-full flex justify-center mb-4 relative z-10">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[7px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
+              <div className="w-full flex justify-center mb-2 md:mb-4 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[6px] md:text-[7px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
                    <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
                 </div>
               </div>
               
-              <div className="flex-1 flex flex-col justify-center items-center relative z-10 text-center">
-                <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-3 text-white">AYUMUSIC</h1>
-                <p className="text-xs md:text-sm font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto italic">
+              <div className="flex-1 flex flex-col justify-center items-center relative z-10">
+                <h1 className="text-3xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-2 md:mb-3 text-white">AYUMUSIC</h1>
+                <p className="text-[10px] md:text-sm font-bold text-neutral-400 leading-tight max-w-[240px] md:max-w-[280px] mx-auto italic">
                   High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
                 </p>
               </div>
 
-              <div className="w-full flex items-center justify-center gap-3 mt-6 relative z-10">
+              <div className="w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-4 md:mt-6 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-11 px-6 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[10px] md:text-sm"
+                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-10 md:h-11 px-5 md:px-6 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[9px] md:text-sm"
                 >
                   <Play className="h-3 w-3 fill-current" /> Play Trending
                 </Button>
                 <Button 
                   variant="secondary"
-                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-11 px-6 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[10px] md:text-sm"
+                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-10 md:h-11 px-5 md:px-6 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[9px] md:text-sm"
                 >
                   <Shuffle className="h-3 w-3" /> Shuffle
                 </Button>
@@ -344,7 +337,7 @@ export default function Home() {
                  <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
                </div>
                <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
-                 <VibeButton icon={HeartIcon} label="Romance" query="Romantic Hits 2024" onClick={handleVibeClick} />
+                 <VibeButton icon={Heart} label="Romance" query="Romantic Hits 2024" onClick={handleVibeClick} />
                  <VibeButton icon={Sparkles} label="Party" query="Top Party Dance Music" onClick={handleVibeClick} />
                  <VibeButton icon={Coffee} label="Lo-fi" query="Lo-fi Hip Hop Beats Relax" onClick={handleVibeClick} />
                  <VibeButton icon={Zap} label="Workout" query="High Energy Workout Motivation" onClick={handleVibeClick} />

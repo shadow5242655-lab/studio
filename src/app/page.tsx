@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Smartphone, Settings2, Sparkles, Shuffle, X
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,7 +161,6 @@ export default function Home() {
       setDisplaySongs(dailyResults.filter(Boolean));
 
       const trending = await getTrending();
-      // Ensure trending is different from daily picks
       const filteredTrending = trending.filter(t => !dailyResults.some(d => d && d.id === t.id)).slice(0, 10);
       setTrendingSongs(filteredTrending);
 
@@ -272,13 +271,13 @@ export default function Home() {
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-700 flex flex-col items-center">
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
         
-        {/* Unified Brand-Search Header */}
+        {/* Unified Brand-Search-Menu Header */}
         <header className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
           <div className="flex items-center gap-2 ml-4 shrink-0">
             <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
               <Music2 className="h-5 w-5 text-white" />
             </div>
-            <span className="font-black text-lg tracking-tighter text-white uppercase italic">AYUMUSIC</span>
+            <span className="font-black text-lg tracking-tighter text-white uppercase italic hidden xs:block">AYUMUSIC</span>
           </div>
           
           <div className="flex-1 relative">
@@ -295,6 +294,10 @@ export default function Home() {
               </button>
             )}
           </div>
+
+          <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full">
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
         </header>
 
         {/* Vibe Chips */}
@@ -365,7 +368,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Dynamic List Section - Spotify Style Results */}
+        {/* Dynamic List Section */}
         <section className="space-y-8 min-h-[400px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">{listTitle}</h2>

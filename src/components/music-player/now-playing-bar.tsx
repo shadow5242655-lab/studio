@@ -14,13 +14,13 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Pixel-perfect Now Playing Bar matching user screenshot.
- * Metadata on the left, controls shifted right, red seek bar below.
+ * Metadata on the left (clickable to open full player), controls shifted right, red seek bar below.
  */
 
 export function NowPlayingBar() {
   const { 
     currentTrack, isPlaying, isBuffering, togglePlay, nextTrack, prevTrack,
-    stopTrack, toggleLike, isLiked
+    stopTrack, toggleLike, isLiked, setIsPlayerOpen
   } = useMusic();
   const { progress, duration, seek, setIsScrubbing } = useMusicProgress();
 
@@ -35,15 +35,18 @@ export function NowPlayingBar() {
         {/* Top Row: Metadata (Left) and Controls (Right Shifted) */}
         <div className="flex items-center justify-between">
           
-          {/* Left: Metadata & Heart */}
-          <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
+          {/* Left: Metadata & Heart (Clickable to open full player) */}
+          <div 
+            className="flex items-center gap-3 min-w-0 flex-1 pr-4 cursor-pointer group"
+            onClick={() => setIsPlayerOpen(true)}
+          >
             <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-[#282828] shrink-0 border border-white/5">
               {imageSrc ? (
                 <Image 
                   src={imageSrc} 
                   alt={currentTrack.name} 
                   fill 
-                  className="object-cover"
+                  className="object-cover group-hover:scale-105 transition-transform"
                   sizes="48px"
                 />
               ) : (
@@ -53,7 +56,7 @@ export function NowPlayingBar() {
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter leading-none">
+              <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter leading-none group-hover:text-primary transition-colors">
                 {decodeEntities(currentTrack.name)}
               </span>
               <span className="text-[10px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1">
@@ -61,7 +64,7 @@ export function NowPlayingBar() {
               </span>
             </div>
             <button 
-              className="text-neutral-500 hover:text-primary transition-colors h-8 w-8 shrink-0 lag-free-tap"
+              className="text-neutral-500 hover:text-primary transition-colors h-8 w-8 shrink-0 lag-free-tap ml-2"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleLike(currentTrack);
@@ -78,7 +81,7 @@ export function NowPlayingBar() {
                 <SkipBack className="h-5 w-5 fill-current" />
               </button>
               <button 
-                onClick={togglePlay} 
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
                 className="bg-primary text-black rounded-full h-11 w-11 sm:h-12 sm:w-12 p-0 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,0,0.3)] shrink-0 transition-transform active:scale-95 lag-free-tap"
               >
                 {isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />}

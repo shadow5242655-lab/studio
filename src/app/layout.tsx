@@ -6,6 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Sidebar, Header } from '@/components/music-player/sidebar';
 import { BottomNav } from '@/components/music-player/bottom-nav';
+import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
+import { LyricsDrawer } from '@/components/music-player/lyrics-drawer';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
@@ -36,6 +38,10 @@ export default function RootLayout({
             
             {/* Global Music Player (Spotify-Style Bar) */}
             <NowPlayingBar />
+            
+            {/* Immersive Player Layers */}
+            <FullScreenPlayer />
+            <LyricsDrawer />
             
             {/* Bottom Navigation */}
             <BottomNav />

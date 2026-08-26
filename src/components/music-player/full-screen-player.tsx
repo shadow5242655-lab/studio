@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Heart, Music2, X, MoreHorizontal } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Heart, Music2, X, MoreHorizontal, ChevronDown, ListMusic } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,14 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview High-fidelity full-screen player view.
- * The ✕ button in the top right collapses the player to the home view 
+ * The ✕ button in the top right collapses the player back to the home view 
  * without stopping the audio, just like Spotify.
  */
 
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
-    togglePlay, nextTrack, prevTrack, toggleLike, isLiked
+    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, setIsLyricsOpen
   } = useMusic();
   const { progress, duration, seek, setIsScrubbing } = useMusicProgress();
 
@@ -31,8 +31,13 @@ export function FullScreenPlayer() {
     <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden text-white">
       {/* High-Fidelity Header */}
       <header className="flex items-center justify-between p-6 shrink-0">
-        <Button variant="ghost" size="icon" className="hover:bg-white/5 opacity-0 pointer-events-none">
-          <MoreHorizontal className="h-6 w-6" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsPlayerOpen(false)}
+          className="hover:bg-white/5 text-neutral-400 lag-free-tap"
+        >
+          <ChevronDown className="h-8 w-8" />
         </Button>
         <div className="flex flex-col items-center">
           <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-500">Playing From</span>
@@ -41,10 +46,7 @@ export function FullScreenPlayer() {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            setIsPlayerOpen(false); // Collapses back to home, music continues
-          }}
+          onClick={() => setIsPlayerOpen(false)}
           className="hover:bg-white/5 text-neutral-400 hover:text-white transition-colors lag-free-tap"
         >
           <X className="h-7 w-7" />
@@ -125,10 +127,20 @@ export function FullScreenPlayer() {
             <SkipForward className="h-10 w-10 fill-current" />
           </Button>
         </div>
+
+        {/* Lyrics & Queue Access */}
+        <div className="w-full max-w-[420px] flex items-center justify-between pt-8">
+          <Button variant="ghost" className="gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white" onClick={() => setIsLyricsOpen(true)}>
+            <Music2 className="h-4 w-4" /> Lyrics
+          </Button>
+          <Button variant="ghost" className="gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white">
+            <ListMusic className="h-4 w-4" /> Queue
+          </Button>
+        </div>
       </div>
       
       {/* Immersive Background Gradient */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 to-black pointer-events-none" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/20 to-black pointer-events-none" />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 export interface Song {
   id: string;
   name: string;
@@ -9,6 +8,7 @@ export interface Song {
 }
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
+const AUDIUS_API_BASE = 'https://api.audius.co/v1';
 
 export function decodeEntities(text: string): string {
   if (!text) return '';
@@ -46,6 +46,32 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
   }
 }
 
+/**
+ * Fetches tracks from Audius based on a mood or keyword.
+ * Normalizes the response to match the AYUMUSIC Song interface.
+ */
+export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
+  try {
+    console.log(`AYUMUSIC API: Fetching Audius resonance for mood: "${mood}"`);
+    const res = await fetch(`${AUDIUS_API_BASE}/tracks/search?query=${encodeURIComponent(mood)}&limit=20`);
+    const data = await res.json();
+    
+    if (!data.data) return [];
+
+    return data.data.map((track: any) => ({
+      id: track.id,
+      name: track.title,
+      artists: { primary: [{ name: track.user.name, id: track.user.id }] },
+      image: [{ link: track.artwork?.['480x480'] || track.artwork?.['150x150'] || '', quality: 'high' }],
+      downloadUrl: [{ link: `${AUDIUS_API_BASE}/tracks/${track.id}/stream`, quality: 'high' }],
+      duration: track.duration,
+    }));
+  } catch (error) {
+    console.error('AYUMUSIC API: Audius resonance failed:', error);
+    return [];
+  }
+}
+
 export function formatDuration(seconds: number) {
   if (!seconds) return '0:00';
   const mins = Math.floor(seconds / 60);
@@ -64,7 +90,6 @@ export function getBestDownload(song: Song): string {
     console.warn('AYUMUSIC API: No download URLs available for song:', song.id);
     return '';
   }
-  // JioSaavn API usually returns an array of objects. We take the highest quality (last item).
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   const url = best?.link || best?.url || '';
   if (!url) {

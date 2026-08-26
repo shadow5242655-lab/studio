@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, decodeEntities } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, decodeEntities, searchSongs } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
+import { analyzeMood } from '@/ai/flows/mood-analysis-flow';
 
 export interface Playlist {
   id: string;
@@ -25,6 +26,8 @@ interface MusicStateContextType {
   likedSongs: Song[];
   playlists: Playlist[];
   playedHistory: HistoryItem[];
+  smartMood: boolean;
+  autoMixQueue: Song[];
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   playNext: (track: Song) => void;
@@ -39,6 +42,9 @@ interface MusicStateContextType {
   createPlaylist: (name: string, songs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
   deletePlaylist: (id: string) => void;
+  setSmartMood: (enabled: boolean) => void;
+  removeFromHistory: (id: string) => void;
+  clearHistory: () => void;
 }
 
 interface MusicProgressContextType {
@@ -68,6 +74,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const volumeRef = useRef(0.7);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  
+  // Neural Engine State
+  const [smartMood, setSmartMood] = useState(true);
+  const [autoMixQueue, setAutoMixQueue] = useState<Song[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -85,7 +95,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
     
-    // Stop current resonance
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -114,6 +123,31 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Neural Auto-Mix Logic
+  useEffect(() => {
+    if (smartMood && currentTrack) {
+      const architectAutoMix = async () => {
+        try {
+          const analysis = await analyzeMood({ 
+            songName: currentTrack.name, 
+            artistName: currentTrack.artists.primary[0]?.name || 'Unknown' 
+          });
+          
+          const searchPromises = analysis.nextQueries.map(q => searchSongs(q, 1));
+          const searchResults = await Promise.all(searchPromises);
+          const newSongs = searchResults.flatMap(r => r).filter(s => s.id !== currentTrack.id);
+          
+          // Deduplicate and buffer
+          const uniqueSongs = Array.from(new Map(newSongs.map(s => [s.id, s])).values());
+          setAutoMixQueue(uniqueSongs.slice(0, 10));
+        } catch (e) {
+          console.error("Neural architect failed", e);
+        }
+      };
+      architectAutoMix();
+    }
+  }, [currentTrack, smartMood]);
+
   const playRandomTrack = useCallback(async () => {
     const trending = await getTrending();
     if (trending.length > 0) {
@@ -124,16 +158,31 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(() => {
     if (queueRef.current.length === 0) {
-      playRandomTrack();
+      if (autoMixQueue.length > 0) {
+        const next = autoMixQueue[0];
+        setAutoMixQueue(prev => prev.slice(1));
+        playTrack(next, [next]);
+      } else {
+        playRandomTrack();
+      }
       return;
     }
+    
     const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
     if (idx !== -1 && idx < queueRef.current.length - 1) {
       playTrack(queueRef.current[idx + 1]);
+    } else if (autoMixQueue.length > 0) {
+      const next = autoMixQueue[0];
+      setAutoMixQueue(prev => prev.slice(1));
+      // Append to queue for continuity
+      const newQueue = [...queueRef.current, next];
+      setQueue(newQueue);
+      queueRef.current = newQueue;
+      playTrack(next);
     } else {
       playRandomTrack();
     }
-  }, [playTrack, playRandomTrack]);
+  }, [playTrack, playRandomTrack, autoMixQueue]);
 
   const prevTrack = useCallback(() => {
     if (queueRef.current.length === 0) return;
@@ -169,6 +218,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const addToPlaylist = useCallback((playlistId: string, track: Song) => {
     setPlaylists(prev => prev.map(p => p.id === playlistId ? { ...p, songs: [...p.songs.filter(s => s.id !== track.id), track] } : p));
     toast({ title: 'Collection Updated', description: `Track added to your playlist.` });
+  }, []);
+
+  const removeFromHistory = useCallback((id: string) => {
+    setPlayedHistory(prev => prev.filter(i => i.id !== id));
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setPlayedHistory([]);
   }, []);
 
   const updateProgress = useCallback(() => {
@@ -207,7 +264,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists,
-    playedHistory, setIsPlayerOpen, playTrack, playNext: (t: Song) => {
+    playedHistory, smartMood, autoMixQueue, setIsPlayerOpen, playTrack, playNext: (t: Song) => {
       setQueue(prev => {
         const next = [...prev.filter(s => s.id !== t.id)];
         const idx = next.findIndex(s => s.id === currentTrackRef.current?.id);
@@ -226,8 +283,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       toast({ title: 'Buffered', description: `"${decodeEntities(t.name)}" added to queue.` });
     },
     playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
-    isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists, playedHistory, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist]);
+    isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist,
+    setSmartMood, removeFromHistory, clearHistory
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists, playedHistory, smartMood, autoMixQueue, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, setSmartMood, removeFromHistory, clearHistory]);
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume,

@@ -9,16 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Sparkles, History, Brain, Zap, ShieldAlert, Trash2, Plus, Loader2, Music2, Wind, Radio } from 'lucide-react';
+import { History, Brain, Zap, Trash2, Loader2, Music2, Wind, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 export default function IntelligencePage() {
   const { 
     playedHistory = [], removeFromHistory, clearHistory, 
-    exclusionRules = [], addExclusionRule, removeExclusionRule,
     createPlaylist, smartMood, setSmartMood, autoMixQueue
   } = useMusic();
   
@@ -29,8 +27,6 @@ export default function IntelligencePage() {
   const [fromMood, setFromMood] = useState('');
   const [toMood, setToMood] = useState('');
   const [loadingJourney, setLoadingJourney] = useState(false);
-  
-  const [exclusionInput, setExclusionInput] = useState('');
 
   const handleMixVibe = async () => {
     if (!vibeInput) return;
@@ -39,7 +35,6 @@ export default function IntelligencePage() {
       const result = await generateVibePlaylist({ vibe: vibeInput });
       const foundSongs = await Promise.all(result.searchTerms.map(term => searchSongs(term)));
       const flatSongs = foundSongs.map(res => res[0]).filter(Boolean);
-      // Deduplicate songs before creating playlist
       const uniqueSongs = Array.from(new Map(flatSongs.map(s => [s.id, s])).values());
       createPlaylist(result.playlistName, uniqueSongs);
       toast({ title: 'AI Mix Ready', description: `Playlist "${result.playlistName}" added to your library.` });
@@ -58,7 +53,6 @@ export default function IntelligencePage() {
       const allSearchTerms = result.stages.flatMap(s => s.searchTerms);
       const foundSongs = await Promise.all(allSearchTerms.map(term => searchSongs(term)));
       const flatSongs = foundSongs.map(res => res[0]).filter(Boolean);
-      // Deduplicate songs before creating playlist
       const uniqueSongs = Array.from(new Map(flatSongs.map(s => [s.id, s])).values());
       createPlaylist(result.journeyName, uniqueSongs);
       toast({ title: 'Journey Initiated', description: `"${result.journeyName}" transition playlist created.` });
@@ -99,17 +93,17 @@ export default function IntelligencePage() {
         <TabsContent value="sync" className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
           <Card className="bg-neutral-900 border-white/5 shadow-2xl max-w-3xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-3xl font-black italic uppercase italic tracking-tighter flex items-center gap-2">
+              <CardTitle className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-2">
                 <Radio className="h-6 w-6 text-primary" />
                 Background Mood Auto-Mix
               </CardTitle>
-              <CardDescription>Definitive vibe continuity engine</CardDescription>
+              <CardDescription>Definitive vibe continuity engine (Enabled by Default)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
                 <div className="space-y-1">
-                  <Label htmlFor="smart-mood" className="text-xl font-bold italic tracking-tighter uppercase">Enable Neural Sync</Label>
-                  <p className="text-sm text-neutral-500">Automatically analyzes song lyrics to predicted mood and curate the next 10 matching frequencies.</p>
+                  <Label htmlFor="smart-mood" className="text-xl font-bold italic tracking-tighter uppercase">Neural Sync Resonance</Label>
+                  <p className="text-sm text-neutral-500">Automatically analyzes sound lineage to curate the next matching frequencies infinitely.</p>
                 </div>
                 <Switch 
                   id="smart-mood" 
@@ -121,7 +115,7 @@ export default function IntelligencePage() {
               <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-4">
                  <h4 className="font-bold text-primary italic uppercase tracking-tight">Active Neural Engine</h4>
                  <p className="text-xs text-neutral-400 leading-relaxed italic">
-                   The system is currently buffering <span className="text-primary font-bold">{autoMixQueue.length} tracks</span> for your next transition. Each time a new song starts, the lyrics are analyzed via Twinword AI to shift the sound lineage.
+                   The system is currently buffering <span className="text-primary font-bold">{autoMixQueue.length} tracks</span> for your next transition. Each time a new song starts, the resonance is analyzed to shift the sound lineage automatically.
                  </p>
               </div>
             </CardContent>

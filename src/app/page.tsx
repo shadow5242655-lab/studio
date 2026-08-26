@@ -29,7 +29,7 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchSongs = useCallback(async (p: number) => {
-    if (isFetching || (!hasMore && p > 1)) return;
+    // Avoid re-fetching if already in progress or no more tracks
     setIsFetching(true);
     try {
       const data = await searchSongs(query, p);
@@ -49,12 +49,14 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
       setIsFetching(false);
       setLoading(false);
     }
-  }, [query, isFetching, hasMore]);
+  }, [query]);
 
+  // Handle initial load
   useEffect(() => {
     setSongs([]);
     setPage(1);
     setHasMore(true);
+    setLoading(true);
     fetchSongs(1);
   }, [query, fetchSongs]);
 
@@ -62,11 +64,9 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
     if (!scrollRef.current || isFetching || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
     if (scrollLeft + clientWidth >= scrollWidth - 600) {
-      setPage(prev => {
-        const next = prev + 1;
-        fetchSongs(next);
-        return next;
-      });
+      const next = page + 1;
+      setPage(next);
+      fetchSongs(next);
     }
   };
 

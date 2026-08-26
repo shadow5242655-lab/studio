@@ -1,3 +1,4 @@
+
 export interface Song {
   id: string;
   name: string;
@@ -23,22 +24,24 @@ export function decodeEntities(text: string): string {
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
+    console.log(`AYUMUSIC API: Searching for "${query}" (Page: ${page})`);
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
-    console.error('Search failed:', error);
+    console.error('AYUMUSIC API: Search failed:', error);
     return [];
   }
 }
 
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
+    console.log(`AYUMUSIC API: Fetching trending hits (Page: ${page})`);
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=20`);
     const data = await res.json();
     return data.data?.results || data.data || [];
   } catch (error) {
-    console.error('Trending fetch failed:', error);
+    console.error('AYUMUSIC API: Trending fetch failed:', error);
     return [];
   }
 }
@@ -57,7 +60,15 @@ export function getBestImage(item: any): string | null {
 }
 
 export function getBestDownload(song: Song): string {
-  if (!song?.downloadUrl?.length) return '';
+  if (!song?.downloadUrl?.length) {
+    console.warn('AYUMUSIC API: No download URLs available for song:', song.id);
+    return '';
+  }
+  // JioSaavn API usually returns an array of objects. We take the highest quality (last item).
   const best = song.downloadUrl[song.downloadUrl.length - 1];
-  return best?.link || best?.url || '';
+  const url = best?.link || best?.url || '';
+  if (!url) {
+    console.warn('AYUMUSIC API: Best download object contains no valid link:', best);
+  }
+  return url;
 }

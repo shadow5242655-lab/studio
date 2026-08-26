@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview High-fidelity full-screen player view.
- * Optimized for mobile resonance to ensure all controls are visible.
+ * Responsive architecture ensuring bottom controls are never hidden on short viewports.
  */
 
 export function FullScreenPlayer() {
@@ -28,7 +29,7 @@ export function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden text-white">
-      {/* High-Fidelity Header */}
+      {/* Immersive Header */}
       <header className="flex items-center justify-between p-6 shrink-0">
         <Button 
           variant="ghost" 
@@ -39,24 +40,24 @@ export function FullScreenPlayer() {
           <ChevronDown className="h-8 w-8" />
         </Button>
         <div className="flex flex-col items-center">
-          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-500">Playing From</span>
-          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">AYUMUSIC Lineage</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-500">Resonance Mode</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">AYUMUSIC Discovery</span>
         </div>
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => setIsPlayerOpen(false)}
-          className="hover:bg-white/5 text-neutral-400 hover:text-white transition-colors lag-free-tap"
+          className="hover:bg-white/5 text-neutral-400 lag-free-tap"
         >
           <X className="h-7 w-7" />
         </Button>
       </header>
 
-      {/* Main Resonance View - Optimized for Mobile Spacing */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 md:px-16 max-w-4xl mx-auto w-full gap-6 md:gap-12 overflow-y-auto custom-scrollbar pb-10">
+      {/* Main Content Area - Responsive Flex */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 md:px-16 max-w-4xl mx-auto w-full gap-4 md:gap-10 overflow-y-auto custom-scrollbar pb-10">
         
-        {/* Album Art with Responsive Sizing */}
-        <div className="relative aspect-square w-full max-w-[280px] md:max-w-[420px] rounded-3xl overflow-hidden shadow-[0_40px_100px_-15px_rgba(255,0,0,0.15)] bg-neutral-900 border border-white/5 group shrink-0">
+        {/* Responsive Album Art */}
+        <div className="relative aspect-square w-full max-w-[260px] md:max-w-[400px] rounded-3xl overflow-hidden shadow-[0_40px_100px_-15px_rgba(255,0,0,0.2)] bg-neutral-900 border border-white/5 shrink-0 group">
           {imageSrc ? (
             <img 
               src={imageSrc} 
@@ -76,24 +77,24 @@ export function FullScreenPlayer() {
           )}
         </div>
 
-        {/* Track Metadata and Like Button */}
-        <div className="w-full max-w-[420px] flex items-center justify-between gap-6 shrink-0">
+        {/* Metadata and Actions */}
+        <div className="w-full max-w-[400px] flex items-center justify-between gap-6 shrink-0 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 className="text-2xl md:text-4xl font-black truncate italic uppercase tracking-tighter leading-tight">{trackName}</h2>
-            <p className="text-xs md:text-base text-neutral-500 truncate mt-1 uppercase font-black tracking-widest">{artistNames}</p>
+            <h2 className="text-xl md:text-3xl font-black truncate italic uppercase tracking-tighter leading-tight">{trackName}</h2>
+            <p className="text-[10px] md:text-sm text-neutral-500 truncate mt-1 uppercase font-black tracking-widest">{artistNames}</p>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => toggleLike(currentTrack)} 
-            className="text-neutral-500 hover:text-primary transition-colors h-12 w-12 md:h-14 md:w-14"
+            className="text-neutral-500 hover:text-primary transition-colors h-12 w-12"
           >
-            <Heart className={cn("h-7 w-7 md:h-8 md:w-8 transition-all", isLiked(currentTrack.id) && "fill-primary text-primary scale-110")} />
+            <Heart className={cn("h-7 w-7 transition-all", isLiked(currentTrack.id) && "fill-primary text-primary scale-110")} />
           </Button>
         </div>
 
-        {/* Spotify-Style Functional Red Seek Bar */}
-        <div className="w-full max-w-[420px] space-y-4 shrink-0">
+        {/* Neural Seek Bar */}
+        <div className="w-full max-w-[400px] space-y-3 shrink-0">
           <Slider 
             value={[progress]} 
             max={duration || 100} 
@@ -106,41 +107,45 @@ export function FullScreenPlayer() {
               setIsScrubbing(false);
             }}
           />
-          <div className="flex justify-between text-[10px] md:text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">
+          <div className="flex justify-between text-[9px] md:text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em]">
             <span>{formatDuration(progress)}</span>
             <span>{formatDuration(duration)}</span>
           </div>
         </div>
 
         {/* Playback Controls */}
-        <div className="w-full max-w-[420px] flex items-center justify-around shrink-0">
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12 md:h-14 md:w-14" onClick={prevTrack}>
-            <SkipBack className="h-8 w-8 md:h-10 md:w-10 fill-current" />
+        <div className="w-full max-w-[400px] flex items-center justify-around shrink-0 py-2">
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12" onClick={prevTrack}>
+            <SkipBack className="h-8 w-8 fill-current" />
           </Button>
           <Button 
             onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-            className="bg-white text-black rounded-full h-16 w-16 md:h-20 md:w-20 p-0 hover:scale-105 active:scale-95 transition-transform shadow-2xl flex items-center justify-center"
+            className="bg-primary text-white rounded-full h-16 w-16 p-0 hover:scale-105 active:scale-95 transition-transform shadow-[0_0_30px_rgba(255,0,0,0.3)] flex items-center justify-center"
           >
-            {isPlaying ? <Pause className="h-8 w-8 md:h-10 md:w-10 fill-current" /> : <Play className="h-8 w-8 md:h-10 md:w-10 fill-current ml-2" />}
+            {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current ml-1.5" />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12 md:h-14 md:w-14" onClick={nextTrack}>
-            <SkipForward className="h-8 w-8 md:h-10 md:w-10 fill-current" />
+          <Button variant="ghost" size="icon" className="text-neutral-500 hover:text-white h-12 w-12" onClick={nextTrack}>
+            <SkipForward className="h-8 w-8 fill-current" />
           </Button>
         </div>
 
-        {/* Lyrics & Queue Access */}
-        <div className="w-full max-w-[420px] flex items-center justify-between pt-4 shrink-0">
-          <Button variant="ghost" className="gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white" onClick={() => setIsLyricsOpen(true)}>
+        {/* Immersive Utilities */}
+        <div className="w-full max-w-[400px] flex items-center justify-between pt-2 shrink-0 border-t border-white/5">
+          <Button 
+            variant="ghost" 
+            className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-primary transition-colors" 
+            onClick={() => setIsLyricsOpen(true)}
+          >
             <Music2 className="h-4 w-4" /> Lyrics
           </Button>
-          <Button variant="ghost" className="gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white">
+          <Button variant="ghost" className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white">
             <ListMusic className="h-4 w-4" /> Queue
           </Button>
         </div>
       </div>
       
-      {/* Immersive Background Gradient */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/20 to-black pointer-events-none" />
+      {/* Background Ambience */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 via-black to-black pointer-events-none" />
     </div>
   );
 }

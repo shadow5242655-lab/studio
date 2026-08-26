@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -71,22 +70,33 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
       console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
       const audio = new Audio();
+      audio.id = 'audioPlayer'; // Ensure accessible via ID
       audio.crossOrigin = "anonymous";
       audio.preload = "auto";
       audioRef.current = audio;
 
+      const updateProgress = () => {
+        if (audioRef.current && !audioRef.current.paused) {
+          setProgress(audioRef.current.currentTime);
+          animationFrameRef.current = requestAnimationFrame(updateProgress);
+        }
+      };
+
       audio.addEventListener('play', () => {
         setIsPlaying(true);
         setIsBuffering(false);
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
       });
 
       audio.addEventListener('pause', () => {
         setIsPlaying(false);
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       });
 
       audio.addEventListener('waiting', () => setIsBuffering(true));
@@ -95,7 +105,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setDuration(audio.duration);
         console.log('AYUMUSIC: Resonance duration resolved:', audio.duration);
       });
-      audio.addEventListener('timeupdate', () => setProgress(audio.currentTime));
+      
+      // Standard timeupdate as fallback
+      audio.addEventListener('timeupdate', () => {
+        if (!animationFrameRef.current) setProgress(audio.currentTime);
+      });
+
       audio.addEventListener('ended', () => {
         console.log('AYUMUSIC: Track ended, architecting next resonance');
         nextTrackInternalRef.current();
@@ -106,11 +121,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setIsBuffering(false);
       });
     }
+
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
-    console.log('AYUMUSIC: Play command received for:', track.name);
+    console.log('AYUMUSIC: playSong called with:', track);
     
     const audio = audioRef.current;
     if (!audio) return;
@@ -122,7 +141,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Set source and start playback
+    console.log('Setting audio src to:', url);
     audio.src = url;
     setCurrentTrack(track);
     currentTrackRef.current = track;
@@ -136,8 +155,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
+    console.log('Calling audio.play()');
     audio.play().catch(err => {
-      console.error('AYUMUSIC: Playback failed:', err);
+      console.error('Play error:', err);
       setIsBuffering(false);
     });
   }, []);
@@ -146,6 +166,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     
+    console.log('AYUMUSIC: Toggle Play triggered. Current paused state:', audio.paused);
     if (audio.paused) {
       audio.play().catch(e => console.error('AYUMUSIC: Toggle failed:', e));
     } else {
@@ -154,9 +175,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack]);
 
   const stopTrack = useCallback(() => {
-    console.log('AYUMUSIC: Killing current sound resonance');
+    console.log('AYUMUSIC: Killing current sound resonance (Close Song)');
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       audioRef.current.src = "";
     }
     setCurrentTrack(null);
@@ -164,6 +186,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(false);
     setIsBuffering(false);
     setProgress(0);
+    setDuration(0);
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   }, []);
 
   const playRandomTrack = useCallback(async () => {
@@ -261,6 +285,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     progress, duration, volume,
     seek: (t: number) => { 
       if (audioRef.current) {
+        console.log('AYUMUSIC: Seeking to', t);
         audioRef.current.currentTime = t;
         setProgress(t);
       }

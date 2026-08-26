@@ -71,3 +71,24 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Close Button requested styles */
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  touch-action: manipulation;
+  z-index: 10;
+  transition: color 0.2s, transform 0.2s;
+}
+.close-btn:hover,
+.close-btn:active {
+  color: #ff4444;
+  transform: scale(1.1);
+}

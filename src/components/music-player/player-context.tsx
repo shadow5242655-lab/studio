@@ -74,9 +74,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
-      console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
+      console.log('AYUMUSIC: Initializing hardware-stabilized audio engine singleton...');
       const audio = new Audio();
-      audio.id = 'audioPlayer'; // Ensure accessible via ID
+      audio.id = 'audioPlayer';
       audio.crossOrigin = "anonymous";
       audio.preload = "auto";
       audioRef.current = audio;
@@ -89,34 +89,32 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       };
 
       audio.addEventListener('play', () => {
+        console.log('AYUMUSIC: Resonance active');
         setIsPlaying(true);
         setIsBuffering(false);
         animationFrameRef.current = requestAnimationFrame(updateProgress);
       });
 
       audio.addEventListener('pause', () => {
+        console.log('AYUMUSIC: Resonance paused');
         setIsPlaying(false);
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       });
 
       audio.addEventListener('waiting', () => setIsBuffering(true));
       audio.addEventListener('playing', () => setIsBuffering(false));
+      
       audio.addEventListener('loadedmetadata', () => {
         setDuration(audio.duration);
-        console.log('AYUMUSIC: Resonance duration resolved:', audio.duration);
-      });
-      
-      // Standard timeupdate as fallback
-      audio.addEventListener('timeupdate', () => {
-        if (!animationFrameRef.current) setProgress(audio.currentTime);
+        console.log('AYUMUSIC: Duration resolved:', audio.duration);
       });
 
       audio.addEventListener('ended', () => {
-        console.log('AYUMUSIC: Track ended, architecting next resonance');
+        console.log('AYUMUSIC: Track ended, architecting next track');
         nextTrackInternalRef.current();
       });
 
-      audio.addEventListener('error', () => {
+      audio.addEventListener('error', (e) => {
         console.error('AYUMUSIC: Audio engine resonance error:', audio.error);
         setIsBuffering(false);
       });
@@ -129,19 +127,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
-    console.log('AYUMUSIC: playSong called with:', track);
+    console.log('AYUMUSIC: playTrack called with:', track);
     
     const audio = audioRef.current;
     if (!audio) return;
 
     const url = getBestDownload(track);
     if (!url) {
-      console.error('AYUMUSIC: Frequency resolution failed for', track.id);
+      console.error('AYUMUSIC: Could not resolve frequency for', track.id);
       toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
       return;
     }
 
-    console.log('Setting audio src to:', url);
+    console.log('AYUMUSIC: Loading track src:', url);
     audio.src = url;
     setCurrentTrack(track);
     currentTrackRef.current = track;
@@ -155,9 +153,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    console.log('Calling audio.play()');
     audio.play().catch(err => {
-      console.error('Play error:', err);
+      console.error('AYUMUSIC: Play command failed (context blocked?):', err);
       setIsBuffering(false);
     });
   }, []);
@@ -166,16 +163,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     
-    console.log('AYUMUSIC: Toggle Play triggered. Current paused state:', audio.paused);
+    console.log('AYUMUSIC: Toggle triggered. Current paused state:', audio.paused);
     if (audio.paused) {
-      audio.play().catch(e => console.error('AYUMUSIC: Toggle failed:', e));
+      audio.play().catch(e => console.error('AYUMUSIC: Toggle play failed:', e));
     } else {
       audio.pause();
     }
   }, [currentTrack]);
 
   const stopTrack = useCallback(() => {
-    console.log('AYUMUSIC: Killing current sound resonance (Close Song)');
+    console.log('AYUMUSIC: Stopping current sound resonance (✕ Close)');
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -198,7 +195,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         playTrack(rand, trending);
       }
     } catch (e) {
-      console.error("AYUMUSIC: Random failed", e);
+      console.error("AYUMUSIC: Random discovery failed", e);
     }
   }, [playTrack]);
 
@@ -266,7 +263,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         queueRef.current = next;
         return next;
       });
-      toast({ title: 'Resonance Buffered', description: `${decodeEntities(t.name)} is next.` });
+      toast({ title: 'Lineage Buffered', description: `${decodeEntities(t.name)} is next.` });
     }, 
     addToQueue: (t: Song) => {
       setQueue(prev => {
@@ -285,7 +282,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     progress, duration, volume,
     seek: (t: number) => { 
       if (audioRef.current) {
-        console.log('AYUMUSIC: Seeking to', t);
+        console.log('AYUMUSIC: Hardware seek to', t);
         audioRef.current.currentTime = t;
         setProgress(t);
       }
@@ -305,12 +302,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
 export const useMusic = () => {
   const c = useContext(MusicStateContext);
-  if (!c) throw new Error('useMusic resonance failed');
+  if (!c) throw new Error('useMusic context resonance failed');
   return c;
 };
 
 export const useMusicProgress = () => {
   const c = useContext(MusicProgressContext);
-  if (!c) throw new Error('useMusicProgress resonance failed');
+  if (!c) throw new Error('useMusicProgress context resonance failed');
   return c;
 };

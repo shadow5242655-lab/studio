@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, 
-  Music2, Download, Loader2, X
+  Music2, Download, Loader2
 } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
@@ -25,7 +25,7 @@ export function NowPlayingBar() {
 
   return (
     <div className={cn(
-      "fixed left-0 right-0 h-24 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex flex-col justify-center z-50 transition-all duration-300",
+      "fixed left-0 right-0 h-28 bg-black/95 backdrop-blur-xl border-t border-white/5 px-4 flex flex-col justify-center z-50 transition-all duration-300 relative",
       "bottom-16" 
     )}>
       {/* High-fidelity Close Button (Top Right) */}
@@ -40,8 +40,8 @@ export function NowPlayingBar() {
         ✕
       </button>
 
-      {/* Progress Bar Container */}
-      <div className="w-full pt-4 px-2">
+      {/* Hardware-Stabilized Seek Bar Container */}
+      <div className="w-full pt-6 px-2">
         <Slider
           value={[progress]}
           max={duration || 100}
@@ -49,15 +49,16 @@ export function NowPlayingBar() {
           onValueChange={(vals) => seek(vals[0])}
           className="w-full cursor-pointer seek-bar"
         />
-        <div className="flex justify-between text-[8px] font-black uppercase text-neutral-600 mt-1">
+        <div className="flex justify-between text-[8px] font-black uppercase text-neutral-600 mt-1.5">
           <span className="current-time">{formatDuration(progress)}</span>
           <span className="total-duration">{formatDuration(duration)}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between flex-1 pb-2">
+      <div className="flex items-center justify-between flex-1 pb-3">
+        {/* Track Metadata Info */}
         <div 
-          className="flex items-center gap-3 w-[40%] min-w-0 cursor-pointer lag-free-tap"
+          className="flex items-center gap-3 w-[45%] min-w-0 cursor-pointer lag-free-tap"
           onClick={() => setIsPlayerOpen(true)}
         >
           <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0 border border-white/5 shadow-lg">
@@ -75,7 +76,7 @@ export function NowPlayingBar() {
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate italic uppercase tracking-tight now-playing-title">
+            <span className="text-[11px] font-bold text-white truncate italic uppercase tracking-tight now-playing-title">
               {decodeEntities(currentTrack.name)}
             </span>
             <span className="text-[9px] text-neutral-500 truncate uppercase font-bold tracking-widest mt-0.5 now-playing-artist">
@@ -84,11 +85,12 @@ export function NowPlayingBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        {/* Playback Controls */}
+        <div className="flex items-center gap-2 md:gap-5">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white lag-free-tap w-8 h-8" 
+            className="text-white lag-free-tap w-9 h-9" 
             onClick={(e) => { 
               e.stopPropagation(); 
               prevTrack(); 
@@ -98,7 +100,7 @@ export function NowPlayingBar() {
           </Button>
 
           <Button 
-            className="bg-white text-black rounded-full h-10 w-10 md:h-12 md:w-12 p-0 shadow-lg lag-free-tap hover:scale-105 play-btn"
+            className="bg-white text-black rounded-full h-11 w-11 md:h-12 md:w-12 p-0 shadow-xl lag-free-tap hover:scale-105 active:scale-95 play-btn"
             onClick={(e) => { 
               e.stopPropagation(); 
               togglePlay(); 
@@ -109,14 +111,14 @@ export function NowPlayingBar() {
             ) : isPlaying ? (
               <Pause className="h-5 w-5 fill-current" />
             ) : (
-              <span className="text-lg">▶</span>
+              <Play className="h-5 w-5 fill-current ml-1" />
             )}
           </Button>
 
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white lag-free-tap w-8 h-8" 
+            className="text-white lag-free-tap w-9 h-9" 
             onClick={(e) => { 
               e.stopPropagation(); 
               nextTrack(); 
@@ -126,6 +128,7 @@ export function NowPlayingBar() {
           </Button>
         </div>
 
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 

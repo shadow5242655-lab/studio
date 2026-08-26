@@ -73,7 +73,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
   
-  // Smart Mood / Auto-Play Features (Seamless Background Logic)
   const [smartMood, setSmartMood] = useState(true);
   const [autoMixQueue, setAutoMixQueue] = useState<Song[]>([]);
   const autoMixQueueRef = useRef<Song[]>([]);
@@ -124,7 +123,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.addEventListener('ended', () => {
-        console.log('AYUMUSIC: Resonance cycle complete. Initiating neural auto-transition.');
+        console.log('AYUMUSIC: Resonance cycle complete. Initiating neural mood transition.');
         nextTrackInternalRef.current();
       });
 
@@ -138,26 +137,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sync refs for internal callbacks to avoid closure staleness
   useEffect(() => {
     autoMixQueueRef.current = autoMixQueue;
   }, [autoMixQueue]);
 
-  const inferMoodFromHistory = useCallback(() => {
-    if (playedHistory.length === 0) return 'chill';
-    const recentTitles = playedHistory.slice(0, 5).map(h => h.name.toLowerCase()).join(' ');
+  const inferMoodFromTrack = useCallback((track: Song) => {
+    const text = (track.name + ' ' + (track.artists.primary[0]?.name || '')).toLowerCase();
     
-    if (recentTitles.includes('love') || recentTitles.includes('romance') || recentTitles.includes('ishq') || recentTitles.includes('dil')) return 'romance';
-    if (recentTitles.includes('party') || recentTitles.includes('dance') || recentTitles.includes('dj') || recentTitles.includes('club') || recentTitles.includes('hip hop')) return 'party';
-    if (recentTitles.includes('lofi') || recentTitles.includes('chill') || recentTitles.includes('sleep') || recentTitles.includes('relax') || recentTitles.includes('rain')) return 'lofi';
-    if (recentTitles.includes('gym') || recentTitles.includes('power') || recentTitles.includes('energy') || recentTitles.includes('workout') || recentTitles.includes('rock')) return 'energetic';
+    if (text.includes('punjabi') || text.includes('diljit') || text.includes('sidhu') || text.includes('moosewala') || text.includes('jassi') || text.includes('guru randhawa') || text.includes('shubh') || text.includes('ap dhillon')) return 'punjabi';
+    if (text.includes('haryanvi') || text.includes('dhanda') || text.includes('sapna') || text.includes('gulzaar') || text.includes('vishwa') || text.includes('mitta')) return 'haryanvi';
+    if (text.includes('love') || text.includes('romance') || text.includes('ishq') || text.includes('dil') || text.includes('pyar') || text.includes('aashiqui') || text.includes('arijit')) return 'romance';
+    if (text.includes('party') || text.includes('dance') || text.includes('dj') || text.includes('club') || text.includes('hip hop') || text.includes('rap') || text.includes('badshah') || text.includes('honey singh')) return 'party';
+    if (text.includes('lofi') || text.includes('chill') || text.includes('sleep') || text.includes('relax') || text.includes('rain') || text.includes('ambient')) return 'lofi';
     
-    return 'chill';
-  }, [playedHistory]);
+    return 'trending';
+  }, []);
 
-  const fetchMoodLineage = useCallback(async () => {
+  const fetchMoodLineage = useCallback(async (mood: string) => {
     if (!smartMood) return;
-    const mood = inferMoodFromHistory();
     try {
       console.log(`AYUMUSIC: Fetching mood resonance lineage for: "${mood}"`);
       const resonance = await fetchAudiusMoodTracks(mood);
@@ -168,7 +165,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn('AYUMUSIC: Failed to fetch mood resonance');
     }
-  }, [smartMood, inferMoodFromHistory]);
+  }, [smartMood]);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
@@ -181,12 +178,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // High-Velocity Load: Reset audio before setting new source
     audio.pause();
     audio.src = "";
     audio.load();
 
-    console.log('AYUMUSIC: Setting audio src to:', url);
+    console.log('AYUMUSIC: Initiating high-velocity resonance for:', track.name);
     audio.src = url;
     setCurrentTrack(track);
     currentTrackRef.current = track;
@@ -200,23 +196,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    console.log('AYUMUSIC: Calling audio.play()');
     audio.play().catch((err) => {
       console.error('AYUMUSIC: Play error:', err);
       setIsBuffering(false);
     });
 
-    // Populate auto-mix queue if empty
-    if (smartMood && autoMixQueueRef.current.length < 5) {
-      fetchMoodLineage();
+    if (smartMood) {
+      const mood = inferMoodFromTrack(track);
+      fetchMoodLineage(mood);
     }
-  }, [smartMood, fetchMoodLineage]);
+  }, [smartMood, inferMoodFromTrack, fetchMoodLineage]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     
-    console.log('AYUMUSIC: Toggling play/pause resonance');
     if (audio.paused) {
       audio.play().catch(() => {});
     } else {
@@ -225,7 +219,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack]);
 
   const stopTrack = useCallback(() => {
-    console.log('AYUMUSIC: Killing sound lineage and resetting UI.');
+    console.log('AYUMUSIC: Hard kill on sound lineage.');
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -253,25 +247,35 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(() => {
     const currentQueue = queueRef.current;
+    const currentMood = currentTrackRef.current ? inferMoodFromTrack(currentTrackRef.current) : null;
+
     if (currentQueue.length > 0) {
-      const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
-      if (idx !== -1 && idx < currentQueue.length - 1) {
-        playTrack(currentQueue[idx + 1]);
+      const currentIdx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
+      
+      // Try finding next same-mood track in queue
+      const nextSameMood = currentQueue.slice(currentIdx + 1).find(s => inferMoodFromTrack(s) === currentMood);
+      if (nextSameMood) {
+        playTrack(nextSameMood);
+        return;
+      }
+
+      // Default to next in queue if no mood match
+      if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
+        playTrack(currentQueue[currentIdx + 1]);
         return;
       }
     }
 
-    // Auto-Mix Fallback: Check for mood-based resonance from Audius
     if (smartMood && autoMixQueueRef.current.length > 0) {
       const nextMoodSong = autoMixQueueRef.current[0];
       setAutoMixQueue(prev => prev.slice(1));
-      console.log('AYUMUSIC: Transitioning to neural mood resonance');
+      console.log('AYUMUSIC: Transitioning to infinite mood resonance');
       playTrack(nextMoodSong);
       return;
     }
 
     playRandomTrack();
-  }, [playTrack, playRandomTrack, smartMood]);
+  }, [playTrack, playRandomTrack, smartMood, inferMoodFromTrack]);
 
   const prevTrack = useCallback(() => {
     const currentQueue = queueRef.current;

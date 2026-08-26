@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -82,7 +83,10 @@ const HorizontalSection = memo(({
                 </div>
               )}
             </div>
-            <p className="font-bold text-[10px] md:text-sm text-white italic uppercase tracking-tight truncate px-1">
+            <p className={cn(
+              "font-bold text-[10px] md:text-sm italic uppercase tracking-tight truncate px-1",
+              currentTrackId === song.id ? "text-primary" : "text-white"
+            )}>
               {decodeEntities(song.name)}
             </p>
             <p className="text-[8px] md:text-[10px] text-neutral-500 uppercase font-black tracking-widest truncate px-1 mt-0.5">
@@ -152,7 +156,6 @@ export default function Home() {
         getTrending(1)
       ]);
       
-      // Filter out 'bonalu', 'mangli', and 'banali'
       const filteredDaily = dailyResults.filter(s => {
         const name = s.name.toLowerCase();
         const artist = (s.artists.primary[0]?.name || '').toLowerCase();
@@ -162,7 +165,6 @@ export default function Home() {
                !artist.includes('mangli');
       });
 
-      // Ensure 'Barian' is the primary resonance
       const barian = barianResults[0];
       const combinedDaily = barian 
         ? [barian, ...filteredDaily.filter(s => s.id !== barian.id)]
@@ -237,7 +239,6 @@ export default function Home() {
 
   const handlePlayAll = () => {
     if (displaySongs.length > 0) {
-      console.log('AYUMUSIC: Play All triggered resonance with', displaySongs.length, 'tracks');
       playTrack(displaySongs[0], displaySongs);
     }
   };
@@ -253,7 +254,6 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
       
-      {/* Hardware-Stabilized Sticky Header - Fixed z-index to avoid overlapping full player */}
       <header className="w-full bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-[50] border-b border-white/5">
         <div className="max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
@@ -318,7 +318,6 @@ export default function Home() {
       </header>
 
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
-        {/* Hero Card */}
         {!isSearching && (
           <section className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-[#1e1e1e] to-black p-8 md:p-16 border border-white/5 shadow-2xl group min-h-[350px] md:min-h-[450px] flex flex-col justify-center">
             <div className="absolute top-0 right-0 p-12 text-white/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -357,7 +356,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* Dynamic Resonance List */}
         <section className="space-y-8 min-h-[400px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">{listTitle}</h2>
@@ -383,10 +381,7 @@ export default function Home() {
               displaySongs.map((song) => (
                 <div 
                   key={`daily-${song.id}`}
-                  onClick={() => {
-                    console.log('AYUMUSIC: Tap interaction on Daily Pick track', song.id);
-                    playTrack(song, displaySongs);
-                  }}
+                  onClick={() => playTrack(song, displaySongs)}
                   className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl md:rounded-[2rem] border border-white/5 lag-free-tap transition-all hover:bg-white/5 group cursor-pointer"
                 >
                   <div className="flex items-center gap-4 md:gap-5 min-w-0">
@@ -427,7 +422,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Trending Lineage */}
         {!isSearching && (
           <>
             <section className="space-y-8">

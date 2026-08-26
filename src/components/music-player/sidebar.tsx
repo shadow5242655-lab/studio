@@ -37,9 +37,6 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
     <div className="flex flex-col gap-2 h-full bg-black pb-20 overflow-y-auto no-scrollbar">
       <div className="p-8 mb-4">
         <Link href="/" onClick={onNavItemClick} className="flex items-center gap-3 group">
-          <div className="bg-primary p-2 rounded-xl group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(255,0,0,0.4)]">
-            <Music2 className="h-7 w-7 text-white" />
-          </div>
           <span className="font-black text-2xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </Link>
       </div>
@@ -152,9 +149,6 @@ export const Header = memo(function Header() {
   return (
     <header className="flex md:hidden items-center justify-between p-5 bg-black/90 backdrop-blur-xl border-b border-white/5 sticky top-0 z-[55]">
       <Link href="/" className="flex items-center gap-2 group shrink-0">
-        <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_15px_rgba(255,0,0,0.3)]">
-          <Music2 className="h-6 w-6 text-white" />
-        </div>
         <span className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
       </Link>
       

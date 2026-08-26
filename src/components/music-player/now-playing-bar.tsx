@@ -36,7 +36,7 @@ export function NowPlayingBar() {
         <div className="flex items-center justify-between relative">
           
           {/* Left: Metadata & Heart */}
-          <div className="flex items-center gap-3 min-w-0 max-w-[40%]">
+          <div className="flex items-center gap-3 min-w-0 max-w-[35%] md:max-w-[40%]">
             <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-[#282828] shrink-0 border border-white/5">
               {imageSrc ? (
                 <Image 
@@ -52,54 +52,57 @@ export function NowPlayingBar() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col min-w-0 mr-2">
-              <span className="text-sm font-black text-white truncate italic uppercase tracking-tighter leading-none max-w-[50px]">
-                {decodeEntities(currentTrack.name).substring(0, 1)}..
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-black text-white truncate italic uppercase tracking-tighter leading-none max-w-[80px] sm:max-w-[120px]">
+                {decodeEntities(currentTrack.name)}
               </span>
-              <span className="text-[10px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1 max-w-[40px]">
-                {currentTrack.artists.primary[0]?.name.substring(0, 1)}...
+              <span className="text-[9px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1 max-w-[60px] sm:max-w-[100px]">
+                {currentTrack.artists.primary[0]?.name}
               </span>
             </div>
             <button 
-              className="text-neutral-500 hover:text-primary transition-colors h-8 w-8 shrink-0"
-              onClick={() => toggleLike(currentTrack)}
+              className="text-neutral-500 hover:text-primary transition-colors h-8 w-8 shrink-0 lag-free-tap"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleLike(currentTrack);
+              }}
             >
-              <Heart className={cn("h-5 w-5", isLiked(currentTrack.id) && "fill-primary text-primary")} />
+              <Heart className={cn("h-4 w-4", isLiked(currentTrack.id) && "fill-primary text-primary")} />
             </button>
           </div>
 
           {/* Center: Playback Controls */}
-          <div className="flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-            <button className="text-neutral-600 hover:text-white" onClick={prevTrack}>
+          <div className="flex items-center gap-4 sm:gap-6 absolute left-1/2 -translate-x-1/2">
+            <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={prevTrack}>
               <SkipBack className="h-5 w-5 fill-current" />
             </button>
             <button 
               onClick={togglePlay} 
-              className="bg-primary text-black rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,0,0.3)] shrink-0 transition-transform active:scale-95"
+              className="bg-primary text-black rounded-full h-11 w-11 sm:h-12 sm:w-12 p-0 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,0,0.3)] shrink-0 transition-transform active:scale-95 lag-free-tap"
             >
-              {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-0.5" />}
+              {isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />}
             </button>
-            <button className="text-neutral-600 hover:text-white" onClick={nextTrack}>
+            <button className="text-neutral-600 hover:text-white lag-free-tap" onClick={nextTrack}>
               <SkipForward className="h-5 w-5 fill-current" />
             </button>
           </div>
 
           {/* Right: X Button */}
           <button 
-            className="text-neutral-800 hover:text-primary transition-colors h-10 w-10 flex justify-end items-center"
+            className="text-neutral-800 hover:text-primary transition-colors h-10 w-10 flex justify-end items-center lag-free-tap"
             onClick={(e) => {
               e.stopPropagation();
               stopTrack();
             }}
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Bottom Row: Seek Bar with Flanking Timestamps */}
-        <div className="flex items-center justify-center w-full px-8 pb-2">
+        <div className="flex items-center justify-center w-full px-2 sm:px-8 pb-1">
           <div className="flex items-center gap-3 w-full max-w-[320px]">
-            <span className="text-[10px] font-black text-neutral-600 w-8 text-right tabular-nums">
+            <span className="text-[9px] font-black text-neutral-600 w-8 text-right tabular-nums">
               {formatDuration(progress)}
             </span>
             <div className="flex-1 relative py-1">
@@ -117,7 +120,7 @@ export function NowPlayingBar() {
                 className="cursor-pointer"
               />
             </div>
-            <span className="text-[10px] font-black text-neutral-600 w-8 tabular-nums">
+            <span className="text-[9px] font-black text-neutral-600 w-8 tabular-nums">
               {formatDuration(duration)}
             </span>
           </div>

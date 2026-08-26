@@ -118,12 +118,11 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
   useEffect(() => {
     async function fetchQuickPicks() {
       const queries = [
-        "Patar Bashori Coke Studio Bangla",
-        "Dai Dai Burna Boy Shakira",
+        "Sheesha Mitta Ror Swara Verma",
+        "Bairan Banjaare",
+        "Fortuner Gulshan Music Jaat Nia",
         "Dracula Tame Impala",
         "O Madhu Benny Dayal",
-        "Bhalolaage Tomake Arijit Singh",
-        "Keno Je Toke Raj Barman",
         "Under The Influence Chris Brown",
         "Señorita Shawn Mendes",
         "Sohniye Tu Original Zubeen Garg"
@@ -156,19 +155,19 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
   return (
     <section className="space-y-6 px-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Quick picks</h2>
+        <h2 className="text-xl font-black italic uppercase tracking-tighter">Daily Picks</h2>
         <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => onPlayTrack(songs[0], songs)}>
           <Play className="h-3 w-3 fill-current" /> Play all
         </Button>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {songs.map((song) => (
           <div 
             key={song.id}
             onClick={() => onPlayTrack(song, songs)}
-            className="flex items-center gap-4 group cursor-pointer active:bg-white/5 p-2 rounded-2xl transition-colors hover:bg-[#1a1a1a]"
+            className="flex items-center gap-4 group cursor-pointer active:bg-white/5 p-3 rounded-2xl transition-colors bg-[#121212] border border-white/5"
           >
-            <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg border border-white/5">
+            <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg border border-white/5">
               <img src={getBestImage(song) || ''} alt="" className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Play className="h-5 w-5 text-white fill-current" />
@@ -177,7 +176,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm text-white truncate italic uppercase tracking-tight">{decodeEntities(song.name)}</p>
               <p className="text-[10px] text-neutral-500 truncate uppercase font-black tracking-widest mt-1">
-                {song.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
+                {song.artists.primary[0]?.name}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -187,7 +186,6 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
               >
                 <Heart className={cn("h-4 w-4", isLiked(song.id) && "fill-primary text-primary")} />
               </button>
-              <span className="text-[10px] font-bold text-neutral-600 w-8 text-right">{formatDuration(song.duration)}</span>
             </div>
           </div>
         ))}
@@ -259,14 +257,13 @@ export default function Home() {
   return (
     <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500">
       
-      {/* Top Header Branding */}
-      <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-xl z-[60] border-b border-white/5">
+      {/* Top Header Branding - Perfectly Matched */}
+      <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black z-[60]">
         <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-neutral-900 border border-white/5 overflow-hidden">
-            <div className="absolute inset-0 bg-primary/20 blur-md" />
-            <span className="relative z-10 text-lg font-black italic text-white">A</span>
+          <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-primary border border-white/5 overflow-hidden shadow-[0_0_15px_rgba(255,0,0,0.5)]">
+            <Music2 className="h-5 w-5 text-white" />
           </div>
-          <span className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
+          <span className="text-2xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
         </div>
         <button className="p-2 text-white hover:text-primary transition-colors">
           <Menu className="h-7 w-7" />
@@ -274,54 +271,65 @@ export default function Home() {
       </header>
 
       {/* Discovery Hub */}
-      <div className="space-y-6 pt-4 pb-44">
+      <div className="space-y-8 pt-2 pb-44">
         
-        {/* Search Node */}
-        <div className="px-6">
-           <div className="relative flex items-center">
-             <div className="absolute left-4 z-10 p-1.5 rounded-xl bg-primary/10">
-               <Music2 className="h-5 w-5 text-primary" />
-             </div>
+        {/* Search Node - Balanced Icons */}
+        <div className="px-6 flex items-center gap-4">
+           <div className="p-1 rounded-xl">
+             <Music2 className="h-6 w-6 text-primary" />
+           </div>
+           <div className="relative flex-1">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
              <Input 
                placeholder="Search for sounds..." 
-               className="pl-14 pr-4 bg-[#121212] border-none rounded-2xl h-14 focus-visible:ring-primary/40 text-sm shadow-inner placeholder:text-neutral-600"
+               className="pl-12 pr-4 bg-[#1a1a1a] border-none rounded-2xl h-12 focus-visible:ring-primary/40 text-sm placeholder:text-neutral-600"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
              />
-             <div className="absolute right-4 flex items-center gap-3 text-neutral-600">
-               <Smartphone className="h-5 w-5" />
-               <ListFilter className="h-5 w-5" />
-             </div>
+           </div>
+           <div className="flex items-center gap-3 text-neutral-400">
+             <Smartphone className="h-5 w-5" />
+             <ListFilter className="h-5 w-5" />
            </div>
         </div>
 
         {!isSearching && (
           <>
-            {/* Hero Card - Optimized for Mobile Scale */}
-            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0a0a0a] via-black to-black p-6 md:p-8 border border-white/5 shadow-2xl flex flex-col group min-h-[380px] md:min-h-[500px]">
+            {/* Hero Card - Pixel Perfect AYUMUSIC Branded Card */}
+            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#121212] via-black to-black p-8 border border-white/5 shadow-2xl flex flex-col group min-h-[360px]">
+              {/* Floating Background Note */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[250px] w-[250px] md:h-[400px] md:w-[400px]" />
+                <Music2 className="h-[300px] w-[300px]" />
               </div>
               
+              {/* Badge */}
               <div className="w-full flex justify-center mb-6 relative z-10">
                 <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
-                   NO ADS • NO SIGN-UP
+                   <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
                 </div>
               </div>
               
+              {/* Title & Description */}
               <div className="flex-1 flex flex-col justify-center relative z-10 text-center">
-                <h1 className="text-6xl sm:text-8xl md:text-9xl font-black italic tracking-tighter uppercase leading-none neon-glow mb-4">RESOUND</h1>
-                <p className="text-sm md:text-xl font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto opacity-80 italic">
-                  AYUMUSIC: High-fidelity sound resonance straight from the source.
+                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none mb-4 text-white">AYUMUSIC</h1>
+                <p className="text-sm font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto italic">
+                  High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
                 </p>
               </div>
 
-              <div className="w-full flex justify-center mt-8 relative z-10">
+              {/* Action Buttons Side by Side */}
+              <div className="w-full flex items-center justify-center gap-4 mt-8 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-[2.5rem] bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-16 md:h-20 px-12 md:px-16 shadow-[0_15px_45px_rgba(255,0,0,0.4)] hover:scale-105 active:scale-95 transition-transform text-xl md:text-2xl w-full sm:w-auto"
+                  className="rounded-[2.5rem] bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 shadow-[0_15px_45px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-sm"
                 >
-                  <Play className="h-6 w-6 fill-current" /> PLAY NOW
+                  <Play className="h-4 w-4 fill-current" /> Play Trending
+                </Button>
+                <Button 
+                  variant="secondary"
+                  className="rounded-[2.5rem] bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-sm"
+                >
+                  <Shuffle className="h-4 w-4" /> Shuffle
                 </Button>
               </div>
             </div>
@@ -329,22 +337,20 @@ export default function Home() {
             {/* Pick A Vibe Section */}
             <section className="space-y-4">
                <div className="flex items-center justify-between px-6">
-                 <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
-                 <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Architectural Curation</span>
+                 <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
                </div>
                <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
                  <VibeButton icon={HeartIcon} label="Romance" query="Romantic Hits 2024" onClick={handleVibeClick} />
                  <VibeButton icon={Sparkles} label="Party" query="Top Party Dance Music" onClick={handleVibeClick} />
                  <VibeButton icon={Coffee} label="Lo-fi" query="Lo-fi Hip Hop Beats Relax" onClick={handleVibeClick} />
                  <VibeButton icon={Zap} label="Workout" query="High Energy Workout Motivation" onClick={handleVibeClick} />
-                 <VibeButton icon={Smartphone} label="Driving" query="Late Night Drive Phonk" onClick={handleVibeClick} />
                </div>
             </section>
 
-            {/* Quick Picks Vertical Section */}
+            {/* Daily Picks Vertical Section */}
             <QuickPicksVertical onPlayTrack={playTrack} />
 
-            {/* Neural Categories */}
+            {/* Regional Infinitely Scrollable Sections */}
             <div className="space-y-12">
               <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />

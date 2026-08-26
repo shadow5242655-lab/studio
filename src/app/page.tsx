@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -13,10 +14,10 @@ import { cn } from '@/lib/utils';
 const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: string, query: string, onClick: (q: string) => void }) => (
   <button 
     onClick={() => onClick(query)}
-    className="flex items-center gap-2 px-6 py-3 bg-[#1a1a1a] rounded-2xl border border-white/5 whitespace-nowrap hover:bg-white/10 transition-all active:scale-95 shrink-0"
+    className="flex items-center gap-2 px-5 py-2.5 bg-[#1a1a1a] rounded-2xl border border-white/5 whitespace-nowrap hover:bg-white/10 transition-all active:scale-95 shrink-0"
   >
-    <Icon className="h-4 w-4 text-primary" />
-    <span className="text-xs font-black text-white uppercase tracking-tight italic">{label}</span>
+    <Icon className="h-3.5 w-3.5 text-primary" />
+    <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-tight italic">{label}</span>
   </button>
 );
 
@@ -291,28 +292,25 @@ export default function Home() {
 
   return (
     <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500">
-      <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black z-[60]">
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black z-[60]">
         <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-primary border border-white/5 overflow-hidden shadow-[0_0_15px_rgba(255,0,0,0.5)]">
-            <Music2 className="h-5 w-5 text-white" />
+          <div className="relative h-9 w-9 flex items-center justify-center rounded-full bg-primary border border-white/5 overflow-hidden shadow-[0_0_15px_rgba(255,0,0,0.5)]">
+            <Music2 className="h-4.5 w-4.5 text-white" />
           </div>
-          <span className="text-2xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
+          <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
         </div>
         <button className="p-2 text-white hover:text-primary transition-colors">
-          <Menu className="h-7 w-7" />
+          <Menu className="h-6 w-6" />
         </button>
       </header>
 
       <div className="space-y-6 pt-2 pb-44">
-        <div className="px-6 flex items-center gap-4">
-           <div className="p-1 rounded-xl">
-             <Music2 className="h-6 w-6 text-primary" />
-           </div>
+        <div className="px-6 flex items-center gap-3">
            <div className="relative flex-1">
              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
              <Input 
                placeholder="Search for sounds..." 
-               className="pl-12 pr-10 bg-[#1a1a1a] border-none rounded-2xl h-12 focus-visible:ring-primary/40 text-sm placeholder:text-neutral-600"
+               className="pl-12 pr-10 bg-[#1a1a1a] border-none rounded-2xl h-11 md:h-12 focus-visible:ring-primary/40 text-sm placeholder:text-neutral-600 shadow-xl"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
              />
@@ -325,7 +323,7 @@ export default function Home() {
                </button>
              )}
            </div>
-           <div className="flex items-center gap-3 text-neutral-400">
+           <div className="flex items-center gap-2 text-neutral-400">
              <Smartphone className="h-5 w-5" />
              <ListFilter className="h-5 w-5" />
            </div>
@@ -333,53 +331,53 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-[#0c0c0c] p-8 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[320px] items-center text-center">
+            <div className="mx-4 md:mx-6 relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0c] p-6 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[280px] md:min-h-[320px] items-center text-center">
               {/* Neural Note Background */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[280px] w-[280px]" />
+                <Music2 className="h-[240px] w-[240px] md:h-[280px] md:w-[280px]" />
               </div>
               
               {/* Badge Pill */}
-              <div className="w-full flex justify-center mb-6 relative z-10">
-                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md">
-                   <span className="text-[10px] font-black text-[#e11d48] uppercase tracking-[0.3em]">
+              <div className="w-full flex justify-center mb-4 md:mb-6 relative z-10">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md">
+                   <span className="text-[9px] md:text-[10px] font-black text-[#e11d48] uppercase tracking-[0.2em] md:tracking-[0.3em]">
                      NO ADS • NO SIGN-UP
                    </span>
                 </div>
               </div>
               
               {/* Hero Metadata */}
-              <div className="flex-1 flex flex-col justify-center items-center relative z-10 space-y-4">
-                <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
+              <div className="flex-1 flex flex-col justify-center items-center relative z-10 space-y-3 md:space-y-4">
+                <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
                   AYUMUSIC
                 </h1>
-                <p className="text-sm md:text-lg font-medium text-neutral-400 max-w-lg leading-snug">
+                <p className="text-xs md:text-lg font-medium text-neutral-400 max-w-lg leading-snug">
                   High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-[#e11d48] font-bold">320 kbps</span>.
                 </p>
               </div>
 
               {/* Action Stack */}
-              <div className="w-full flex flex-row items-center justify-center gap-4 mt-10 relative z-10">
+              <div className="w-full flex flex-row items-center justify-center gap-2 md:gap-4 mt-8 md:mt-10 relative z-10">
                 <button 
                   onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
-                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 shadow-[0_15px_40px_rgba(225,29,72,0.3)] hover:scale-105 active:scale-95 transition-all text-xs flex items-center"
+                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 shadow-[0_10px_30px_rgba(225,29,72,0.3)] hover:scale-105 active:scale-95 transition-all text-[10px] md:text-xs flex items-center"
                 >
-                  <Play className="h-5 w-5 fill-current" /> PLAY TRENDING
+                  <Play className="h-4 w-4 md:h-5 md:w-5 fill-current" /> PLAY TRENDING
                 </button>
                 <button 
                   onClick={handleShuffle}
-                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 border border-white/5 backdrop-blur-sm hover:bg-neutral-800 hover:scale-105 active:scale-95 transition-all text-xs flex items-center"
+                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-2 md:gap-3 h-11 md:h-14 px-5 md:px-8 border border-white/5 backdrop-blur-sm hover:bg-neutral-800 hover:scale-105 active:scale-95 transition-all text-[10px] md:text-xs flex items-center"
                 >
-                  <Shuffle className="h-5 w-5" /> SHUFFLE
+                  <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> SHUFFLE
                 </button>
               </div>
             </div>
 
             <section className="space-y-4 pt-4">
                <div className="flex items-center justify-between px-6">
-                 <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
+                 <h2 className="text-lg md:text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
                </div>
-               <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
+               <div className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
                  <VibeButton icon={Heart} label="Romance" query="Romantic Hits 2024" onClick={handleVibeClick} />
                  <VibeButton icon={Sparkles} label="Party" query="Top Party Dance Music" onClick={handleVibeClick} />
                  <VibeButton icon={Coffee} label="Lo-fi" query="Lo-fi Hip Hop Beats Relax" onClick={handleVibeClick} />
@@ -389,7 +387,7 @@ export default function Home() {
 
             <QuickPicksVertical onPlayTrack={playTrack} />
 
-            <div className="space-y-12 mt-8">
+            <div className="space-y-10 md:space-y-12 mt-6 md:mt-8">
               <HorizontalSection title="Punjabi Songs" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Songs" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Bhojpuri Songs" query="Trending Bhojpuri Hit Music" onPlayTrack={playTrack} />
@@ -402,32 +400,32 @@ export default function Home() {
           <section className="space-y-8 pb-20">
             <div className="flex items-center justify-between px-6">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Resonance Found</span>
-                <h2 className="text-2xl font-black italic uppercase tracking-tighter truncate max-w-[200px]">"{searchQuery}"</h2>
+                <span className="text-[9px] md:text-[10px] font-black text-primary uppercase tracking-widest">Resonance Found</span>
+                <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter truncate max-w-[200px]">"{searchQuery}"</h2>
               </div>
               <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs)}>
                 <Play className="h-3 w-3 fill-current" /> Play all
               </Button>
             </div>
             
-            <div className="space-y-4 px-6">
+            <div className="space-y-3 md:space-y-4 px-6">
               {displaySongs.length > 0 ? (
                 displaySongs.map((song, idx) => (
                   <div 
                     key={`${song.id}-${idx}`}
                     onClick={() => playTrack(song, displaySongs)}
-                    className="flex items-center justify-between p-4 bg-[#121212] rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-pointer hover:border-primary/30 shadow-xl"
+                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-pointer hover:border-primary/30 shadow-xl"
                   >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
+                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                      <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
                         <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
                         {currentTrack?.id === song.id && (
                           <div className="absolute inset-0 bg-primary/30 flex items-center justify-center backdrop-blur-[2px]">
                             {isPlaying ? (
-                              <div className="flex gap-0.5 items-end h-4">
-                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
-                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
-                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
+                              <div className="flex gap-0.5 items-end h-3.5 md:h-4">
+                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
+                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
+                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
                               </div>
                             ) : (
                               <Pause className="h-4 w-4 text-white fill-current" />
@@ -437,31 +435,31 @@ export default function Home() {
                       </div>
                       <div className="min-w-0">
                         <p className={cn(
-                          "font-black text-sm leading-tight italic uppercase tracking-tighter truncate", 
+                          "font-black text-xs md:text-sm leading-tight italic uppercase tracking-tighter truncate", 
                           currentTrack?.id === song.id ? "text-primary" : "text-white"
                         )}>
                           {decodeEntities(song.name)}
                         </p>
-                        <p className="text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.15em]">
+                        <p className="text-[9px] md:text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.1em] md:tracking-[0.15em]">
                           {song.artists.primary[0]?.name}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
-                        className="p-2 text-neutral-700 hover:text-primary transition-all"
+                        className="p-1.5 md:p-2 text-neutral-700 hover:text-primary transition-all"
                       >
-                        <Heart className={cn("h-5 w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
+                        <Heart className={cn("h-4 w-4 md:h-5 md:w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
                       </button>
-                      <MoreVertical className="h-5 w-5 text-neutral-800" />
+                      <MoreVertical className="h-4 w-4 md:h-5 md:w-5 text-neutral-800" />
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="py-20 text-center opacity-40">
-                  <Music2 className="h-12 w-12 mx-auto mb-4 text-neutral-700" />
-                  <p className="text-sm font-bold uppercase tracking-widest italic">No frequencies matching your vibration.</p>
+                  <Music2 className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
+                  <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No frequencies matching your vibration.</p>
                 </div>
               )}
             </div>

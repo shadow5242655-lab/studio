@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { memo, useRef } from 'react';
+import React, { memo } from 'react';
 import { Play, Music2, Pause, MoreVertical, Forward, ListMusic, PlusCircle, Download } from 'lucide-react';
 import { Song, getBestImage, getBestDownload, decodeEntities } from '@/lib/music-api';
 import { useMusic } from './player-context';
@@ -31,36 +30,12 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   const isActive = currentTrack?.id === song.id;
   const imageSrc = getBestImage(song);
   
-  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-  };
-
-  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
-    if (!startPos.current) return;
-    const dx = Math.abs(e.clientX - startPos.current.x);
-    const dy = Math.abs(e.clientY - startPos.current.y);
-    const dt = Date.now() - startPos.current.time;
-    
-    // Hardware-calibrated interaction threshold for high-DPI reliability
-    if (dx < 30 && dy < 30 && dt < 450) {
-      console.log('AYUMUSIC: Valid resonance tap for:', decodeEntities(song.name));
-      callback();
-    }
-    startPos.current = null;
-  };
-
-  const handlePointerCancel = () => {
-    startPos.current = null;
-  };
-
-  const handleArtistClick = (e: React.PointerEvent, artistName: string) => {
+  const handleArtistClick = (e: React.MouseEvent, artistName: string) => {
     e.stopPropagation();
     router.push(`/search?q=${encodeURIComponent(artistName)}`);
   };
 
-  const handleDownload = (e: React.PointerEvent) => {
+  const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = getBestDownload(song);
     if (url) window.open(url, '_blank');
@@ -69,9 +44,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
   return (
     <div 
       className="group glass-card p-4 rounded-2xl transition-all hover:bg-white/10 cursor-pointer relative lag-free-tap"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp(() => playTrack(song, playlist))}
-      onPointerCancel={handlePointerCancel}
+      onClick={() => playTrack(song, playlist)}
       style={{ touchAction: 'manipulation' }}
     >
       <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-2xl bg-neutral-900 flex items-center justify-center">
@@ -89,16 +62,14 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
         
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div 
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp((e?: any) => {
-              if (e) e.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               if (isActive) {
                 togglePlay();
               } else {
                 playTrack(song, playlist);
               }
-            })}
-            onPointerCancel={handlePointerCancel}
+            }}
             className={cn(
               "p-4 bg-primary text-black rounded-full shadow-xl transition-all scale-90 group-hover:scale-110 hover:bg-primary/90 active:scale-95",
               isActive && isPlaying && "scale-100"
@@ -121,10 +92,10 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="glass-card text-white w-56 border-white/10" align="end">
-              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => playNext(song))} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); playNext(song); }} className="hover:bg-primary/20 cursor-pointer">
                 <Forward className="mr-2 h-4 w-4" /> Play Next
               </DropdownMenuItem>
-              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => addToQueue(song))} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); addToQueue(song); }} className="hover:bg-primary/20 cursor-pointer">
                 <ListMusic className="mr-2 h-4 w-4" /> Add to Queue
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
@@ -134,13 +105,13 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="glass-card text-white border-white/10">
                   {playlists.map(p => (
-                    <DropdownMenuItem key={p.id} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => addToPlaylist(p.id, song))} className="hover:bg-primary/20 cursor-pointer">
+                    <DropdownMenuItem key={p.id} onClick={(e) => { e.stopPropagation(); addToPlaylist(p.id, song); }} className="hover:bg-primary/20 cursor-pointer">
                       {p.name}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(handleDownload)} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onClick={handleDownload} className="hover:bg-primary/20 cursor-pointer">
                 <Download className="mr-2 h-4 w-4" /> Download
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -159,8 +130,7 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
           {song.artists.primary.map((artist, index) => (
             <span key={artist.id || index}>
               <span 
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => handleArtistClick({ stopPropagation: () => {} } as any, artist.name))}
+                onClick={(e) => handleArtistClick(e, artist.name)}
                 className="hover:text-white hover:underline cursor-pointer"
               >
                 {decodeEntities(artist.name)}

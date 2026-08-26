@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal, Library, Compass, BarChart3
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal, Library, Compass, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,23 +37,7 @@ const HorizontalSection = memo(({
   loadingMore: boolean,
   currentTrackId?: string
 }) => {
-  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-  };
-
-  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
-    if (!startPos.current) return;
-    const dx = Math.abs(e.clientX - startPos.current.x);
-    const dy = Math.abs(e.clientY - startPos.current.y);
-    const dt = Date.now() - startPos.current.time;
-    if (dx < 30 && dy < 30 && dt < 450) {
-      callback();
-    }
-    startPos.current = null;
-  };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -69,8 +53,7 @@ const HorizontalSection = memo(({
         <Button 
           variant="ghost" 
           className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2 hover:bg-white/10"
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp(() => songs.length > 0 && onPlayAll(songs))}
+          onClick={() => songs.length > 0 && onPlayAll(songs)}
         >
           <Play className="h-3 w-3 fill-current" /> Play all
         </Button>
@@ -83,8 +66,7 @@ const HorizontalSection = memo(({
         {songs.map((song) => (
           <div 
             key={`${type}-${song.id}`}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp(() => onPlayTrack(song, songs))}
+            onClick={() => onPlayTrack(song, songs)}
             className="flex-shrink-0 w-36 md:w-48 lag-free-tap group cursor-pointer"
           >
             <div className="relative aspect-square rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-neutral-900 border border-white/5 shadow-xl mb-3">
@@ -141,7 +123,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
-  const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -222,21 +203,6 @@ export default function Home() {
     }
   }, [pages, loadingMore]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    startPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-  };
-
-  const handlePointerUp = (callback: () => void) => (e: React.PointerEvent) => {
-    if (!startPos.current) return;
-    const dx = Math.abs(e.clientX - startPos.current.x);
-    const dy = Math.abs(e.clientY - startPos.current.y);
-    const dt = Date.now() - startPos.current.time;
-    if (dx < 30 && dy < 30 && dt < 450) {
-      callback();
-    }
-    startPos.current = null;
-  };
-
   const performSearch = async (query: string) => {
     setVibeLoading(true);
     setIsSearching(true);
@@ -315,7 +281,7 @@ export default function Home() {
                 <Compass className="mr-3 h-5 w-5 text-neutral-400" /> Genres
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onSelect={() => router.push('/insights')}>
-                <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Echoes
+                <History className="mr-3 h-5 w-5 text-neutral-400" /> Echoes
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5 my-2" />
               <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onSelect={() => playRandomTrack()}>
@@ -349,16 +315,14 @@ export default function Home() {
 
               <div className="flex flex-wrap gap-4 pt-4">
                 <Button 
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => playRandomTrack())}
+                  onClick={() => playRandomTrack()}
                   className="rounded-full bg-primary text-white hover:bg-primary/90 font-black uppercase italic tracking-tight gap-3 h-12 md:h-14 px-8 md:px-12 lag-free-tap shadow-2xl shadow-primary/20 text-sm md:text-lg"
                 >
                   <Play className="h-4 w-4 md:h-5 md:w-5 fill-current" /> Play Trending
                 </Button>
                 <Button 
                   variant="secondary"
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => playRandomTrack())}
+                  onClick={() => playRandomTrack()}
                   className="rounded-full bg-[#1e1e1e] border border-white/5 text-white hover:bg-white/10 font-black uppercase italic tracking-tight gap-3 h-12 md:h-14 px-8 md:px-12 lag-free-tap text-sm md:text-lg"
                 >
                   <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> Shuffle
@@ -378,8 +342,7 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs))}
+                onClick={() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs)}
               >
                 <Play className="h-3 w-3 fill-current" /> Play all
               </Button>
@@ -395,8 +358,7 @@ export default function Home() {
               displaySongs.map((song) => (
                 <div 
                   key={`daily-${song.id}`}
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => playTrack(song, displaySongs))}
+                  onClick={() => playTrack(song, displaySongs)}
                   className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl md:rounded-[2rem] border border-white/5 lag-free-tap transition-all hover:bg-white/5 group cursor-pointer"
                 >
                   <div className="flex items-center gap-4 md:gap-5 min-w-0">
@@ -421,8 +383,7 @@ export default function Home() {
                     </div>
                   </div>
                   <button 
-                    onPointerDown={handlePointerDown}
-                    onPointerUp={handlePointerUp((e?: any) => { e?.stopPropagation(); toggleLike(song); })}
+                    onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
                     className="p-3 text-neutral-700 hover:text-primary transition-colors"
                   >
                     <Heart className={cn("h-5 w-5 md:h-6 md:w-6", isLiked(song.id) && "fill-primary text-primary")} />
@@ -447,8 +408,7 @@ export default function Home() {
                 <Button 
                   variant="ghost" 
                   className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs))}
+                  onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
                 >
                   <Play className="h-3 w-3 fill-current" /> Play all
                 </Button>
@@ -457,8 +417,7 @@ export default function Home() {
                 {trendingSongs.map((song, i) => (
                   <div 
                     key={`trending-${song.id}`} 
-                    onPointerDown={handlePointerDown}
-                    onPointerUp={handlePointerUp(() => playTrack(song, trendingSongs))}
+                    onClick={() => playTrack(song, trendingSongs)}
                     className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl md:rounded-[2rem] border border-white/5 lag-free-tap transition-all hover:bg-white/5 group cursor-pointer"
                   >
                     <div className="flex items-center gap-4 md:gap-5 min-w-0">
@@ -479,8 +438,7 @@ export default function Home() {
                       </div>
                     </div>
                     <button 
-                      onPointerDown={handlePointerDown}
-                      onPointerUp={handlePointerUp((e?: any) => { e?.stopPropagation(); toggleLike(song); })}
+                      onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
                       className="p-3 text-neutral-700 hover:text-primary transition-colors"
                     >
                       <Heart className={cn("h-5 w-5 md:h-6 md:w-6", isLiked(song.id) && "fill-primary text-primary")} />

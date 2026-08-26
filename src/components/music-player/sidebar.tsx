@@ -2,7 +2,7 @@
 
 import React, { useState, memo } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, History } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Menu, History } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -147,7 +147,6 @@ export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Unified sticky header serves home, mobile header for others
   if (pathname === '/') return null;
 
   return (

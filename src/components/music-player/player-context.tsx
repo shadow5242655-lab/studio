@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, decodeEntities, searchSongs } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, decodeEntities } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -72,117 +72,64 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const frameRef = useRef<number | null>(null);
 
-  // Initialize hardware-stabilized audio engine
+  // Initialize Audio Engine as a Singleton
   useEffect(() => {
-    if (!audioRef.current && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !audioRef.current) {
       console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.preload = "auto";
       audioRef.current = audio;
 
-      const handlers = {
-        loadedmetadata: () => {
-          console.log('AYUMUSIC: Metadata resolved. Duration:', audio.duration);
-          setDuration(audio.duration);
-        },
-        timeupdate: () => {
-          if (!frameRef.current) setProgress(audio.currentTime);
-        },
-        ended: () => {
-          console.log('AYUMUSIC: Sound lineage reached conclusion, transitioning...');
-          if (nextTrackInternalRef.current) nextTrackInternalRef.current();
-        },
-        play: () => {
-          console.log('AYUMUSIC: Playback resonance confirmed');
-          setIsPlaying(true);
-          isPlayingRef.current = true;
-          setIsBuffering(false);
-        },
-        pause: () => {
-          console.log('AYUMUSIC: Playback resonance suspended');
-          setIsPlaying(false);
-          isPlayingRef.current = false;
-        },
-        waiting: () => {
-          console.log('AYUMUSIC: Buffering frequencies...');
-          setIsBuffering(true);
-        },
-        playing: () => {
-          console.log('AYUMUSIC: Buffering complete, streaming resonance');
-          setIsBuffering(false);
-        },
-        error: () => {
-          const err = audio.error;
-          console.error('AYUMUSIC: Audio engine resonance failure:', {
-            code: err?.code,
-            message: err?.message,
-            src: audio.src
-          });
-          setIsBuffering(false);
-          toast({ variant: "destructive", title: "Resonance Blocked", description: "The audio stream could not be established." });
-        }
-      };
-
-      Object.entries(handlers).forEach(([event, handler]) => {
-        audio.addEventListener(event, handler);
+      audio.addEventListener('play', () => {
+        setIsPlaying(true);
+        isPlayingRef.current = true;
+        setIsBuffering(false);
       });
 
-      return () => {
-        Object.entries(handlers).forEach(([event, handler]) => {
-          audio.removeEventListener(event, handler);
-        });
-      };
-    }
-  }, []);
+      audio.addEventListener('pause', () => {
+        setIsPlaying(false);
+        isPlayingRef.current = false;
+      });
 
-  const updateProgress = useCallback(() => {
-    if (audioRef.current && isPlayingRef.current) {
-      setProgress(audioRef.current.currentTime);
-      frameRef.current = requestAnimationFrame(updateProgress);
-    }
-  }, []);
+      audio.addEventListener('waiting', () => setIsBuffering(true));
+      audio.addEventListener('playing', () => setIsBuffering(false));
+      audio.addEventListener('loadedmetadata', () => setDuration(audio.duration));
+      audio.addEventListener('timeupdate', () => setProgress(audio.currentTime));
+      audio.addEventListener('ended', () => {
+        console.log('AYUMUSIC: Sound lineage reached conclusion, transitioning...');
+        if (nextTrackInternalRef.current) nextTrackInternalRef.current();
+      });
 
-  useEffect(() => {
-    if (isPlaying) {
-      frameRef.current = requestAnimationFrame(updateProgress);
-    } else if (frameRef.current) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
+      audio.addEventListener('error', () => {
+        console.error('AYUMUSIC: Audio engine error:', audio.error);
+        setIsBuffering(false);
+      });
     }
-  }, [isPlaying, updateProgress]);
-
-  const stopTrack = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
-    setIsPlaying(false);
-    isPlayingRef.current = false;
-    setProgress(0);
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
-    console.log('AYUMUSIC: playTrack called with:', track);
+    console.log('playSong called with:', track);
     
     if (!audioRef.current) {
-      console.error('AYUMUSIC: Audio engine not ready.');
-      return;
+      audioRef.current = new Audio();
+      audioRef.current.crossOrigin = "anonymous";
     }
     
+    const audio = audioRef.current;
     const url = getBestDownload(track);
-    console.log('AYUMUSIC: Setting audio src to:', url);
     
     if (!url) {
-      console.error('AYUMUSIC: No valid download URL found.');
+      console.error('AYUMUSIC: No download URL for song', track.id);
       toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
       return;
     }
 
-    const audio = audioRef.current;
+    console.log('Setting audio src to:', url);
+    audio.src = url;
+    
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -196,24 +143,33 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    try {
-      audio.pause();
-      audio.src = url;
-      audio.volume = volumeRef.current;
-      audio.load();
-      
-      console.log('AYUMUSIC: Calling audio.play()');
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(e => {
-          console.error("AYUMUSIC: Play error:", e);
-          setIsBuffering(false);
-        });
-      }
-    } catch (err) {
-      console.error('AYUMUSIC: Playback initiation error:', err);
+    console.log('Calling audio.play()');
+    audio.play().catch(err => {
+      console.error('Play error:', err);
       setIsBuffering(false);
+    });
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      console.log('AYUMUSIC: Toggling playback resonance. Currently paused:', audio.paused);
+      if (audio.paused) {
+        audio.play().catch(e => console.error('AYUMUSIC: Play failed:', e));
+      } else {
+        audio.pause();
+      }
     }
+  }, []);
+
+  const stopTrack = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+    setProgress(0);
   }, []);
 
   const playRandomTrack = useCallback(async () => {
@@ -248,18 +204,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       playTrack(currentQueue[idx - 1]);
     }
   }, [playTrack]);
-
-  const togglePlay = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      console.log('AYUMUSIC: Toggling playback resonance. Currently paused:', audio.paused);
-      if (audio.paused) {
-        audio.play().catch(e => console.error('AYUMUSIC: Play failed:', e));
-      } else {
-        audio.pause();
-      }
-    }
-  }, []);
 
   const nextTrackInternalRef = useRef(nextTrack);
   useEffect(() => {

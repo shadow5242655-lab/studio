@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -162,7 +161,9 @@ export default function Home() {
       setDisplaySongs(dailyResults.filter(Boolean));
 
       const trending = await getTrending();
-      setTrendingSongs(trending.slice(0, 10));
+      // Ensure trending is different from daily picks
+      const filteredTrending = trending.filter(t => !dailyResults.some(d => d && d.id === t.id)).slice(0, 10);
+      setTrendingSongs(filteredTrending);
 
       const [punjabi, haryanvi, bhojpuri, lofi] = await Promise.all([
         searchSongs("Punjabi Top Hits 2024", 1),
@@ -357,7 +358,7 @@ export default function Home() {
                   onPointerUp={handlePointerUp(() => playRandomTrack())}
                   className="rounded-full bg-[#1e1e1e] border border-white/5 text-white hover:bg-white/10 font-black uppercase italic tracking-tight gap-3 h-12 md:h-14 px-8 md:px-12 lag-free-tap text-sm md:text-lg"
                 >
-                  <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> Safal
+                  <Shuffle className="h-4 w-4 md:h-5 md:w-5" /> Shuffle
                 </Button>
               </div>
             </div>
@@ -439,7 +440,7 @@ export default function Home() {
           <>
             <section className="space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">Trending Resonance</h2>
+                <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">Trending Now</h2>
                 <Button 
                   variant="ghost" 
                   className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"

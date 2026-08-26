@@ -38,7 +38,6 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
       } else {
         setSongs(prev => {
           const combined = p === 1 ? data : [...prev, ...data];
-          // High-fidelity deduplication
           const uniqueMap = new Map();
           combined.forEach(s => uniqueMap.set(s.id, s));
           return Array.from(uniqueMap.values());
@@ -62,7 +61,6 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const handleScroll = () => {
     if (!scrollRef.current || isFetching || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    // Hardware-stabilized threshold for earlier loading
     if (scrollLeft + clientWidth >= scrollWidth - 600) {
       setPage(prev => {
         const next = prev + 1;
@@ -133,7 +131,6 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
 
   useEffect(() => {
     async function fetchQuickPicks() {
-      // Precise sound lineage as requested
       const queries = [
         "Patar Bashori",
         "Dai Dai",
@@ -274,8 +271,6 @@ export default function Home() {
 
   return (
     <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500">
-      
-      {/* Branding Header - Precise Mobile Scaling */}
       <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black z-[60]">
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-primary border border-white/5 overflow-hidden shadow-[0_0_15px_rgba(255,0,0,0.5)]">
@@ -288,10 +283,7 @@ export default function Home() {
         </button>
       </header>
 
-      {/* Discovery Hub */}
-      <div className="space-y-8 pt-2 pb-44">
-        
-        {/* Search Node - Balanced Icons */}
+      <div className="space-y-6 pt-2 pb-44">
         <div className="px-6 flex items-center gap-4">
            <div className="p-1 rounded-xl">
              <Music2 className="h-6 w-6 text-primary" />
@@ -313,42 +305,40 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            {/* Branded Hero Card - Optimized Centering and Scaling */}
-            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#121212] via-black to-black p-8 border border-white/5 shadow-2xl flex flex-col group min-h-[360px]">
+            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-6 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] md:min-h-[360px]">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[300px] w-[300px]" />
+                <Music2 className="h-[260px] w-[260px] md:h-[300px] md:w-[300px]" />
               </div>
               
-              <div className="w-full flex justify-center mb-6 relative z-10">
-                <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
+              <div className="w-full flex justify-center mb-4 relative z-10">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[7px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
                    <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
                 </div>
               </div>
               
               <div className="flex-1 flex flex-col justify-center items-center relative z-10 text-center">
-                <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-4 text-white">AYUMUSIC</h1>
-                <p className="text-sm font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto italic">
+                <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-3 text-white">AYUMUSIC</h1>
+                <p className="text-xs md:text-sm font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto italic">
                   High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
                 </p>
               </div>
 
-              <div className="w-full flex items-center justify-center gap-4 mt-8 relative z-10">
+              <div className="w-full flex items-center justify-center gap-3 mt-6 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-[2.5rem] bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 shadow-[0_15px_45px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-sm"
+                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-11 px-6 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[10px] md:text-sm"
                 >
-                  <Play className="h-4 w-4 fill-current" /> Play Trending
+                  <Play className="h-3 w-3 fill-current" /> Play Trending
                 </Button>
                 <Button 
                   variant="secondary"
-                  className="rounded-[2.5rem] bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-sm"
+                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-11 px-6 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[10px] md:text-sm"
                 >
-                  <Shuffle className="h-4 w-4" /> Shuffle
+                  <Shuffle className="h-3 w-3" /> Shuffle
                 </Button>
               </div>
             </div>
 
-            {/* Pick A Vibe Section */}
             <section className="space-y-4">
                <div className="flex items-center justify-between px-6">
                  <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
@@ -361,10 +351,8 @@ export default function Home() {
                </div>
             </section>
 
-            {/* Daily Picks Vertical Section - Centered Pinnacles */}
             <QuickPicksVertical onPlayTrack={playTrack} />
 
-            {/* Regional Infinitely Scrollable Lineages */}
             <div className="space-y-12">
               <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
@@ -374,7 +362,6 @@ export default function Home() {
           </>
         )}
 
-        {/* Search Results */}
         {isSearching && (
           <section className="space-y-8 pb-20">
             <div className="flex items-center justify-between px-6">
@@ -434,7 +421,6 @@ export default function Home() {
             </div>
           </section>
         )}
-
       </div>
     </div>
   );

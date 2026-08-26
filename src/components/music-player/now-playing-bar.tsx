@@ -47,7 +47,7 @@ export function NowPlayingBar() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 flex-1">
               <span className="text-[10px] font-black text-white truncate italic uppercase tracking-tighter leading-none">
                 {decodeEntities(currentTrack.name)}
               </span>
@@ -55,19 +55,19 @@ export function NowPlayingBar() {
                 {currentTrack.artists.primary[0]?.name}
               </span>
             </div>
-            <button className="p-1 text-neutral-600 ml-1" onClick={(e) => { e.stopPropagation(); toggleLike(currentTrack); }}>
-               <Heart className={cn("h-4 w-4", isLiked(currentTrack.id) && "fill-primary text-primary")} />
+            <button className="p-1 text-neutral-600 ml-1 hover:text-primary transition-colors" onClick={(e) => { e.stopPropagation(); toggleLike(currentTrack); }}>
+               <Heart className={cn("h-4 w-4 transition-all", isLiked(currentTrack.id) && "fill-primary text-primary scale-110")} />
             </button>
           </div>
 
           {/* Right-Shifted Playback Controls */}
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-4 shrink-0 pl-4">
              <button className="text-neutral-500 hover:text-white transition-colors" onClick={prevTrack}>
                <SkipBack className="h-5 w-5 fill-current" />
              </button>
              <button 
                onClick={(e) => { e.stopPropagation(); togglePlay(); }} 
-               className="bg-primary text-black rounded-full h-10 w-10 flex items-center justify-center shadow-lg shadow-primary/20 active:scale-90 transition-transform"
+               className="bg-white text-black rounded-full h-10 w-10 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
              >
                {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
              </button>
@@ -81,7 +81,7 @@ export function NowPlayingBar() {
         </div>
 
         {/* Red Seek Line with Timestamps */}
-        <div className="w-full flex items-center gap-3 h-1 mt-1">
+        <div className="w-full flex items-center gap-3 h-1 mt-1 px-1">
            <span className="text-[8px] font-black text-neutral-600 w-8">{formatDuration(progress)}</span>
            <div className="flex-1 relative">
              <Slider

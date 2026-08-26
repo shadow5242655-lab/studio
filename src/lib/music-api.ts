@@ -31,17 +31,18 @@ export function attachMood(song: Song, context?: string): Song {
   const text = (song.name + ' ' + (song.artists.primary[0]?.name || '') + ' ' + (context || '')).toLowerCase();
   
   let mood = 'pop';
-  if (text.includes('punjabi') || text.includes('diljit') || text.includes('sidhu')) mood = 'punjabi';
-  else if (text.includes('haryanvi') || text.includes('dhanda')) mood = 'haryanvi';
-  else if (text.includes('love') || text.includes('romance') || text.includes('arijit')) mood = 'romance';
-  else if (text.includes('lofi') || text.includes('chill') || text.includes('relax')) mood = 'lofi';
-  else if (text.includes('bhajan') || text.includes('devotional')) mood = 'bhajan';
-  else if (text.includes('sufi') || text.includes('nusrat')) mood = 'sufi';
-  else if (text.includes('party') || text.includes('dance') || text.includes('club')) mood = 'party';
-  else if (text.includes('gym') || text.includes('workout') || text.includes('energy')) mood = 'energetic';
-  else if (text.includes('indie') || text.includes('local')) mood = 'indie';
-  else if (text.includes('rock') || text.includes('metal')) mood = 'rock';
-  else if (text.includes('desi')) mood = 'desi';
+  if (text.includes('punjabi') || text.includes('diljit') || text.includes('sidhu') || text.includes('karan aujla')) mood = 'punjabi';
+  else if (text.includes('haryanvi') || text.includes('dhanda') || text.includes('sapna')) mood = 'haryanvi';
+  else if (text.includes('love') || text.includes('romance') || text.includes('arijit') || text.includes('jubin')) mood = 'romance';
+  else if (text.includes('lofi') || text.includes('chill') || text.includes('relax') || text.includes('study')) mood = 'lofi';
+  else if (text.includes('bhajan') || text.includes('devotional') || text.includes('krishna') || text.includes('ram')) mood = 'bhajan';
+  else if (text.includes('sufi') || text.includes('nusrat') || text.includes('rahut')) mood = 'sufi';
+  else if (text.includes('party') || text.includes('dance') || text.includes('club') || text.includes('remix')) mood = 'party';
+  else if (text.includes('gym') || text.includes('workout') || text.includes('energy') || text.includes('bass')) mood = 'energetic';
+  else if (text.includes('indie') || text.includes('local') || text.includes('independent')) mood = 'indie';
+  else if (text.includes('rock') || text.includes('metal') || text.includes('guitar')) mood = 'rock';
+  else if (text.includes('desi') || text.includes('folk')) mood = 'desi';
+  else if (text.includes('slow') || text.includes('peaceful')) mood = 'chill';
   
   return { ...song, mood };
 }

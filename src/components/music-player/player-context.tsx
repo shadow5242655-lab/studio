@@ -117,7 +117,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     audio.src = url;
     audio.load();
 
-    console.log('AYUMUSIC: Playing:', track.name, '| Mood:', track.mood);
+    console.log('🎵 AYUMUSIC NEURAL: Initiating Playback:', track.name, '| Mood:', track.mood);
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -131,16 +131,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
     audio.play().catch((err) => {
-      console.warn('AYUMUSIC: Playback failed', err);
+      console.warn('⚠️ AYUMUSIC: Playback interrupted', err);
       setIsBuffering(false);
     });
 
-    // Spotify-style: Pre-fetch next recommendations immediately
+    // Spotify-style: Immediate Neural Buffer Fetch
     if (smartMood) {
       const mood = track.mood || 'pop';
       fetchAudiusMoodTracks(mood).then(res => {
         autoMixQueueRef.current = res;
         setAutoMixQueue(res);
+        console.log(`📡 AYUMUSIC NEURAL: Buffered ${res.length} songs for "${mood}" mood.`);
       });
     }
   }, [smartMood]);
@@ -149,36 +150,38 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const lastSong = currentTrackRef.current;
     const mood = lastSong?.mood || 'pop';
     
-    console.log('AYUMUSIC NEURAL: Starting autoplay discovery for mood:', mood);
+    console.log('🔄 AYUMUSIC NEURAL: Queue finished. Starting infinite autoplay for mood:', mood);
 
-    // 1. Try pre-fetched queue first
+    // 1. Use Neural Buffer
     if (autoMixQueueRef.current.length > 0) {
       const nextBatch = [...autoMixQueueRef.current];
       const nextSong = nextBatch.shift()!;
       
-      // Hardware-stabilized handover: update current queue so it keeps looping
+      console.log('✅ AYUMUSIC NEURAL: Transitioning to Auto-Mix Queue:', nextSong.name);
+      
+      // Hardware-Stabilized Handover: The new AI batch becomes the current queue
       queueRef.current = [nextSong, ...nextBatch];
       setQueue([nextSong, ...nextBatch]);
       autoMixQueueRef.current = nextBatch;
       setAutoMixQueue(nextBatch);
       
-      console.log('AYUMUSIC NEURAL: Playing from pre-fetched mood queue:', nextSong.name);
       playTrackInternal(nextSong);
       return;
     }
 
-    // 2. Fetch fresh resonance if pre-fetch failed or is empty
+    // 2. Fresh Neural Discovery
     try {
+      console.log('📡 AYUMUSIC NEURAL: Buffer empty. Fetching fresh resonance...');
       const resonance = await fetchAudiusMoodTracks(mood);
       if (resonance.length > 0) {
         const nextSong = resonance.shift()!;
         queueRef.current = [nextSong, ...resonance];
         setQueue([nextSong, ...resonance]);
-        console.log('AYUMUSIC NEURAL: Initiating fresh mood resonance:', nextSong.name);
+        console.log('✅ AYUMUSIC NEURAL: Playing fresh resonance:', nextSong.name);
         playTrackInternal(nextSong);
       } else {
-        // 3. Fallback: Trending if no mood matches found
-        console.log('AYUMUSIC NEURAL: No mood matches. Falling back to trending.');
+        // 3. Fallback to Trending
+        console.log('⚠️ AYUMUSIC NEURAL: Mood resonance exhausted. Falling back to trending.');
         const trending = await getTrending();
         if (trending.length > 0) {
           const nextSong = trending.shift()!;
@@ -188,7 +191,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (e) {
-      console.error('AYUMUSIC NEURAL: Autoplay fetch failed', e);
+      console.error('❌ AYUMUSIC NEURAL: Autoplay fetch failed', e);
     }
   }, [playTrackInternal]);
 
@@ -196,21 +199,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const currentQueue = queueRef.current;
     const currentSong = currentTrackRef.current;
     
-    // Case 1: More songs in current queue/playlist -> play next
+    console.log('⏹️ AYUMUSIC: Song ended. Checking current lineage...');
+
+    // Case 1: Active queue has more frequencies
     if (currentQueue.length > 0) {
       const currentIdx = currentQueue.findIndex(s => s.id === currentSong?.id);
       if (currentIdx !== -1 && currentIdx < currentQueue.length - 1) {
-        console.log('AYUMUSIC: Playing next in queue sequence');
-        playTrackInternal(currentQueue[currentIdx + 1]);
+        const nextSong = currentQueue[currentIdx + 1];
+        console.log('▶️ AYUMUSIC: Playing next in lineage:', nextSong.name);
+        playTrackInternal(nextSong);
         return;
       }
     }
 
-    // Case 2: Queue empty/ended -> initiate Spotify-style autoplay discovery
+    // Case 2: Lineage end -> Recursive Neural Autoplay
     if (smartMood) {
       startAutoRecommendation();
     } else {
       setIsPlaying(false);
+      console.log('⏹️ AYUMUSIC: Playback stopped (Smart Mood Disabled)');
     }
   }, [playTrackInternal, startAutoRecommendation, smartMood]);
 
@@ -247,8 +254,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.onended = () => {
-        console.log('AYUMUSIC: Song ended. Determining next resonance...');
         nextTrackInternal();
+      };
+      
+      // Expose globally for user-requested debugging visibility
+      (window as any).ayumusic = {
+        getQueue: () => queueRef.current,
+        getCurrent: () => currentTrackRef.current,
+        skip: nextTrackInternal
       };
     }
 

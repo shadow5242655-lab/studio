@@ -312,7 +312,17 @@ export default function Home() {
         {/* 6. TRENDING NOW (VERTICAL LIST WITH PHOTOS) */}
         {!isSearching && (
           <section className="space-y-6">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Trending Now</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Trending Now</h2>
+              <Button 
+                variant="ghost" 
+                className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2"
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp(() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs))}
+              >
+                <Play className="h-3 w-3 fill-current" /> Play all
+              </Button>
+            </div>
             <div className="space-y-3">
               {trendingSongs.length > 0 ? (
                 trendingSongs.map((song, i) => (

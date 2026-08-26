@@ -1,17 +1,14 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
-import { Sidebar, Header } from '@/components/music-player/sidebar';
 import { NowPlayingBar } from '@/components/music-player/now-playing-bar';
 import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
-import { LyricsDrawer } from '@/components/music-player/lyrics-drawer';
 import { MusicProvider } from '@/components/music-player/player-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
-  description: 'The definitive Red and Grey music experience.',
+  description: 'Clean, modern music discovery.',
 };
 
 export default function RootLayout({
@@ -21,19 +18,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased bg-black text-white h-screen overflow-hidden flex flex-col selection:bg-primary selection:text-white">
+      <body className="antialiased bg-[#0a0a0a] text-white h-screen overflow-hidden flex flex-col">
         <FirebaseClientProvider>
           <MusicProvider>
-            <Header />
             <div className="flex flex-1 overflow-hidden">
-              <Sidebar />
-              <main className="flex-1 overflow-y-auto bg-neutral-950 spotify-gradient relative">
+              <main className="flex-1 overflow-y-auto relative">
                 {children}
               </main>
             </div>
             <NowPlayingBar />
             <FullScreenPlayer />
-            <LyricsDrawer />
             <Toaster />
           </MusicProvider>
         </FirebaseClientProvider>

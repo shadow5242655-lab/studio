@@ -6,7 +6,7 @@
   :root {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
@@ -23,7 +23,7 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 84.2% 60.2%;
-    --radius: 1rem;
+    --radius: 0.75rem;
   }
 }
 
@@ -32,19 +32,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 100%);
-    background-attachment: fixed;
+    @apply bg-[#0a0a0a] text-foreground antialiased selection:bg-primary/30;
   }
 }
 
-.glass-card {
-  @apply bg-white/5 backdrop-blur-[40px] border border-white/10 shadow-2xl;
-  backdrop-filter: blur(40px) saturate(150%);
-}
-
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+  height: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -57,35 +51,26 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .lag-free-tap {
   touch-action: manipulation;
   will-change: transform;
   transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .lag-free-tap:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
-.neon-glow {
-  text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
-}
-
-@keyframes slow-zoom {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
-}
-
-.animate-slow-zoom {
-  animation: slow-zoom 20s linear infinite alternate;
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
-}
-
-.animate-marquee {
-  animation: marquee 15s linear infinite;
-  display: inline-block;
-  white-space: nowrap;
+.text-line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

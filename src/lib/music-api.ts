@@ -9,9 +9,6 @@ export interface Song {
 
 const API_BASE = 'https://jiosvvnn.vercel.app/api';
 
-/**
- * High-Fidelity Entity Decoder
- */
 export function decodeEntities(text: string): string {
   if (!text) return '';
   return text
@@ -22,24 +19,6 @@ export function decodeEntities(text: string): string {
     .replace(/&gt;/gi, '>')
     .replace(/&copy;/gi, '©')
     .replace(/&reg;/gi, '®');
-}
-
-/**
- * SmartRank3 Algorithm
- */
-export function applySmartRank3(songs: Song[], localPopularity: Record<string, number> = {}): Song[] {
-  return [...songs].sort((a, b) => {
-    const getScore = (song: Song) => {
-      let score = 0;
-      const name = (song.name || '').toLowerCase();
-      if (name.includes('cover') || name.includes('tribute') || name.includes('reprise')) score -= 100;
-      if (name.includes('original') || name.includes('official') || name.includes('ost')) score += 30;
-      score += (localPopularity[song.id] || 0) * 15;
-      if (song.duration > 120) score += 10;
-      return score;
-    };
-    return getScore(b) - getScore(a);
-  });
 }
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
@@ -62,50 +41,6 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
     console.error('Trending fetch failed:', error);
     return [];
   }
-}
-
-/**
- * Neural Mood Analysis Engine (Twinword API)
- */
-export async function analyzeMood(text: string): Promise<string> {
-  const apiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY || 'YOUR_API_KEY';
-  if (!text || text.length < 10) return "neutral";
-  
-  try {
-    const response = await fetch("https://twinword-emotion-analysis-v1.p.rapidapi.com/analyze/", {
-      method: "POST",
-      headers: {
-        "x-rapidapi-key": apiKey,
-        "content-type": "application/x-www-form-urlencoded",
-      },
-      body: `text=${encodeURIComponent(text)}`,
-    });
-    const data = await response.json();
-    
-    if (data.emotion_scores) {
-      const scores = data.emotion_scores;
-      // Get the dominant emotion key
-      const dominant = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-      return dominant;
-    }
-    return "neutral";
-  } catch (error) {
-    console.error("Mood analysis failed:", error);
-    return "neutral";
-  }
-}
-
-export function mapMoodToGenre(emotion: string): string {
-  const mapping: Record<string, string> = {
-    joy: "Party",
-    sadness: "Romantic",
-    anger: "Rap",
-    surprise: "Bollywood",
-    fear: "Lo-Fi",
-    disgust: "Lo-Fi",
-    neutral: "Acoustic"
-  };
-  return mapping[emotion.toLowerCase()] || "Latest Hits";
 }
 
 export function formatDuration(seconds: number) {

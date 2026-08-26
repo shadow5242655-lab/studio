@@ -69,7 +69,7 @@ export function NowPlayingBar() {
             className="text-[#b3b3b3] hover:text-white shrink-0 ml-2"
             onClick={(e) => { e.stopPropagation(); toggleLike(currentTrack); }}
           >
-            <Heart className={cn("h-4 w-4", isLiked(currentTrack.id) && "fill-white text-white")} />
+            <Heart className={cn("h-4 w-4", isLiked(currentTrack.id) && "fill-primary text-primary")} />
           </Button>
         </div>
 
@@ -109,7 +109,7 @@ export function NowPlayingBar() {
           </div>
         </div>
 
-        {/* Placeholder for Volume/Right Side alignment */}
+        {/* Volume alignment */}
         <div className="w-1/3 hidden md:block" />
       </div>
     </div>

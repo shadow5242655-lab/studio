@@ -10,7 +10,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 142 70% 45%; /* Spotify Green */
+    --primary: 0 72.2% 50.6%; /* High-Fidelity Red */
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 12%;
     --input: 0 0% 12%;
-    --ring: 142 70% 45%;
+    --ring: 0 72.2% 50.6%;
     --radius: 0.5rem;
   }
 }
@@ -75,7 +75,7 @@
 }
 .close-btn:hover,
 .close-btn:active {
-  color: #ff4444;
+  color: var(--primary);
   transform: scale(1.1);
 }
 

@@ -33,7 +33,7 @@ export function FullScreenPlayer() {
           variant="ghost" 
           size="icon" 
           onClick={stopTrack}
-          className="hover:bg-white/5 text-[#b3b3b3] hover:text-[#ff4444]"
+          className="hover:bg-white/5 text-[#b3b3b3] hover:text-primary"
         >
           <X className="h-6 w-6" />
         </Button>
@@ -56,8 +56,8 @@ export function FullScreenPlayer() {
             <h2 className="text-2xl md:text-3xl font-bold truncate">{trackName}</h2>
             <p className="text-sm md:text-base text-[#b3b3b3] truncate mt-1">{artistNames}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => toggleLike(currentTrack)} className="text-[#b3b3b3] hover:text-white">
-            <Heart className={cn("h-7 w-7", isLiked(currentTrack.id) && "fill-white text-white")} />
+          <Button variant="ghost" size="icon" onClick={() => toggleLike(currentTrack)} className="text-[#b3b3b3] hover:text-primary">
+            <Heart className={cn("h-7 w-7", isLiked(currentTrack.id) && "fill-primary text-primary")} />
           </Button>
         </div>
 

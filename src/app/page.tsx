@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
   Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal
@@ -153,27 +153,31 @@ export default function Home() {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [searchQuery]);
 
-  async function loadInitialData() {
+  const loadInitialData = async () => {
     setLoading(true);
     try {
-      const dailyTerms = ["Bairan Banjaare", "Fortuner Raj Mawar", "Kabze Bintu Pabra", "Mithe Tere Bol Pari Masoom", "80 Lakh D Naveen"];
-      const dailyResults = await Promise.all(dailyTerms.map(t => searchSongs(t).then(r => r[0])));
-      setDisplaySongs(dailyResults.filter(Boolean));
-
-      const trending = await getTrending();
-      const filteredTrending = trending.filter(t => !dailyResults.some(d => d && d.id === t.id)).slice(0, 10);
-      setTrendingSongs(filteredTrending);
-
-      const [punjabi, haryanvi, bhojpuri, lofi] = await Promise.all([
-        searchSongs("Punjabi Top Hits 2024", 1),
-        searchSongs("Haryanvi Latest Hits", 1),
-        searchSongs("Bhojpuri Superhits", 1),
-        searchSongs("Lofi Hip Hop Chill", 1)
+      // Optimized single fetch for Daily Picks and concurrent fetch for Trending
+      const [daily, trending] = await Promise.all([
+        searchSongs("Bairan Banjaare Fortuner Raj Mawar Kabze Bintu Pabra", 1),
+        getTrending(1)
       ]);
+      
+      setDisplaySongs(daily.slice(0, 10));
+      setTrendingSongs(trending.slice(0, 10));
 
-      setRegionalSongs({
-        punjabi, haryanvi, bhojpuri, lofi
-      });
+      // Background load regional sections to prioritize first paint
+      searchSongs("Punjabi Top Hits 2024", 1).then(songs => 
+        setRegionalSongs(prev => ({ ...prev, punjabi: songs }))
+      );
+      searchSongs("Haryanvi Latest Hits", 1).then(songs => 
+        setRegionalSongs(prev => ({ ...prev, haryanvi: songs }))
+      );
+      searchSongs("Bhojpuri Superhits", 1).then(songs => 
+        setRegionalSongs(prev => ({ ...prev, bhojpuri: songs }))
+      );
+      searchSongs("Lofi Hip Hop Chill", 1).then(songs => 
+        setRegionalSongs(prev => ({ ...prev, lofi: songs }))
+      );
 
       setListTitle('Daily Picks');
       setIsSearching(false);
@@ -183,7 +187,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const handleVibeClick = async (vibeName: string) => {
     setVibeLoading(true);
@@ -268,7 +272,7 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-700 flex flex-col items-center">
+    <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
         
         {/* Unified Brand-Search-Menu Header */}
@@ -401,7 +405,7 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-4 md:gap-5 min-w-0">
                     <div className="h-14 w-14 md:h-16 md:w-16 rounded-xl md:rounded-2xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg relative border border-white/5">
-                      <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                      <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" loading="lazy" />
                       {currentTrack?.id === song.id && (
                         <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                           <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(255,0,0,0.8)]" />
@@ -464,7 +468,7 @@ export default function Home() {
                     <div className="flex items-center gap-4 md:gap-5 min-w-0">
                       <span className="text-lg md:text-xl font-black italic text-neutral-800 group-hover:text-primary transition-colors shrink-0 w-6 md:w-8">{i + 1}</span>
                       <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg relative border border-white/5">
-                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" loading="lazy" />
                       </div>
                       <div className="min-w-0">
                         <p className={cn(

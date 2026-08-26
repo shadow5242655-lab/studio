@@ -259,57 +259,58 @@ export default function Home() {
   return (
     <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500 pb-52">
       
-      {/* Top Header Branding */}
+      {/* Top Header Branding - Perfectly Matched to Screenshot */}
       <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-xl z-[60]">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary p-1.5 rounded-full shadow-[0_0_15px_rgba(255,0,0,0.5)]">
-            <Music2 className="h-5 w-5 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-neutral-900 border border-white/5 overflow-hidden">
+            <div className="absolute inset-0 bg-primary/20 blur-md" />
+            <span className="relative z-10 text-lg font-black italic text-white">N</span>
           </div>
-          <span className="text-2xl font-black italic tracking-tighter uppercase">AYUMUSIC</span>
+          <span className="text-3xl font-black italic tracking-tighter uppercase leading-none">AYUMUSIC</span>
         </div>
-        <button className="p-2 text-neutral-400 hover:text-white transition-colors">
-          <Menu className="h-7 w-7" />
+        <button className="p-2 text-white hover:text-primary transition-colors">
+          <Menu className="h-8 w-8" />
         </button>
       </header>
 
       {/* Discovery Hub */}
-      <div className="space-y-10">
+      <div className="space-y-8">
         
-        {/* Search Node */}
-        <div className="px-6 flex items-center gap-3">
-           <div className="bg-primary/20 p-2.5 rounded-2xl">
-              <Music2 className="h-6 w-6 text-primary" />
-           </div>
-           <div className="flex-1 relative">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
+        {/* Search Node - Centered with Red Icon */}
+        <div className="px-6">
+           <div className="relative flex items-center">
+             <div className="absolute left-4 z-10 p-1.5 rounded-xl bg-primary/10">
+               <Music2 className="h-5 w-5 text-primary" />
+             </div>
              <Input 
                placeholder="Search for sounds..." 
-               className="pl-11 pr-4 bg-[#1a1a1a] border-none rounded-2xl h-14 focus-visible:ring-primary/40 text-sm shadow-inner"
+               className="pl-14 pr-4 bg-[#121212] border-none rounded-[1.5rem] h-14 focus-visible:ring-primary/40 text-sm shadow-inner placeholder:text-neutral-600"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
              />
-           </div>
-           <div className="flex items-center gap-4 text-neutral-400">
-              <Smartphone className="h-6 w-6" />
-              <ListFilter className="h-6 w-6" />
+             <div className="absolute right-4 flex items-center gap-3 text-neutral-600">
+               <Smartphone className="h-5 w-5" />
+               <ListFilter className="h-5 w-5" />
+             </div>
            </div>
         </div>
 
         {!isSearching && (
           <>
-            {/* Hero Card - RESOUND Style */}
-            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#121212] via-black to-black p-10 border border-white/5 shadow-2xl space-y-8 group">
+            {/* Hero Card - RESOUND Style (Exact Screenshot Match) */}
+            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0a0a0a] via-black to-black p-10 border border-white/5 shadow-2xl space-y-10 group">
+              {/* Large Abstract Background Music Node */}
               <div className="absolute top-0 right-0 p-10 text-white/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-72 w-72" />
+                <Music2 className="h-96 w-96" />
               </div>
               
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-primary uppercase tracking-[0.3em] shadow-inner">
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
                  NO ADS • NO SIGN-UP
               </div>
               
-              <div className="space-y-4 relative z-10">
-                <h1 className="text-7xl font-black italic tracking-tighter uppercase leading-[0.8] neon-glow">RESOUND</h1>
-                <p className="text-lg font-bold text-neutral-400 leading-tight max-w-[280px]">
+              <div className="space-y-6 relative z-10">
+                <h1 className="text-8xl font-black italic tracking-tighter uppercase leading-[0.75] neon-glow">RESOUND</h1>
+                <p className="text-xl font-bold text-neutral-400 leading-tight max-w-[260px] opacity-80">
                   High-fidelity sound resonance straight from the source.
                 </p>
               </div>
@@ -317,20 +318,14 @@ export default function Home() {
               <div className="flex gap-4 pt-4 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-10 shadow-[0_10px_40px_rgba(255,0,0,0.4)] hover:scale-105 active:scale-95 transition-transform text-lg"
+                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-3 h-16 px-12 shadow-[0_15px_45px_rgba(255,0,0,0.4)] hover:scale-105 active:scale-95 transition-transform text-xl"
                 >
-                  <Play className="h-5 w-5 fill-current" /> PLAY NOW
-                </Button>
-                <Button 
-                  variant="secondary"
-                  className="rounded-full bg-[#1a1a1a] border border-white/5 text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 hover:bg-white/10 text-lg"
-                >
-                  <Shuffle className="h-5 w-5" /> SHUFFLE
+                  <Play className="h-6 w-6 fill-current" /> PLAY NOW
                 </Button>
               </div>
             </div>
 
-            {/* Pick A Vibe Section - Moved Up */}
+            {/* Pick A Vibe Section - Pinned above Quick Picks */}
             <section className="space-y-5">
                <div className="flex items-center justify-between px-6">
                  <h2 className="text-2xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>

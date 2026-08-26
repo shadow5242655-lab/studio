@@ -49,7 +49,8 @@ const HorizontalSection = memo(({
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    if (dx < 15 && dy < 15 && dt < 400) {
+    // Increased threshold to 30px for better mobile reliability
+    if (dx < 30 && dy < 30 && dt < 450) {
       callback();
     }
     startPos.current = null;
@@ -249,7 +250,7 @@ export default function Home() {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    if (dx < 15 && dy < 15 && dt < 400) {
+    if (dx < 30 && dy < 30 && dt < 450) {
       callback();
     }
     startPos.current = null;
@@ -320,24 +321,25 @@ export default function Home() {
             <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl z-[110]" align="end">
               <DropdownMenuItem 
                 className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" 
-                onClick={() => {
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp(() => {
                   searchInputRef.current?.focus();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                })}
               >
                 <Search className="mr-3 h-5 w-5 text-primary" /> Search
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/library')}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/library'))}>
                 <Library className="mr-3 h-5 w-5 text-neutral-400" /> My Library
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/genres')}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/genres'))}>
                 <Compass className="mr-3 h-5 w-5 text-neutral-400" /> Genres
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/insights')}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/insights'))}>
                 <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Echoes
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5 my-2" />
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onClick={() => playRandomTrack()}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => playRandomTrack())}>
                 <Shuffle className="mr-3 h-5 w-5" /> Shuffle All
               </DropdownMenuItem>
             </DropdownMenuContent>

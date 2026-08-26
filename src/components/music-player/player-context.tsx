@@ -70,8 +70,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
-  const [volume, setVolumeState] = useState(0.7);
-  const volumeRef = useRef(0.7);
+  const [volume, setVolumeState] = useState(0.8);
+  const volumeRef = useRef(0.8);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   
@@ -82,10 +82,36 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
 
-  // Stabilize Audio Instance
-  if (typeof window !== 'undefined' && !audioRef.current) {
-    audioRef.current = new Audio();
-  }
+  // Stabilize Audio Instance with best practices for mobile/CORS
+  useEffect(() => {
+    if (!audioRef.current && typeof window !== 'undefined') {
+      const audio = new Audio();
+      audio.crossOrigin = "anonymous";
+      audio.preload = "auto";
+      audioRef.current = audio;
+
+      const hs = {
+        loadedmetadata: () => setDuration(audio.duration),
+        ended: () => {
+          if (nextTrackRef.current) nextTrackRef.current();
+        },
+        play: () => { setIsPlaying(true); isPlayingRef.current = true; },
+        pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
+        waiting: () => setIsBuffering(true),
+        playing: () => setIsBuffering(false),
+        error: (e: any) => {
+          console.error("Audio engine error:", e);
+          setIsBuffering(false);
+        }
+      };
+
+      Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
+      
+      return () => {
+        Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
+      };
+    }
+  }, []);
 
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
@@ -98,39 +124,48 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
-    if (!track) return;
+    if (!track || !audioRef.current) return;
     
     const audio = audioRef.current;
-    if (!audio) return;
+    const url = getBestDownload(track);
+    
+    if (!url) {
+      toast({ variant: "destructive", title: "Resonance Blocked", description: "This frequency is currently unavailable." });
+      return;
+    }
 
-    audio.pause();
-    audio.src = "";
+    // Immediate state feedback
+    setCurrentTrack(track);
+    currentTrackRef.current = track;
+    setIsBuffering(true);
+    setProgress(0);
+    setDuration(track.duration || 0);
 
     if (fromQueue) {
       setQueue(fromQueue);
       queueRef.current = fromQueue;
     }
     
-    setProgress(0);
-    setDuration(track.duration || 0);
-    setCurrentTrack(track);
-    currentTrackRef.current = track;
-    
+    // Update history lineage
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    const url = getBestDownload(track);
-    if (url) {
-      audio.src = url;
-      audio.volume = volumeRef.current;
-      audio.load();
-      audio.play().catch(e => {
-        console.error("Playback failed:", e);
-        toast({ variant: "destructive", title: "Playback Error", description: "Frequencies blocked. Please tap again." });
+    // Playback execution
+    audio.pause();
+    audio.src = url;
+    audio.volume = volumeRef.current;
+    audio.load();
+    
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        console.error("Playback start failed:", e);
+        setIsBuffering(false);
+        // Silent failure handling for autoplay blocks
       });
     }
   }, []);
 
-  // Neural Auto-Mix Logic
+  // Neural Auto-Mix Architecting
   useEffect(() => {
     if (smartMood && currentTrack) {
       const architectAutoMix = async () => {
@@ -157,10 +192,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack, smartMood]);
 
   const playRandomTrack = useCallback(async () => {
-    const trending = await getTrending();
-    if (trending.length > 0) {
-      const rand = trending[Math.floor(Math.random() * trending.length)];
-      playTrack(rand, trending);
+    try {
+      const trending = await getTrending();
+      if (trending.length > 0) {
+        const rand = trending[Math.floor(Math.random() * trending.length)];
+        playTrack(rand, trending);
+      }
+    } catch (e) {
+      console.error("Shuffle failed", e);
     }
   }, [playTrack]);
 
@@ -208,36 +247,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (audio) {
-      if (isPlayingRef.current) audio.pause();
-      else audio.play().catch(() => {});
+      if (isPlayingRef.current) {
+        audio.pause();
+      } else {
+        const p = audio.play();
+        if (p) p.catch(() => {});
+      }
     }
   }, []);
 
-  // Stabilize Event Listeners
   const nextTrackRef = useRef(nextTrack);
   useEffect(() => {
     nextTrackRef.current = nextTrack;
   }, [nextTrack]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    const hs = {
-      loadedmetadata: () => setDuration(audio.duration),
-      ended: () => nextTrackRef.current(),
-      play: () => { setIsPlaying(true); isPlayingRef.current = true; },
-      pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
-      waiting: () => setIsBuffering(true),
-      playing: () => setIsBuffering(false)
-    };
-
-    Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
-    
-    return () => {
-      Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
-    };
-  }, []);
 
   const updateProgress = useCallback(() => {
     const audio = audioRef.current;
@@ -248,8 +270,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
-    else if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (isPlaying) {
+      frameRef.current = requestAnimationFrame(updateProgress);
+    } else if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+    }
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
   }, [isPlaying, updateProgress]);
 

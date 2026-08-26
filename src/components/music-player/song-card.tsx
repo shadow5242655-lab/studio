@@ -42,8 +42,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
-    // Calibrated interaction threshold for responsive feedback
-    if (dx < 15 && dy < 15 && dt < 400) {
+    // Increased threshold for high-DPI reliability
+    if (dx < 30 && dy < 30 && dt < 450) {
       callback();
     }
     startPos.current = null;
@@ -116,10 +116,10 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="glass-card text-white w-56 border-white/10" align="end">
-              <DropdownMenuItem onPointerDown={() => playNext(song)} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => playNext(song))} className="hover:bg-primary/20 cursor-pointer">
                 <Forward className="mr-2 h-4 w-4" /> Play Next
               </DropdownMenuItem>
-              <DropdownMenuItem onPointerDown={() => addToQueue(song)} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => addToQueue(song))} className="hover:bg-primary/20 cursor-pointer">
                 <ListMusic className="mr-2 h-4 w-4" /> Add to Queue
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
@@ -129,13 +129,13 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="glass-card text-white border-white/10">
                   {playlists.map(p => (
-                    <DropdownMenuItem key={p.id} onPointerDown={() => addToPlaylist(p.id, song)} className="hover:bg-primary/20 cursor-pointer">
+                    <DropdownMenuItem key={p.id} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => addToPlaylist(p.id, song))} className="hover:bg-primary/20 cursor-pointer">
                       {p.name}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem onPointerDown={handleDownload} className="hover:bg-primary/20 cursor-pointer">
+              <DropdownMenuItem onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(handleDownload)} className="hover:bg-primary/20 cursor-pointer">
                 <Download className="mr-2 h-4 w-4" /> Download
               </DropdownMenuItem>
             </DropdownMenuContent>

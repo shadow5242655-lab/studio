@@ -1,10 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Song, getBestDownload, getTrending, decodeEntities, searchSongs } from '@/lib/music-api';
 import { toast } from '@/hooks/use-toast';
-import { analyzeMood } from '@/ai/flows/mood-analysis-flow';
 
 export interface Playlist {
   id: string;
@@ -27,8 +25,6 @@ interface MusicStateContextType {
   likedSongs: Song[];
   playlists: Playlist[];
   playedHistory: HistoryItem[];
-  smartMood: boolean;
-  autoMixQueue: Song[];
   setIsPlayerOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   playNext: (track: Song) => void;
@@ -43,7 +39,6 @@ interface MusicStateContextType {
   createPlaylist: (name: string, songs?: Song[]) => void;
   addToPlaylist: (playlistId: string, track: Song) => void;
   deletePlaylist: (id: string) => void;
-  setSmartMood: (enabled: boolean) => void;
   removeFromHistory: (id: string) => void;
   clearHistory: () => void;
 }
@@ -76,14 +71,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   
-  const [smartMood, setSmartMood] = useState(true);
-  const [autoMixQueue, setAutoMixQueue] = useState<Song[]>([]);
-  const autoMixQueueRef = useRef<Song[]>([]);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
 
-  // Hardware-stabilized audio instance initialization
+  // Initialize hardware-stabilized audio engine
   useEffect(() => {
     if (!audioRef.current && typeof window !== 'undefined') {
       console.log('AYUMUSIC: Initializing hardware-stabilized audio engine...');
@@ -123,7 +114,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           console.log('AYUMUSIC: Buffering complete, streaming resonance');
           setIsBuffering(false);
         },
-        error: (e: any) => {
+        error: () => {
           const err = audio.error;
           console.error('AYUMUSIC: Audio engine resonance failure:', {
             code: err?.code,
@@ -175,16 +166,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
+    console.log('AYUMUSIC: playTrack called with:', track);
+    
     if (!audioRef.current) {
       console.error('AYUMUSIC: Audio engine not ready.');
       return;
     }
     
-    const trackName = decodeEntities(track.name);
-    console.log(`AYUMUSIC: Initiating playback for "${trackName}"`);
-    
-    const audio = audioRef.current;
     const url = getBestDownload(track);
+    console.log('AYUMUSIC: Setting audio src to:', url);
     
     if (!url) {
       console.error('AYUMUSIC: No valid download URL found.');
@@ -192,6 +182,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const audio = audioRef.current;
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -211,15 +202,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.volume = volumeRef.current;
       audio.load();
       
+      console.log('AYUMUSIC: Calling audio.play()');
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(e => {
-          console.error("AYUMUSIC: Playback failed:", e);
+          console.error("AYUMUSIC: Play error:", e);
           setIsBuffering(false);
         });
       }
     } catch (err) {
-      console.error('AYUMUSIC: Audio error:', err);
+      console.error('AYUMUSIC: Playback initiation error:', err);
       setIsBuffering(false);
     }
   }, []);
@@ -238,8 +230,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(() => {
     const currentQueue = queueRef.current;
-    const currentMix = autoMixQueueRef.current;
-
     if (currentQueue.length > 0) {
       const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
       if (idx !== -1 && idx < currentQueue.length - 1) {
@@ -247,15 +237,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         return;
       }
     }
-
-    if (currentMix.length > 0) {
-      const next = currentMix[0];
-      autoMixQueueRef.current = currentMix.slice(1);
-      setAutoMixQueue(autoMixQueueRef.current);
-      playTrack(next);
-      return;
-    }
-    
     playRandomTrack();
   }, [playTrack, playRandomTrack]);
 
@@ -271,11 +252,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (audio) {
-      if (isPlayingRef.current) {
-        audio.pause();
+      console.log('AYUMUSIC: Toggling playback resonance. Currently paused:', audio.paused);
+      if (audio.paused) {
+        audio.play().catch(e => console.error('AYUMUSIC: Play failed:', e));
       } else {
-        const p = audio.play();
-        if (p) p.catch(e => console.error('AYUMUSIC: Play failed:', e));
+        audio.pause();
       }
     }
   }, []);
@@ -284,31 +265,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     nextTrackInternalRef.current = nextTrack;
   }, [nextTrack]);
-
-  // Infinite mood sync architect
-  useEffect(() => {
-    if (smartMood && currentTrack) {
-      const architectMood = async () => {
-        try {
-          console.log('AYUMUSIC: Architecting mood lineage for:', currentTrack.name);
-          const analysis = await analyzeMood({ 
-            songName: currentTrack.name, 
-            artistName: currentTrack.artists.primary[0]?.name || 'Unknown' 
-          });
-          
-          const results = await Promise.all(analysis.nextQueries.map(q => searchSongs(q, 1)));
-          const flat = results.flatMap(r => r).filter(s => s.id !== currentTrack.id);
-          const unique = Array.from(new Map(flat.map(s => [s.id, s])).values()).slice(0, 10);
-          
-          setAutoMixQueue(unique);
-          autoMixQueueRef.current = unique;
-        } catch (e) {
-          console.error("AYUMUSIC: Mood architecting failed", e);
-        }
-      };
-      architectMood();
-    }
-  }, [currentTrack, smartMood]);
 
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
@@ -340,7 +296,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists,
-    playedHistory, smartMood, autoMixQueue, setIsPlayerOpen, playTrack, playNext: (t: Song) => {
+    playedHistory, setIsPlayerOpen, playTrack, playNext: (t: Song) => {
       setQueue(prev => {
         const next = [...prev.filter(s => s.id !== t.id)];
         const idx = next.findIndex(s => s.id === currentTrackRef.current?.id);
@@ -360,8 +316,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     },
     playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, 
     isLiked: (id: string) => !!likedSongs.find(s => s.id === id), createPlaylist, addToPlaylist, deletePlaylist,
-    setSmartMood, removeFromHistory, clearHistory
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists, playedHistory, smartMood, autoMixQueue, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, setSmartMood, removeFromHistory, clearHistory]);
+    removeFromHistory, clearHistory
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists, playedHistory, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory]);
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume,

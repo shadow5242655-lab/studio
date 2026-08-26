@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -141,7 +140,6 @@ export default function Home() {
   const [listTitle, setListTitle] = useState('Daily Picks');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [activeVibe, setActiveVibe] = useState<string | null>(null);
   
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -189,28 +187,10 @@ export default function Home() {
 
       setListTitle('Daily Picks');
       setIsSearching(false);
-      setActiveVibe(null);
     } catch (e) {
       console.error("Initial load failed", e);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVibeClick = async (vibeName: string) => {
-    setVibeLoading(true);
-    setIsSearching(false);
-    setListTitle(`${vibeName} Resonance`);
-    setSearchQuery('');
-    setActiveVibe(vibeName);
-    try {
-      const results = await searchSongs(vibeName);
-      setDisplaySongs(results.slice(0, 10));
-      if (results.length > 0) playTrack(results[0], results);
-    } catch (e) {
-      console.error("Vibe fetch failed", e);
-    } finally {
-      setVibeLoading(false);
     }
   };
 
@@ -261,7 +241,6 @@ export default function Home() {
     setVibeLoading(true);
     setIsSearching(true);
     setListTitle(`Results for "${query}"`);
-    setActiveVibe(null);
     try {
       const results = await searchSongs(query);
       setDisplaySongs(results);
@@ -314,7 +293,7 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="shrink-0 text-neutral-500 hover:text-white rounded-full h-10 w-10 lag-free-tap"
+                className="shrink-0 text-neutral-500 hover:text-white rounded-full h-10 w-10"
               >
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
@@ -322,25 +301,24 @@ export default function Home() {
             <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl z-[110]" align="end">
               <DropdownMenuItem 
                 className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" 
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => {
+                onSelect={() => {
                   searchInputRef.current?.focus();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
-                })}
+                }}
               >
                 <Search className="mr-3 h-5 w-5 text-primary" /> Search
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/library'))}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onSelect={() => router.push('/library')}>
                 <Library className="mr-3 h-5 w-5 text-neutral-400" /> My Library
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/genres'))}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onSelect={() => router.push('/genres')}>
                 <Compass className="mr-3 h-5 w-5 text-neutral-400" /> Genres
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => router.push('/insights'))}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onSelect={() => router.push('/insights')}>
                 <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Echoes
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5 my-2" />
-              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp(() => playRandomTrack())}>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onSelect={() => playRandomTrack()}>
                 <Shuffle className="mr-3 h-5 w-5" /> Shuffle All
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -349,33 +327,6 @@ export default function Home() {
       </header>
 
       <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
-        {/* Vibe Chips (Mood Feature) */}
-        <section className="space-y-6">
-          <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white">Select Mood</h2>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-            {[
-              { name: 'Romance', icon: Heart },
-              { name: 'Party', icon: Sparkles },
-              { name: 'Lo-fi', icon: Music2 },
-              { name: 'Workout', icon: Shuffle }
-            ].map((vibe) => (
-              <Button 
-                key={vibe.name}
-                variant="secondary" 
-                className={cn(
-                  "rounded-2xl bg-[#1e1e1e] border border-white/5 px-8 h-12 text-xs font-black uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20 gap-2 transition-all",
-                  activeVibe === vibe.name && "ring-2 ring-primary bg-primary/10 text-primary"
-                )}
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => handleVibeClick(vibe.name))}
-              >
-                <vibe.icon className={cn("h-4 w-4", activeVibe === vibe.name ? "text-primary" : "text-neutral-500")} />
-                {vibe.name}
-              </Button>
-            ))}
-          </div>
-        </section>
-
         {/* Hero Card */}
         {!isSearching && (
           <section className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-[#1e1e1e] to-black p-8 md:p-16 border border-white/5 shadow-2xl group min-h-[350px] md:min-h-[450px] flex flex-col justify-center">

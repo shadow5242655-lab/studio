@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities } from '@/lib/music-api';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Smartphone, Settings2, 
-  Sparkles, Shuffle, Menu, Heart as HeartIcon, 
-  Coffee, Dumbbell, Star, Loader2, X
+  Heart, Play, Music2, Search, Settings2, 
+  Sparkles, Menu, X, Loader2, Clock, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,41 +13,58 @@ import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack } = useMusic();
-  const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
-  const [loading, setLoading] = useState(true);
   
-  // Search State
+  // State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Load Initial Lineages
   useEffect(() => {
-    async function loadData() {
+    async function loadInitialData() {
       setLoading(true);
       try {
+        // Daily Picks requested songs
         const dailyTerms = [
-          "Sheesha Aakhya Mai Aakh",
+          "Barsaat Banjaare Roni",
           "Bairan Banjaare",
+          "Sheesha Mitta Ror Swara Verma",
           "Fortuner Raj Mawar",
-          "Kamar DJ Pe Manish",
+          "Kamar DJ Pe Manish Sonipat",
           "80 Lakh D Naveen",
           "Kabze Bintu Pabra",
-          "Mithe Tere Bol Masoom"
+          "Mithe Tere Bol Pari Masoom"
         ];
-        const dailyRes = await Promise.all(
-          dailyTerms.map(t => searchSongs(t).then(r => r[0]))
-        );
+        
+        // Trending Now requested songs
+        const trendingTerms = [
+          "Sohniye Tu Zubeen Garg",
+          "Bhalolaage Tomake Arijit Singh",
+          "Akasheo Alpo Neel Arijit Singh",
+          "Dandelions Ruth B",
+          "Boom Shaka Dhanda Nyoliwala"
+        ];
+
+        const [dailyRes, trendingRes] = await Promise.all([
+          Promise.all(dailyTerms.map(t => searchSongs(t).then(r => r[0]))),
+          Promise.all(trendingTerms.map(t => searchSongs(t).then(r => r[0])))
+        ]);
+
         setDailyPicks(dailyRes.filter(Boolean));
+        setTrendingSongs(trendingRes.filter(Boolean));
       } catch (e) {
-        console.error("Data load failed", e);
+        console.error("Initial load failed", e);
       } finally {
         setLoading(false);
       }
     }
-    loadData();
+    loadInitialData();
   }, []);
 
-  // Live Search Logic
+  // Live Search Logic (No Redirection)
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!searchQuery.trim()) {
@@ -70,206 +86,255 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleSongPlay = (song: Song, list: Song[]) => {
-    playTrack(song, list);
-  };
+  const activeSongs = searchQuery.trim() ? searchResults : dailyPicks;
+  const sectionTitle = searchQuery.trim() ? "Search Results" : "Daily Picks";
 
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
+  const handleVibeClick = (vibe: string) => {
+    setSearchQuery(vibe);
   };
 
   return (
-    <div className="bg-black min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl">
+    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden">
       {/* Header */}
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-md z-30">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-40">
         <div className="flex items-center gap-2">
-          <div className="bg-primary p-1 rounded-full">
-            <Music2 className="h-4 w-4 text-white" />
+          <div className="bg-primary p-1 rounded-lg">
+            <Music2 className="h-5 w-5 text-white" />
           </div>
           <span className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
           <Menu className="h-6 w-6" />
         </Button>
       </header>
 
-      <main className="py-4">
-        {/* Search Bar */}
-        <div className="px-4 flex items-center gap-3 mb-8">
-          <Music2 className="h-6 w-6 text-primary" />
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+      <main className="space-y-8 py-4">
+        {/* Search Bar Utility */}
+        <div className="px-4">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
             <Input 
-              placeholder="Search for sounds..." 
-              className="pl-9 pr-10 bg-[#1a1a1a] border-none text-sm h-11 rounded-xl focus-visible:ring-primary/50"
+              placeholder="Search sounds, artists, vibes..." 
+              className="pl-11 pr-10 bg-[#1a1a1a] border-none text-sm h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-primary/50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
               <button 
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
-          <div className="flex gap-2">
-            <Smartphone className="h-5 w-5 text-neutral-500" />
-            <Settings2 className="h-5 w-5 text-neutral-500" />
-          </div>
         </div>
 
-        {searchQuery.trim() ? (
-          /* Search Results View */
-          <section className="px-4 space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-black italic uppercase text-white tracking-tighter">Results</h2>
-              {isSearching && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
-            </div>
-            
-            <div className="space-y-3">
-              {searchResults.length > 0 ? (
-                searchResults.map((song) => (
-                  <div 
-                    key={`search-${song.id}`} 
-                    onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, searchResults); }}
-                    className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-[1.25rem] border border-white/5 lag-free-tap cursor-pointer active:scale-[0.98] transition-transform group"
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg border border-white/5">
-                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={cn(
-                          "font-bold text-sm leading-tight italic uppercase tracking-tight", 
-                          currentTrack?.id === song.id ? "text-primary" : "text-white"
-                        )}>
-                          {decodeEntities(song.name)}
-                        </p>
-                        <p className="text-[10px] text-neutral-500 truncate uppercase mt-1 font-bold tracking-widest">
-                          {song.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onPointerDown={(e) => { e.stopPropagation(); toggleLike(song); }}
-                      className="p-2 text-neutral-700 hover:text-primary transition-colors lag-free-tap"
-                    >
-                      <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
-                    </button>
-                  </div>
-                ))
-              ) : !isSearching ? (
-                <div className="py-20 text-center text-neutral-500 italic font-bold uppercase tracking-widest text-xs">
-                  No matching frequencies found.
-                </div>
-              ) : null}
+        {/* 1. Top Navigation Chips */}
+        <section className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-2">
+          {["Songs", "Artists", "Albums", "Playlists", "Genres", "Moods"].map((chip) => (
+            <Button 
+              key={chip}
+              variant="secondary" 
+              className="rounded-full bg-[#1a1a1a] text-white border border-white/5 px-6 h-10 text-xs font-bold uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20"
+              onPointerDown={(e) => { e.preventDefault(); handleVibeClick(chip); }}
+            >
+              {chip}
+            </Button>
+          ))}
+        </section>
+
+        {/* Vibe Chips (Screenshot Style) */}
+        {!searchQuery && (
+          <section className="px-4 space-y-4">
+            <h2 className="text-[10px] font-black uppercase text-neutral-500 tracking-[0.3em]">Pick a Vibe</h2>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+              {[
+                { name: 'Romance', color: 'bg-red-500/10 text-red-500' },
+                { name: 'Party', color: 'bg-yellow-500/10 text-yellow-500' },
+                { name: 'Lo-fi', color: 'bg-blue-500/10 text-blue-500' },
+                { name: 'Workout', color: 'bg-green-500/10 text-green-500' }
+              ].map((vibe) => (
+                <button 
+                  key={vibe.name}
+                  onPointerDown={(e) => { e.preventDefault(); handleVibeClick(vibe.name); }}
+                  className={cn("px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border border-white/5 lag-free-tap shrink-0", vibe.color)}
+                >
+                  {vibe.name}
+                </button>
+              ))}
             </div>
           </section>
-        ) : (
-          /* Default Discovery View */
-          <>
-            {/* Hero Card */}
-            <div className="px-4 mb-10">
-              <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#2a1a1a] via-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl">
-                <div className="absolute top-8 right-8 text-primary/5 -rotate-12 pointer-events-none">
-                  <Music2 className="h-40 w-40" />
-                </div>
-                <div className="relative z-10 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10 text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
-                    <Sparkles className="h-3 w-3 text-primary" /> NO ADS • NO SIGN-UP
-                  </div>
-                  <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">AYUMUSIC</h1>
-                  <p className="text-sm text-neutral-400 max-w-[260px] leading-relaxed font-medium">
-                    High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary font-bold">320 kbps</span>.
-                  </p>
-                  <div className="flex gap-3">
-                    <Button className="rounded-full bg-primary hover:bg-primary/90 text-white font-black uppercase italic tracking-tight gap-2 h-12 px-8 lag-free-tap shadow-lg shadow-primary/20">
-                      <Play className="h-4 w-4 fill-current" /> Play Trending
-                    </Button>
-                    <Button variant="secondary" className="rounded-full bg-white/5 hover:bg-white/10 text-white font-black uppercase italic tracking-tight gap-2 h-12 px-8 border border-white/5 lag-free-tap">
-                      <Shuffle className="h-4 w-4" /> Shuffle
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+        )}
 
-            {/* Vibe Chips */}
-            <section className="px-4 mb-10">
-              <h2 className="text-lg font-black italic uppercase text-white tracking-tighter mb-4">PICK A VIBE</h2>
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                {[
-                  { name: 'Romance', icon: HeartIcon },
-                  { name: 'Party', icon: Star },
-                  { name: 'Lo-fi', icon: Coffee },
-                  { name: 'Workout', icon: Dumbbell }
-                ].map((vibe) => (
-                  <Button 
-                    key={vibe.name}
-                    variant="secondary" 
-                    className="rounded-2xl bg-[#1a1a1a] text-white border border-white/5 px-6 h-12 gap-3 font-bold uppercase italic tracking-tighter lag-free-tap shrink-0"
-                    onClick={() => setSearchQuery(vibe.name)}
-                  >
-                    <vibe.icon className="h-4 w-4 text-neutral-400" /> {vibe.name}
-                  </Button>
-                ))}
-              </div>
-            </section>
-
-            {/* Daily Picks */}
-            <section>
-              <div className="flex items-center justify-between px-4 mb-6">
-                <h2 className="text-xl font-black italic uppercase text-white tracking-tighter">DAILY PICKS</h2>
+        {/* 2. Daily Picks / Search Results */}
+        <section className="px-4 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter flex items-center gap-2">
+              {sectionTitle}
+              {isSearching && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            </h2>
+            <button className="text-[10px] font-black text-primary uppercase tracking-widest">View All</button>
+          </div>
+          
+          <div className="space-y-3">
+            {activeSongs.map((song) => (
+              <div 
+                key={`${sectionTitle}-${song.id}`}
+                onPointerDown={(e) => { e.preventDefault(); playTrack(song, activeSongs); }}
+                className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl border border-white/5 lag-free-tap transition-transform active:scale-[0.98] group"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg relative border border-white/5">
+                    <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                    {currentTrack?.id === song.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn(
+                      "font-bold text-sm leading-tight italic uppercase tracking-tight", 
+                      currentTrack?.id === song.id ? "text-primary" : "text-white"
+                    )}>
+                      {decodeEntities(song.name)}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 truncate uppercase mt-1 font-bold tracking-widest">
+                      {song.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
+                    </p>
+                  </div>
+                </div>
                 <button 
-                  onPointerDown={(e) => { e.preventDefault(); dailyPicks.length > 0 && handleSongPlay(dailyPicks[0], dailyPicks); }}
-                  className="flex items-center gap-1.5 text-[10px] font-black text-white bg-white/5 px-4 py-2 rounded-xl lag-free-tap active:scale-95"
+                  onPointerDown={(e) => { e.stopPropagation(); toggleLike(song); }}
+                  className="p-2 text-neutral-700 hover:text-primary transition-colors"
                 >
-                  <Play className="h-3 w-3 fill-current" /> PLAY ALL
+                  <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
                 </button>
               </div>
-              
-              <div className="px-4 space-y-3">
-                {loading ? (
-                  Array(6).fill(0).map((_, i) => (
-                    <div key={`daily-skeleton-${i}`} className="h-20 bg-[#1a1a1a] rounded-2xl animate-pulse" />
-                  ))
-                ) : dailyPicks.map((song) => (
-                  <div 
-                    key={song.id} 
-                    onPointerDown={(e) => { e.preventDefault(); handleSongPlay(song, dailyPicks); }}
-                    className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-[1.25rem] border border-white/5 lag-free-tap cursor-pointer active:scale-[0.98] transition-transform group"
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg border border-white/5">
-                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={cn(
-                          "font-bold text-sm leading-tight italic uppercase tracking-tight", 
-                          currentTrack?.id === song.id ? "text-primary" : "text-white"
-                        )}>
-                          {decodeEntities(song.name)}
-                        </p>
-                        <p className="text-[10px] text-neutral-500 truncate uppercase mt-1 font-bold tracking-widest">
-                          {song.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onPointerDown={(e) => { e.stopPropagation(); toggleLike(song); }}
-                      className="p-2 text-neutral-700 hover:text-primary transition-colors lag-free-tap"
-                    >
-                      <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
-                    </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 3. Trending Now (Numbered) */}
+        {!searchQuery && (
+          <section className="px-4 space-y-6 pt-4 border-t border-white/5">
+            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Trending Now</h2>
+            <div className="space-y-4">
+              {trendingSongs.map((song, idx) => (
+                <div 
+                  key={`trending-${song.id}`}
+                  onPointerDown={(e) => { e.preventDefault(); playTrack(song, trendingSongs); }}
+                  className="flex items-center gap-4 group cursor-pointer lag-free-tap active:opacity-70"
+                >
+                  <span className="text-sm font-black text-neutral-700 group-hover:text-primary transition-colors w-6 shrink-0">{idx + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white truncate italic uppercase tracking-tight">{decodeEntities(song.name)}</p>
+                    <p className="text-[9px] text-neutral-500 truncate uppercase font-bold tracking-widest mt-0.5">{song.artists.primary[0]?.name}</p>
                   </div>
-                ))}
-              </div>
-            </section>
-          </>
+                  <div className="flex items-center gap-2 text-neutral-600 text-[10px] font-bold">
+                    <Clock className="h-3 w-3" />
+                    {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
+
+        {/* 4. Top Charts */}
+        <section className="space-y-4">
+          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Top Charts</h2>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
+            {[
+              { name: 'India Superhits', genre: 'Hindi', duration: '50 Songs' },
+              { name: 'Global Top 50', genre: 'International', duration: '50 Songs' },
+              { name: 'Bengali Beats', genre: 'Bengali', duration: '30 Songs' },
+              { name: 'Indie Rock', genre: 'Alternative', duration: '25 Songs' }
+            ].map((chart, i) => (
+              <div key={i} className="min-w-[160px] bg-[#1a1a1a] p-4 rounded-2xl border border-white/5 space-y-3 lag-free-tap hover:bg-neutral-900 transition-colors">
+                <div className="aspect-square bg-gradient-to-br from-primary/20 to-black rounded-xl flex items-center justify-center border border-white/5">
+                  <Music2 className="h-10 w-10 text-primary/40" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-xs text-white italic uppercase">{chart.name}</p>
+                  <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">{chart.genre} • {chart.duration}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. Fresh Playlists */}
+        <section className="space-y-4">
+          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Fresh Playlists</h2>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
+            {["Chartbusters 2026", "Viral Nation", "Late Night Vibes", "Chill Frequencies"].map((name, i) => (
+              <div key={i} className="min-w-[140px] space-y-2 group cursor-pointer lag-free-tap">
+                <div className="aspect-square bg-[#1a1a1a] rounded-2xl overflow-hidden relative border border-white/5">
+                  <img src={`https://picsum.photos/seed/playlist-${i}/300/300`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play className="h-8 w-8 text-white fill-current" />
+                  </div>
+                </div>
+                <p className="font-bold text-[11px] text-white italic uppercase truncate tracking-tight">{name}</p>
+                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">50 Songs • 109 Saves</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. New Releases */}
+        <section className="space-y-4">
+          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">New Releases</h2>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
+            {["Byatha Nei", "WILD", "Vaaroon Forever", "Bolo Ki Tumi", "Eternal Love"].map((name, i) => (
+              <div key={i} className="min-w-[120px] space-y-2 group cursor-pointer lag-free-tap">
+                <div className="aspect-square rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                  <img src={`https://picsum.photos/seed/new-${i}/300/300`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                </div>
+                <p className="font-bold text-[10px] text-white italic uppercase text-center truncate">{name}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 7. Buzzing Albums */}
+        <section className="space-y-4">
+          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Buzzing Albums</h2>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
+            {["Hanuman Ansh", "Awarapan 2", "Deep Sleep", "East Bengal 100", "Lyrical Soul"].map((name, i) => (
+              <div key={i} className="min-w-[140px] bg-[#1a1a1a]/50 p-3 rounded-2xl border border-white/5 lag-free-tap active:bg-primary/5 transition-colors">
+                <div className="aspect-video bg-neutral-900 rounded-xl mb-3 overflow-hidden">
+                   <img src={`https://picsum.photos/seed/album-${i}/400/225`} className="w-full h-full object-cover grayscale group-hover:grayscale-0" alt="" />
+                </div>
+                <p className="font-bold text-[10px] text-white uppercase italic truncate">{name}</p>
+                <p className="text-[8px] text-neutral-600 font-bold uppercase tracking-widest mt-1">Verified Resonance</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 8. Main Release Highlight */}
+        <section className="px-4 pb-12">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl group cursor-pointer lag-free-tap">
+            <div className="absolute top-0 right-0 p-8 text-primary/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+              <Sparkles className="h-48 w-48" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10 text-[9px] font-black text-primary uppercase tracking-[0.2em]">
+                Featured Release
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">Jamaican</h1>
+                <p className="text-lg font-bold text-neutral-400 italic uppercase">Bam Bam • Hugel, SOLTO (FR)</p>
+              </div>
+              <Button className="rounded-full bg-white text-black hover:bg-neutral-200 font-black uppercase italic tracking-tight gap-2 h-14 px-10 lag-free-tap shadow-2xl">
+                <Play className="h-5 w-5 fill-current" /> Play Now
+              </Button>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

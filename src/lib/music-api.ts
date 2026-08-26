@@ -35,6 +35,39 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
   }
 }
 
+export async function searchAlbums(query: string, page: number = 1): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const data = await res.json();
+    return data.data?.results || data.data || [];
+  } catch (error) {
+    console.error('AYUMUSIC API: Album search failed:', error);
+    return [];
+  }
+}
+
+export async function searchArtists(query: string, page: number = 1): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/search/artists?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const data = await res.json();
+    return data.data?.results || data.data || [];
+  } catch (error) {
+    console.error('AYUMUSIC API: Artist search failed:', error);
+    return [];
+  }
+}
+
+export async function searchPlaylists(query: string, page: number = 1): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const data = await res.json();
+    return data.data?.results || data.data || [];
+  } catch (error) {
+    console.error('AYUMUSIC API: Playlist search failed:', error);
+    return [];
+  }
+}
+
 export async function getTrending(page: number = 1): Promise<Song[]> {
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=Latest%20Top%20Trending%20Hits&page=${page}&limit=20`);
@@ -46,10 +79,6 @@ export async function getTrending(page: number = 1): Promise<Song[]> {
   }
 }
 
-/**
- * Fetches tracks from Audius based on a mood or keyword for Auto-Play Lineage.
- * Normalizes the response to match the AYUMUSIC Song interface.
- */
 export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
   try {
     console.log(`AYUMUSIC API: Fetching Audius resonance for: "${mood}"`);
@@ -90,7 +119,6 @@ export function getBestDownload(song: Song): string {
   if (!song?.downloadUrl?.length) {
     return '';
   }
-  // Select highest quality download URL
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   return best?.link || best?.url || '';
 }

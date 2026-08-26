@@ -50,6 +50,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.audius.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'validator.stuffisup.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.stuffisup.com',
+      },
     ],
   },
 };

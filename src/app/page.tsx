@@ -15,8 +15,10 @@ export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, playRandomTrack } = useMusic();
   const router = useRouter();
   
-  const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
+  const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
+  const [listTitle, setListTitle] = useState('Daily Picks');
   const [loading, setLoading] = useState(true);
+  const [vibeLoading, setVibeLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
 
@@ -39,7 +41,7 @@ export default function Home() {
           dailyTerms.map(t => searchSongs(t).then(r => r[0]))
         );
 
-        setDailyPicks(results.filter(Boolean));
+        setDisplaySongs(results.filter(Boolean));
       } catch (e) {
         console.error("Initial load failed", e);
       } finally {
@@ -72,8 +74,17 @@ export default function Home() {
     }
   };
 
-  const handleVibeClick = (vibe: string) => {
-    router.push(`/search?q=${encodeURIComponent(vibe)}`);
+  const handleVibeClick = async (vibe: string) => {
+    setVibeLoading(true);
+    setListTitle(`${vibe} Resonance`);
+    try {
+      const results = await searchSongs(vibe);
+      setDisplaySongs(results);
+    } catch (e) {
+      console.error("Vibe search failed", e);
+    } finally {
+      setVibeLoading(false);
+    }
   };
 
   if (loading) {
@@ -170,7 +181,10 @@ export default function Home() {
               <Button 
                 key={vibe.name}
                 variant="secondary" 
-                className="rounded-2xl bg-[#1e1e1e] border border-white/5 px-6 h-12 text-xs font-black uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20 gap-2"
+                className={cn(
+                  "rounded-2xl bg-[#1e1e1e] border border-white/5 px-6 h-12 text-xs font-black uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20 gap-2",
+                  listTitle.includes(vibe.name) && "ring-1 ring-primary"
+                )}
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerUp(() => handleVibeClick(vibe.name))}
               >
@@ -181,26 +195,30 @@ export default function Home() {
           </div>
         </section>
 
-        {/* DAILY PICKS */}
-        <section className="space-y-6">
+        {/* LIST SECTION */}
+        <section className="space-y-6 relative min-h-[400px]">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Daily Picks</h2>
-            <Button 
-              variant="ghost" 
-              className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2"
-              onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp(() => dailyPicks.length > 0 && playTrack(dailyPicks[0], dailyPicks))}
-            >
-              <Play className="h-3 w-3 fill-current" /> Play all
-            </Button>
+            <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">{listTitle}</h2>
+            {vibeLoading ? (
+              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            ) : (
+              <Button 
+                variant="ghost" 
+                className="text-[10px] font-black text-white bg-white/5 rounded-full px-4 h-8 uppercase tracking-widest gap-2"
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp(() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs))}
+              >
+                <Play className="h-3 w-3 fill-current" /> Play all
+              </Button>
+            )}
           </div>
           
-          <div className="space-y-2">
-            {dailyPicks.map((song) => (
+          <div className={cn("space-y-2 transition-opacity", vibeLoading && "opacity-50 pointer-events-none")}>
+            {displaySongs.map((song) => (
               <div 
-                key={`daily-${song.id}`}
+                key={`item-${song.id}`}
                 onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => playTrack(song, dailyPicks))}
+                onPointerUp={handlePointerUp(() => playTrack(song, displaySongs))}
                 className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-[1.5rem] border border-white/5 lag-free-tap transition-transform active:scale-[0.98] group cursor-pointer"
               >
                 <div className="flex items-center gap-4 min-w-0">

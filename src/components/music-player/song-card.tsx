@@ -42,7 +42,8 @@ export const SongCard = memo(function SongCard({ song, playlist }: SongCardProps
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
     
-    if (dx < 10 && dy < 10 && dt < 300) {
+    // Calibrated interaction threshold for responsive feedback
+    if (dx < 15 && dy < 15 && dt < 400) {
       callback();
     }
     startPos.current = null;

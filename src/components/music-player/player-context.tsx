@@ -75,12 +75,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   
-  // Neural Engine State
   const [smartMood, setSmartMood] = useState(true);
   const [autoMixQueue, setAutoMixQueue] = useState<Song[]>([]);
+  const autoMixQueueRef = useRef<Song[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const frameRef = useRef<number | null>(null);
+
+  // Stabilize Audio Instance
+  if (typeof window !== 'undefined' && !audioRef.current) {
+    audioRef.current = new Audio();
+  }
 
   const stopTrack = useCallback(() => {
     if (audioRef.current) {
@@ -95,10 +100,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playTrack = useCallback((track: Song, fromQueue?: Song[]) => {
     if (!track) return;
     
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.pause();
+    audio.src = "";
 
     if (fromQueue) {
       setQueue(fromQueue);
@@ -113,12 +119,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setPlayedHistory(prev => [{ id: track.id, name: track.name }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
     const url = getBestDownload(track);
-    if (audioRef.current && url) {
-      audioRef.current.src = url;
-      audioRef.current.volume = volumeRef.current;
-      audioRef.current.play().catch(e => {
+    if (url) {
+      audio.src = url;
+      audio.volume = volumeRef.current;
+      audio.load();
+      audio.play().catch(e => {
         console.error("Playback failed:", e);
-        toast({ variant: "destructive", title: "Playback Error", description: "Could not stream the selected track." });
+        toast({ variant: "destructive", title: "Playback Error", description: "Frequencies blocked. Please tap again." });
       });
     }
   }, []);
@@ -137,9 +144,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           const searchResults = await Promise.all(searchPromises);
           const newSongs = searchResults.flatMap(r => r).filter(s => s.id !== currentTrack.id);
           
-          // Deduplicate and buffer
           const uniqueSongs = Array.from(new Map(newSongs.map(s => [s.id, s])).values());
-          setAutoMixQueue(uniqueSongs.slice(0, 10));
+          const mix = uniqueSongs.slice(0, 10);
+          setAutoMixQueue(mix);
+          autoMixQueueRef.current = mix;
         } catch (e) {
           console.error("Neural architect failed", e);
         }
@@ -157,10 +165,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playTrack]);
 
   const nextTrack = useCallback(() => {
-    if (queueRef.current.length === 0) {
-      if (autoMixQueue.length > 0) {
-        const next = autoMixQueue[0];
-        setAutoMixQueue(prev => prev.slice(1));
+    const currentQueue = queueRef.current;
+    const currentMix = autoMixQueueRef.current;
+
+    if (currentQueue.length === 0) {
+      if (currentMix.length > 0) {
+        const next = currentMix[0];
+        autoMixQueueRef.current = currentMix.slice(1);
+        setAutoMixQueue(autoMixQueueRef.current);
         playTrack(next, [next]);
       } else {
         playRandomTrack();
@@ -168,36 +180,78 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
-    if (idx !== -1 && idx < queueRef.current.length - 1) {
-      playTrack(queueRef.current[idx + 1]);
-    } else if (autoMixQueue.length > 0) {
-      const next = autoMixQueue[0];
-      setAutoMixQueue(prev => prev.slice(1));
-      // Append to queue for continuity
-      const newQueue = [...queueRef.current, next];
+    const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
+    if (idx !== -1 && idx < currentQueue.length - 1) {
+      playTrack(currentQueue[idx + 1]);
+    } else if (currentMix.length > 0) {
+      const next = currentMix[0];
+      autoMixQueueRef.current = currentMix.slice(1);
+      setAutoMixQueue(autoMixQueueRef.current);
+      const newQueue = [...currentQueue, next];
       setQueue(newQueue);
       queueRef.current = newQueue;
       playTrack(next);
     } else {
       playRandomTrack();
     }
-  }, [playTrack, playRandomTrack, autoMixQueue]);
+  }, [playTrack, playRandomTrack]);
 
   const prevTrack = useCallback(() => {
-    if (queueRef.current.length === 0) return;
-    const idx = queueRef.current.findIndex(s => s.id === currentTrackRef.current?.id);
+    const currentQueue = queueRef.current;
+    if (currentQueue.length === 0) return;
+    const idx = currentQueue.findIndex(s => s.id === currentTrackRef.current?.id);
     if (idx !== -1 && idx > 0) {
-      playTrack(queueRef.current[idx - 1]);
+      playTrack(currentQueue[idx - 1]);
     }
   }, [playTrack]);
 
   const togglePlay = useCallback(() => {
-    if (audioRef.current) {
-      if (isPlayingRef.current) audioRef.current.pause();
-      else audioRef.current.play().catch(() => {});
+    const audio = audioRef.current;
+    if (audio) {
+      if (isPlayingRef.current) audio.pause();
+      else audio.play().catch(() => {});
     }
   }, []);
+
+  // Stabilize Event Listeners
+  const nextTrackRef = useRef(nextTrack);
+  useEffect(() => {
+    nextTrackRef.current = nextTrack;
+  }, [nextTrack]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const hs = {
+      loadedmetadata: () => setDuration(audio.duration),
+      ended: () => nextTrackRef.current(),
+      play: () => { setIsPlaying(true); isPlayingRef.current = true; },
+      pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
+      waiting: () => setIsBuffering(true),
+      playing: () => setIsBuffering(false)
+    };
+
+    Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
+    
+    return () => {
+      Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
+    };
+  }, []);
+
+  const updateProgress = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio && isPlayingRef.current) {
+      setProgress(audio.currentTime);
+      frameRef.current = requestAnimationFrame(updateProgress);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
+    else if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
+  }, [isPlaying, updateProgress]);
 
   const toggleLike = useCallback((track: Song) => {
     setLikedSongs(prev => {
@@ -227,40 +281,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const clearHistory = useCallback(() => {
     setPlayedHistory([]);
   }, []);
-
-  const updateProgress = useCallback(() => {
-    if (audioRef.current && isPlayingRef.current) {
-      setProgress(audioRef.current.currentTime);
-      frameRef.current = requestAnimationFrame(updateProgress);
-    }
-  }, []);
-
-  useEffect(() => {
-    audioRef.current = new Audio();
-    const audio = audioRef.current;
-    
-    const hs = {
-      loadedmetadata: () => setDuration(audio.duration),
-      ended: () => nextTrack(),
-      play: () => { setIsPlaying(true); isPlayingRef.current = true; },
-      pause: () => { setIsPlaying(false); isPlayingRef.current = false; },
-      waiting: () => setIsBuffering(true),
-      playing: () => setIsBuffering(false)
-    };
-    Object.entries(hs).forEach(([e, f]) => audio.addEventListener(e, f));
-    
-    return () => {
-      Object.entries(hs).forEach(([e, f]) => audio.removeEventListener(e, f));
-      audio.pause();
-      audio.src = "";
-    };
-  }, [nextTrack]);
-
-  useEffect(() => {
-    if (isPlaying) frameRef.current = requestAnimationFrame(updateProgress);
-    else if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [isPlaying, updateProgress]);
 
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists,

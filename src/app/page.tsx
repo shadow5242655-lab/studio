@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -50,7 +49,7 @@ const HorizontalSection = memo(({
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    if (dx < 10 && dy < 10 && dt < 300) {
+    if (dx < 15 && dy < 15 && dt < 400) {
       callback();
     }
     startPos.current = null;
@@ -250,7 +249,7 @@ export default function Home() {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    if (dx < 10 && dy < 10 && dt < 300) {
+    if (dx < 15 && dy < 15 && dt < 400) {
       callback();
     }
     startPos.current = null;
@@ -282,7 +281,7 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
       
-      {/* Unified Brand-Search-Menu Header - Hardware Stabilized Sticky */}
+      {/* Unified Brand-Search-Menu Header */}
       <header className="w-full bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-[100] border-b border-white/5">
         <div className="max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
@@ -335,7 +334,7 @@ export default function Home() {
                 <Compass className="mr-3 h-5 w-5 text-neutral-400" /> Genres
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" onClick={() => router.push('/insights')}>
-                <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Insights
+                <BarChart3 className="mr-3 h-5 w-5 text-neutral-400" /> Echoes
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5 my-2" />
               <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary p-3 rounded-xl hover:bg-primary/10" onClick={() => playRandomTrack()}>

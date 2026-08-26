@@ -25,7 +25,7 @@ export function decodeEntities(text: string): string {
 
 /**
  * Assigns a mood to a song based on its metadata or the context of the search.
- * Mandatory moods: punjabi, romance, party, lofi, chill, energetic, haryanvi, desi, bhajan, sufi, pop, indie, rock.
+ * Supported Moods: punjabi, romance, party, lofi, chill, energetic, haryanvi, desi, bhajan, sufi, pop, indie, rock.
  */
 export function attachMood(song: Song, context?: string): Song {
   const text = (song.name + ' ' + (song.artists.primary[0]?.name || '') + ' ' + (context || '')).toLowerCase();

@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Menu, X, Loader2, Clock, Sparkles
+  Heart, Play, Music2, Search, Menu, Loader2, Clock, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,6 @@ export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack } = useMusic();
   const router = useRouter();
   
-  // State for static lineages
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,52 +79,48 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden font-sans">
-      {/* Header */}
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-40">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary p-1 rounded-lg">
-            <Music2 className="h-5 w-5 text-white" />
+    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden font-sans text-white">
+      {/* 1. Header & Navigation Chips */}
+      <header className="p-4 flex flex-col gap-4 sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary p-1 rounded-lg">
+              <Music2 className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-black text-xl tracking-tighter uppercase italic">AYUMUSIC</span>
           </div>
-          <span className="font-black text-xl tracking-tighter text-white uppercase italic">AYUMUSIC</span>
-        </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
-          <Menu className="h-6 w-6" />
-        </Button>
-      </header>
-
-      <main className="space-y-8 py-4">
-        {/* Search Bar */}
-        <div className="px-4">
-          <form onSubmit={handleSearchSubmit} className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-            <Input 
-              placeholder="Search sounds, artists, vibes..." 
-              className="pl-11 pr-10 bg-[#1a1a1a] border-none text-sm h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-primary/50"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
+          <Button variant="ghost" size="icon" className="hover:bg-white/5"><Menu className="h-6 w-6" /></Button>
         </div>
 
-        {/* 1. Top Navigation Chips */}
-        <section className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-2">
+        <form onSubmit={handleSearchSubmit} className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+          <Input 
+            placeholder="Search sounds, artists, vibes..." 
+            className="pl-11 pr-10 bg-[#1e1e1e] border-none text-sm h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-primary/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </form>
+
+        <section className="overflow-x-auto no-scrollbar flex gap-3 pb-2">
           {["Songs", "Artists", "Albums", "Playlists", "Genres", "Moods"].map((chip) => (
             <Button 
               key={chip}
               variant="secondary" 
-              className="rounded-full bg-[#1e1e1e] text-white border border-white/5 px-6 h-10 text-xs font-bold uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20"
+              className="rounded-full bg-[#1e1e1e] border border-white/5 px-6 h-10 text-xs font-bold uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20"
               onPointerDown={(e) => { e.preventDefault(); handleVibeClick(chip); }}
             >
               {chip}
             </Button>
           ))}
         </section>
+      </header>
 
+      <main className="space-y-12 py-8">
         {/* 2. Daily Picks (Vertical) */}
         <section className="px-4 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Daily Picks</h2>
+            <h2 className="text-2xl font-black italic uppercase tracking-tighter">Daily Picks</h2>
             <button className="text-[10px] font-black text-primary uppercase tracking-widest">View All</button>
           </div>
           
@@ -148,7 +142,7 @@ export default function Home() {
                   </div>
                   <div className="min-w-0">
                     <p className={cn(
-                      "font-bold text-sm leading-tight italic uppercase tracking-tight", 
+                      "font-bold text-sm leading-tight italic uppercase tracking-tight truncate", 
                       currentTrack?.id === song.id ? "text-primary" : "text-white"
                     )}>
                       {decodeEntities(song.name)}
@@ -170,8 +164,8 @@ export default function Home() {
         </section>
 
         {/* 3. Trending Now (Numbered) */}
-        <section className="px-4 space-y-6 pt-4 border-t border-white/5">
-          <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Trending Now</h2>
+        <section className="px-4 space-y-6">
+          <h2 className="text-2xl font-black italic uppercase tracking-tighter">Trending Now</h2>
           <div className="space-y-4">
             {trendingSongs.map((song, idx) => (
               <div 
@@ -193,9 +187,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. Top Charts */}
+        {/* 4. Top Charts (Horizontal) */}
         <section className="space-y-4">
-          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Top Charts</h2>
+          <h2 className="px-4 text-xl font-black italic uppercase tracking-tighter">Top Charts</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
             {[
               { name: 'India Superhits', genre: 'Hindi', duration: '50 Songs' },
@@ -222,9 +216,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 5. Fresh Playlists */}
+        {/* 5. Fresh Playlists (Horizontal) */}
         <section className="space-y-4">
-          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Fresh Playlists</h2>
+          <h2 className="px-4 text-xl font-black italic uppercase tracking-tighter">Fresh Playlists</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
             {[
               { name: "Chartbusters 2026 - B...", songs: 50, saves: 109 },
@@ -242,9 +236,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 6. New Releases */}
+        {/* 6. New Releases (Horizontal) */}
         <section className="space-y-4">
-          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">New Releases</h2>
+          <h2 className="px-4 text-xl font-black italic uppercase tracking-tighter">New Releases</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
             {["Byatha Nei", "WILD", "Vaaroon Forever", "Bolo Ki Tumi"].map((name, i) => (
               <div key={i} className="min-w-[120px] space-y-2 group cursor-pointer lag-free-tap">
@@ -257,9 +251,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 7. Buzzing Albums */}
+        {/* 7. Buzzing Albums (Horizontal) */}
         <section className="space-y-4">
-          <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Buzzing Albums</h2>
+          <h2 className="px-4 text-xl font-black italic uppercase tracking-tighter">Buzzing Albums</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
             {["Hanuman Ansh", "Awarapan 2", "Deep Sleep", "East Bengal 100"].map((name, i) => (
               <div key={i} className="min-w-[140px] bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 lag-free-tap active:bg-primary/5 transition-colors">
@@ -300,4 +294,3 @@ export default function Home() {
     </div>
   );
 }
-

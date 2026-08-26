@@ -1,4 +1,3 @@
-
 export interface Song {
   id: string;
   name: string;
@@ -62,4 +61,3 @@ export function getBestDownload(song: Song): string {
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   return best?.link || best?.url || '';
 }
-

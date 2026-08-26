@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Search, Music, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
-  Song, searchSongs, 
-  applySmartRank3
+  Song, searchSongs 
 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +16,7 @@ function SearchContent() {
   const [query, setQuery] = useState('');
   const [rawSongs, setRawSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
-  const { songPopularity } = useMusic();
+  const { songPopularity = {} } = useMusic();
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -48,16 +47,17 @@ function SearchContent() {
   }, [query]);
 
   const rankedSongs = useMemo(() => {
-    return applySmartRank3(rawSongs, songPopularity);
-  }, [rawSongs, songPopularity]);
+    // Return raw songs for stability, as applySmartRank3 is deprecated
+    return rawSongs;
+  }, [rawSongs]);
 
   return (
-    <div className="p-8 pb-32 min-h-full max-w-7xl mx-auto">
+    <div className="p-8 pb-32 min-h-full max-w-7xl mx-auto bg-[#0a0a0a] text-white">
       <div className="max-w-2xl relative mb-12">
         <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-neutral-500" />
         <Input
           placeholder="Search for high-fidelity sounds, artists, or vibes..."
-          className="pl-16 bg-neutral-900 border-none rounded-2xl h-16 text-xl focus-visible:ring-primary/50 shadow-2xl transition-all"
+          className="pl-16 bg-[#1e1e1e] border-none rounded-2xl h-16 text-xl focus-visible:ring-primary/50 shadow-2xl transition-all"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
@@ -78,7 +78,7 @@ function SearchContent() {
               </div>
               <div>
                 <h2 className="text-3xl font-black tracking-tighter uppercase italic">Search Results</h2>
-                <p className="text-[9px] font-bold text-primary italic tracking-widest uppercase">SmartRank3 Prioritized</p>
+                <p className="text-[9px] font-bold text-primary italic tracking-widest uppercase">Verified Frequencies</p>
               </div>
             </div>
             
@@ -86,8 +86,8 @@ function SearchContent() {
               {loading ? (
                 Array(10).fill(0).map((_, i) => (
                   <div key={`skeleton-song-${i}`} className="space-y-3">
-                    <Skeleton className="aspect-square w-full rounded-2xl" />
-                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="aspect-square w-full rounded-2xl bg-[#1e1e1e]" />
+                    <Skeleton className="h-4 w-3/4 bg-[#1e1e1e]" />
                   </div>
                 ))
               ) : rankedSongs.map((song) => (
@@ -104,11 +104,11 @@ function SearchContent() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-32 text-center opacity-40">
-          <div className="bg-neutral-900 p-12 rounded-full mb-8 border border-white/5">
+          <div className="bg-[#1e1e1e] p-12 rounded-full mb-8 border border-white/5">
             <Search className="h-24 w-24 text-neutral-800" />
           </div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Artist Discovery</h2>
-          <p className="text-neutral-500 max-w-sm font-medium">Search for an artist or tap their name on any track to instantly filter their high-fidelity lineage.</p>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Discovery Engine</h2>
+          <p className="text-neutral-500 max-w-sm font-medium uppercase tracking-tight">Search for an artist or vibe to architect your playback lineage.</p>
         </div>
       )}
     </div>
@@ -117,7 +117,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-neutral-500">Loading discovery engine...</div>}>
+    <Suspense fallback={<div className="p-8 text-neutral-500 uppercase font-black italic">Loading discovery engine...</div>}>
       <SearchContent />
     </Suspense>
   );

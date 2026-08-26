@@ -333,42 +333,49 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 border border-white/5 shadow-2xl flex flex-col group min-h-[260px] items-center text-center">
+            <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-[#0c0c0c] p-8 md:p-12 border border-white/5 shadow-2xl flex flex-col group min-h-[320px] items-center text-center">
+              {/* Neural Note Background */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[200px] w-[200px]" />
+                <Music2 className="h-[280px] w-[280px]" />
               </div>
               
-              <div className="w-full flex justify-center mb-2 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[6px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
-                   <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
+              {/* Badge Pill */}
+              <div className="w-full flex justify-center mb-6 relative z-10">
+                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md">
+                   <span className="text-[10px] font-black text-[#e11d48] uppercase tracking-[0.3em]">
+                     NO ADS • NO SIGN-UP
+                   </span>
                 </div>
               </div>
               
-              <div className="flex-1 flex flex-col justify-center items-center relative z-10">
-                <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none mb-2 text-white">AYUMUSIC</h1>
-                <p className="text-[10px] md:text-xs font-bold text-neutral-400 leading-tight max-w-[240px] mx-auto italic">
-                  High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
+              {/* Hero Metadata */}
+              <div className="flex-1 flex flex-col justify-center items-center relative z-10 space-y-4">
+                <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none text-white">
+                  AYUMUSIC
+                </h1>
+                <p className="text-sm md:text-lg font-medium text-neutral-400 max-w-lg leading-snug">
+                  High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-[#e11d48] font-bold">320 kbps</span>.
                 </p>
               </div>
 
-              <div className="w-full flex flex-wrap items-center justify-center gap-2 mt-4 relative z-10">
-                <Button 
+              {/* Action Stack */}
+              <div className="w-full flex flex-row items-center justify-center gap-4 mt-10 relative z-10">
+                <button 
                   onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
-                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-10 px-5 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[9px]"
+                  className="rounded-full bg-[#e11d48] text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 shadow-[0_15px_40px_rgba(225,29,72,0.3)] hover:scale-105 active:scale-95 transition-all text-xs flex items-center"
                 >
-                  <Play className="h-3 w-3 fill-current" /> Play Trending
-                </Button>
-                <Button 
-                  variant="secondary"
+                  <Play className="h-5 w-5 fill-current" /> PLAY TRENDING
+                </button>
+                <button 
                   onClick={handleShuffle}
-                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-10 px-5 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[9px]"
+                  className="rounded-full bg-neutral-800/80 text-white font-black uppercase italic tracking-tighter gap-3 h-14 px-8 border border-white/5 backdrop-blur-sm hover:bg-neutral-800 hover:scale-105 active:scale-95 transition-all text-xs flex items-center"
                 >
-                  <Shuffle className="h-3 w-3" /> Shuffle
-                </Button>
+                  <Shuffle className="h-5 w-5" /> SHUFFLE
+                </button>
               </div>
             </div>
 
-            <section className="space-y-4">
+            <section className="space-y-4 pt-4">
                <div className="flex items-center justify-between px-6">
                  <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
                </div>

@@ -29,14 +29,14 @@ export default function RootLayout({
               
               <div className="flex-1 flex flex-col overflow-hidden relative">
                 <Header />
-                <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black pb-44">
+                <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black">
                   {children}
                 </main>
               </div>
             </div>
             
-            {/* Playback & Navigation Stack - Anchored at absolute bottom */}
-            <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col bg-black">
+            {/* Pinned Playback Stack - Anchored at the absolute bottom pinnacle */}
+            <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col bg-black shadow-[0_-20px_40px_rgba(0,0,0,0.8)]">
                <NowPlayingBar />
                <BottomNav />
             </div>

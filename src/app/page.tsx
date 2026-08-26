@@ -1,16 +1,24 @@
+
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, X, MoreHorizontal, Library, Compass, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
-// Hardware-stabilized Horizontal Section for Infinite Resonance
 const HorizontalSection = memo(({ 
   title, 
   songs, 
@@ -113,6 +121,7 @@ HorizontalSection.displayName = 'HorizontalSection';
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, playRandomTrack } = useMusic();
+  const router = useRouter();
   
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
@@ -156,7 +165,6 @@ export default function Home() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // Optimized single fetch for Daily Picks and concurrent fetch for Trending
       const [daily, trending] = await Promise.all([
         searchSongs("Bairan Banjaare Fortuner Raj Mawar Kabze Bintu Pabra", 1),
         getTrending(1)
@@ -165,7 +173,6 @@ export default function Home() {
       setDisplaySongs(daily.slice(0, 10));
       setTrendingSongs(trending.slice(0, 10));
 
-      // Background load regional sections to prioritize first paint
       searchSongs("Punjabi Top Hits 2024", 1).then(songs => 
         setRegionalSongs(prev => ({ ...prev, punjabi: songs }))
       );
@@ -299,9 +306,28 @@ export default function Home() {
             )}
           </div>
 
-          <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-48" align="end">
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/library')}>
+                <Library className="mr-2 h-4 w-4" /> My Library
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/genres')}>
+                <Compass className="mr-2 h-4 w-4" /> Genres
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter" onClick={() => router.push('/insights')}>
+                <BarChart3 className="mr-2 h-4 w-4" /> Insights
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem className="cursor-pointer font-bold italic uppercase tracking-tighter text-primary" onClick={() => playRandomTrack()}>
+                <Shuffle className="mr-2 h-4 w-4" /> Shuffle All
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         {/* Vibe Chips */}

@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState, memo } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, Brain, BarChart3 } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music2, Compass, Menu, BarChart3 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMusic } from './player-context';
@@ -23,7 +24,6 @@ export const SidebarContent = memo(function SidebarContent({ onNavItemClick }: {
     { name: 'Library', icon: Library, href: '/library' },
     { name: 'Insights', icon: BarChart3, href: '/insights' },
     { name: 'Browse Genres', icon: Compass, href: '/genres' },
-    { name: 'Intelligence', icon: Brain, href: '/intelligence' },
   ];
 
   const handleCreatePlaylist = () => {

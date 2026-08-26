@@ -219,6 +219,7 @@ export default function Home() {
       if (newSongs.length > 0) {
         setter((prev: Song[]) => {
           const combined = [...prev, ...newSongs];
+          // Deduplicate
           return Array.from(new Map(combined.map(s => [s.id, s])).values());
         });
         setPages(prev => ({ ...prev, [type]: nextPage }));
@@ -239,7 +240,9 @@ export default function Home() {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
     const dt = Date.now() - startPos.current.time;
-    if (dx < 10 && dy < 10 && dt < 300) callback();
+    if (dx < 10 && dy < 10 && dt < 300) {
+      callback();
+    }
     startPos.current = null;
   };
 

@@ -3,27 +3,33 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, History, Library } from 'lucide-react';
+import { Home, Search, History, Library, Disc } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * @fileOverview High-fidelity navigation bar for both Mobile and Web.
- * Provides quick access to Home, Explore, Echoes, and Library.
+ * @fileOverview High-fidelity navigation bar restored to match the requested image lineage.
  */
 
 export function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Home', icon: Home, href: '/' },
-    { name: 'Explore', icon: Search, href: '/genres' },
-    { name: 'Echoes', icon: History, href: '/insights' },
-    { name: 'Library', icon: Library, href: '/library' },
+    { name: 'HOME', icon: Home, href: '/' },
+    { name: 'EXPLORE', icon: Search, href: '/genres' },
+    { name: 'ECHOES', icon: History, href: '/insights' },
+    { name: 'LIBRARY', icon: Library, href: '/library' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-black/95 backdrop-blur-xl border-t border-white/5 flex items-center z-[60]">
-      <div className="flex w-full max-w-7xl mx-auto justify-around px-2">
+    <nav className="h-20 bg-black border-t border-white/5 flex items-center shrink-0 z-[60] pb-2">
+      <div className="flex w-full max-w-7xl mx-auto justify-around px-4">
+        {/* Ayumusik Logo Node */}
+        <div className="flex flex-col items-center gap-1.5 opacity-20">
+          <div className="h-8 w-8 rounded-full border border-white flex items-center justify-center">
+            <span className="font-black text-xs text-white">N</span>
+          </div>
+        </div>
+
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -31,11 +37,11 @@ export function BottomNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1.5 px-4 py-1.5 rounded-2xl transition-all duration-300 lag-free-tap",
-                isActive ? "text-primary scale-105" : "text-neutral-500 hover:text-white"
+                "flex flex-col items-center gap-1.5 px-4 transition-all duration-300 lag-free-tap",
+                isActive ? "text-primary" : "text-neutral-500 hover:text-white"
               )}
             >
-              <item.icon className={cn("h-5 w-5 transition-transform", isActive && "fill-primary/10")} />
+              <item.icon className={cn("h-6 w-6 transition-transform", isActive && "fill-primary/10")} />
               <span className="text-[9px] font-black uppercase tracking-[0.1em] italic text-center leading-none">
                 {item.name}
               </span>

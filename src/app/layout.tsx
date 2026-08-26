@@ -5,6 +5,7 @@ import { MusicProvider } from '@/components/music-player/player-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Sidebar, Header } from '@/components/music-player/sidebar';
+import { BottomNav } from '@/components/music-player/bottom-nav';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
@@ -18,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased bg-[#0a0a0a] text-white h-screen overflow-hidden flex flex-col font-sans">
+      <body className="antialiased bg-black text-white h-screen overflow-hidden flex flex-col font-sans">
         <FirebaseClientProvider>
           <MusicProvider>
             {/* Mobile Header */}
@@ -28,13 +29,16 @@ export default function RootLayout({
               {/* Desktop Sidebar */}
               <Sidebar />
               
-              <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-[#0a0a0a]">
+              <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black">
                 {children}
               </main>
             </div>
             
-            {/* Global Music Player (Fixed Mini Bar) */}
+            {/* Global Music Player (Spotify-Style Bar) */}
             <NowPlayingBar />
+            
+            {/* Bottom Navigation */}
+            <BottomNav />
             
             <Toaster />
           </MusicProvider>

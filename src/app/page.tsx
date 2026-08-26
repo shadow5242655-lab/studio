@@ -78,7 +78,6 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const onScroll = () => {
     if (!scrollRef.current || isFetchingRef.current || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    // Trigger fetch when user is 400px from the end of horizontal scroll
     if (scrollLeft + clientWidth >= scrollWidth - 400) {
       fetchNextPage();
     }
@@ -101,7 +100,6 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
     <section className="space-y-4">
       <div className="flex items-center justify-between px-6">
         <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">{title}</h2>
-        <span className="text-[9px] font-black text-primary uppercase tracking-widest">Neural Resonance</span>
       </div>
       <div 
         ref={scrollRef}

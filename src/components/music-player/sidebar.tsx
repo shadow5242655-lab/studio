@@ -147,6 +147,10 @@ export const Sidebar = memo(function Sidebar() {
 
 export const Header = memo(function Header() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Hide global mobile header on home page to avoid double-sticky bars
+  if (pathname === '/') return null;
 
   return (
     <header className="flex md:hidden items-center justify-between p-5 bg-black/90 backdrop-blur-xl border-b border-white/5 sticky top-0 z-[55]">

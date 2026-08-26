@@ -281,11 +281,11 @@ export default function Home() {
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
-      <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
-        
-        {/* Unified Brand-Search-Menu Header */}
-        <header className="flex items-center gap-4 bg-[#1a1a1a] p-2 rounded-[2rem] border border-white/5 shadow-2xl sticky top-2 z-50">
-          <div className="flex items-center gap-2 ml-4 shrink-0">
+      
+      {/* Unified Brand-Search-Menu Header - Hardware Stabilized Sticky */}
+      <header className="w-full bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-[100] border-b border-white/5">
+        <div className="max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_10px_rgba(255,0,0,0.3)]">
               <Music2 className="h-5 w-5 text-white" />
             </div>
@@ -293,16 +293,16 @@ export default function Home() {
           </div>
           
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
             <Input 
               ref={searchInputRef}
               placeholder="Search frequencies..." 
-              className="pl-11 pr-10 bg-transparent border-none text-sm md:text-base h-12 focus-visible:ring-0 placeholder:text-neutral-600"
+              className="pl-9 pr-8 bg-white/5 border-none text-sm h-10 rounded-full focus-visible:ring-primary/50 placeholder:text-neutral-600"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -313,19 +313,16 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="shrink-0 mr-2 text-neutral-500 hover:text-white rounded-full h-10 w-10 lag-free-tap"
-                onPointerDown={(e) => e.stopPropagation()}
-                onPointerUp={(e) => e.stopPropagation()}
+                className="shrink-0 text-neutral-500 hover:text-white rounded-full h-10 w-10 lag-free-tap"
               >
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl z-[60]" align="end">
+            <DropdownMenuContent className="bg-[#1a1a1a] border-white/5 text-white w-52 p-2 shadow-2xl z-[110]" align="end">
               <DropdownMenuItem 
                 className="cursor-pointer font-bold italic uppercase tracking-tighter p-3 rounded-xl hover:bg-white/10" 
                 onClick={() => {
                   searchInputRef.current?.focus();
-                  // For mobile, scroll to top when focusing
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
@@ -346,8 +343,10 @@ export default function Home() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </header>
+        </div>
+      </header>
 
+      <main className="w-full max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] px-6 md:px-10 py-8 space-y-12">
         {/* Vibe Chips */}
         <section className="space-y-6">
           <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white">Pick a Vibe</h2>

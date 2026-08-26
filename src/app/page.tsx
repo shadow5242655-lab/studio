@@ -1,33 +1,31 @@
+
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
+import React, { useEffect, useState } from 'react';
+import { Song, searchSongs, getBestImage, decodeEntities } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Settings2, 
-  Sparkles, Menu, X, Loader2, Clock, ChevronRight
+  Heart, Play, Music2, Search, Menu, X, Loader2, Clock, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack } = useMusic();
+  const router = useRouter();
   
-  // State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Song[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  // State for static lineages
   const [dailyPicks, setDailyPicks] = useState<Song[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Load Initial Lineages
   useEffect(() => {
     async function loadInitialData() {
       setLoading(true);
       try {
-        // Daily Picks requested songs
         const dailyTerms = [
           "Barsaat Banjaare Roni",
           "Bairan Banjaare",
@@ -39,7 +37,6 @@ export default function Home() {
           "Mithe Tere Bol Pari Masoom"
         ];
         
-        // Trending Now requested songs
         const trendingTerms = [
           "Sohniye Tu Zubeen Garg",
           "Bhalolaage Tomake Arijit Singh",
@@ -64,37 +61,27 @@ export default function Home() {
     loadInitialData();
   }, []);
 
-  // Live Search Logic (No Redirection)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-      setIsSearching(true);
-      try {
-        const results = await searchSongs(searchQuery);
-        setSearchResults(results);
-      } catch (error) {
-        console.error('Search resonance failed', error);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const activeSongs = searchQuery.trim() ? searchResults : dailyPicks;
-  const sectionTitle = searchQuery.trim() ? "Search Results" : "Daily Picks";
-
-  const handleVibeClick = (vibe: string) => {
-    setSearchQuery(vibe);
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
   };
 
+  const handleVibeClick = (vibe: string) => {
+    router.push(`/search?q=${encodeURIComponent(vibe)}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden">
+    <div className="bg-[#0a0a0a] min-h-screen pb-48 max-w-[480px] mx-auto border-x border-white/5 relative shadow-2xl overflow-x-hidden font-sans">
       {/* Header */}
       <header className="p-4 flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-40">
         <div className="flex items-center gap-2">
@@ -109,25 +96,17 @@ export default function Home() {
       </header>
 
       <main className="space-y-8 py-4">
-        {/* Search Bar Utility */}
+        {/* Search Bar */}
         <div className="px-4">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-primary transition-colors" />
+          <form onSubmit={handleSearchSubmit} className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
             <Input 
               placeholder="Search sounds, artists, vibes..." 
               className="pl-11 pr-10 bg-[#1a1a1a] border-none text-sm h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-primary/50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          </form>
         </div>
 
         {/* 1. Top Navigation Chips */}
@@ -136,7 +115,7 @@ export default function Home() {
             <Button 
               key={chip}
               variant="secondary" 
-              className="rounded-full bg-[#1a1a1a] text-white border border-white/5 px-6 h-10 text-xs font-bold uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20"
+              className="rounded-full bg-[#1e1e1e] text-white border border-white/5 px-6 h-10 text-xs font-bold uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20"
               onPointerDown={(e) => { e.preventDefault(); handleVibeClick(chip); }}
             >
               {chip}
@@ -144,45 +123,19 @@ export default function Home() {
           ))}
         </section>
 
-        {/* Vibe Chips (Screenshot Style) */}
-        {!searchQuery && (
-          <section className="px-4 space-y-4">
-            <h2 className="text-[10px] font-black uppercase text-neutral-500 tracking-[0.3em]">Pick a Vibe</h2>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-              {[
-                { name: 'Romance', color: 'bg-red-500/10 text-red-500' },
-                { name: 'Party', color: 'bg-yellow-500/10 text-yellow-500' },
-                { name: 'Lo-fi', color: 'bg-blue-500/10 text-blue-500' },
-                { name: 'Workout', color: 'bg-green-500/10 text-green-500' }
-              ].map((vibe) => (
-                <button 
-                  key={vibe.name}
-                  onPointerDown={(e) => { e.preventDefault(); handleVibeClick(vibe.name); }}
-                  className={cn("px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border border-white/5 lag-free-tap shrink-0", vibe.color)}
-                >
-                  {vibe.name}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 2. Daily Picks / Search Results */}
+        {/* 2. Daily Picks (Vertical) */}
         <section className="px-4 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter flex items-center gap-2">
-              {sectionTitle}
-              {isSearching && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-            </h2>
+            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Daily Picks</h2>
             <button className="text-[10px] font-black text-primary uppercase tracking-widest">View All</button>
           </div>
           
           <div className="space-y-3">
-            {activeSongs.map((song) => (
+            {dailyPicks.map((song) => (
               <div 
-                key={`${sectionTitle}-${song.id}`}
-                onPointerDown={(e) => { e.preventDefault(); playTrack(song, activeSongs); }}
-                className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl border border-white/5 lag-free-tap transition-transform active:scale-[0.98] group"
+                key={`daily-${song.id}`}
+                onPointerDown={(e) => { e.preventDefault(); playTrack(song, dailyPicks); }}
+                className="flex items-center justify-between p-4 bg-[#1e1e1e] rounded-2xl border border-white/5 lag-free-tap transition-transform active:scale-[0.98] group"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg relative border border-white/5">
@@ -217,30 +170,28 @@ export default function Home() {
         </section>
 
         {/* 3. Trending Now (Numbered) */}
-        {!searchQuery && (
-          <section className="px-4 space-y-6 pt-4 border-t border-white/5">
-            <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Trending Now</h2>
-            <div className="space-y-4">
-              {trendingSongs.map((song, idx) => (
-                <div 
-                  key={`trending-${song.id}`}
-                  onPointerDown={(e) => { e.preventDefault(); playTrack(song, trendingSongs); }}
-                  className="flex items-center gap-4 group cursor-pointer lag-free-tap active:opacity-70"
-                >
-                  <span className="text-sm font-black text-neutral-700 group-hover:text-primary transition-colors w-6 shrink-0">{idx + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-white truncate italic uppercase tracking-tight">{decodeEntities(song.name)}</p>
-                    <p className="text-[9px] text-neutral-500 truncate uppercase font-bold tracking-widest mt-0.5">{song.artists.primary[0]?.name}</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-neutral-600 text-[10px] font-bold">
-                    <Clock className="h-3 w-3" />
-                    {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}
-                  </div>
+        <section className="px-4 space-y-6 pt-4 border-t border-white/5">
+          <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Trending Now</h2>
+          <div className="space-y-4">
+            {trendingSongs.map((song, idx) => (
+              <div 
+                key={`trending-${song.id}`}
+                onPointerDown={(e) => { e.preventDefault(); playTrack(song, trendingSongs); }}
+                className="flex items-center gap-4 group cursor-pointer lag-free-tap active:opacity-70"
+              >
+                <span className="text-sm font-black text-neutral-700 group-hover:text-primary transition-colors w-6 shrink-0">{idx + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-white truncate italic uppercase tracking-tight">{decodeEntities(song.name)}</p>
+                  <p className="text-[9px] text-neutral-500 truncate uppercase font-bold tracking-widest mt-0.5">{song.artists.primary[0]?.name}</p>
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+                <div className="flex items-center gap-2 text-neutral-600 text-[10px] font-bold">
+                  <Clock className="h-3 w-3" />
+                  {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* 4. Top Charts */}
         <section className="space-y-4">
@@ -250,9 +201,15 @@ export default function Home() {
               { name: 'India Superhits', genre: 'Hindi', duration: '50 Songs' },
               { name: 'Global Top 50', genre: 'International', duration: '50 Songs' },
               { name: 'Bengali Beats', genre: 'Bengali', duration: '30 Songs' },
-              { name: 'Indie Rock', genre: 'Alternative', duration: '25 Songs' }
+              { name: 'Indie Rock', genre: 'Alternative', duration: '25 Songs' },
+              { name: 'Bhajan Frequencies', genre: 'Devotional', duration: '20 Songs' },
+              { name: 'Sufi Resonance', genre: 'Sufi', duration: '15 Songs' }
             ].map((chart, i) => (
-              <div key={i} className="min-w-[160px] bg-[#1a1a1a] p-4 rounded-2xl border border-white/5 space-y-3 lag-free-tap hover:bg-neutral-900 transition-colors">
+              <div 
+                key={i} 
+                onPointerDown={() => handleVibeClick(chart.name)}
+                className="min-w-[160px] bg-[#1e1e1e] p-4 rounded-2xl border border-white/5 space-y-3 lag-free-tap hover:bg-neutral-900 transition-colors cursor-pointer"
+              >
                 <div className="aspect-square bg-gradient-to-br from-primary/20 to-black rounded-xl flex items-center justify-center border border-white/5">
                   <Music2 className="h-10 w-10 text-primary/40" />
                 </div>
@@ -269,16 +226,17 @@ export default function Home() {
         <section className="space-y-4">
           <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Fresh Playlists</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
-            {["Chartbusters 2026", "Viral Nation", "Late Night Vibes", "Chill Frequencies"].map((name, i) => (
+            {[
+              { name: "Chartbusters 2026 - B...", songs: 50, saves: 109 },
+              { name: "Chartbusters 2026 - In...", songs: 50, saves: 245 },
+              { name: "Viral Nation", songs: 40, saves: 567 }
+            ].map((playlist, i) => (
               <div key={i} className="min-w-[140px] space-y-2 group cursor-pointer lag-free-tap">
-                <div className="aspect-square bg-[#1a1a1a] rounded-2xl overflow-hidden relative border border-white/5">
+                <div className="aspect-square bg-[#1e1e1e] rounded-2xl overflow-hidden relative border border-white/5">
                   <img src={`https://picsum.photos/seed/playlist-${i}/300/300`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="h-8 w-8 text-white fill-current" />
-                  </div>
                 </div>
-                <p className="font-bold text-[11px] text-white italic uppercase truncate tracking-tight">{name}</p>
-                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">50 Songs • 109 Saves</p>
+                <p className="font-bold text-[11px] text-white italic uppercase truncate tracking-tight">{playlist.name}</p>
+                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">{playlist.songs} Songs • {playlist.saves} Saves</p>
               </div>
             ))}
           </div>
@@ -288,9 +246,9 @@ export default function Home() {
         <section className="space-y-4">
           <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">New Releases</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
-            {["Byatha Nei", "WILD", "Vaaroon Forever", "Bolo Ki Tumi", "Eternal Love"].map((name, i) => (
+            {["Byatha Nei", "WILD", "Vaaroon Forever", "Bolo Ki Tumi"].map((name, i) => (
               <div key={i} className="min-w-[120px] space-y-2 group cursor-pointer lag-free-tap">
-                <div className="aspect-square rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                <div className="aspect-square rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-[#1e1e1e]">
                   <img src={`https://picsum.photos/seed/new-${i}/300/300`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                 </div>
                 <p className="font-bold text-[10px] text-white italic uppercase text-center truncate">{name}</p>
@@ -303,8 +261,8 @@ export default function Home() {
         <section className="space-y-4">
           <h2 className="px-4 text-xl font-black italic uppercase text-white tracking-tighter">Buzzing Albums</h2>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-2">
-            {["Hanuman Ansh", "Awarapan 2", "Deep Sleep", "East Bengal 100", "Lyrical Soul"].map((name, i) => (
-              <div key={i} className="min-w-[140px] bg-[#1a1a1a]/50 p-3 rounded-2xl border border-white/5 lag-free-tap active:bg-primary/5 transition-colors">
+            {["Hanuman Ansh", "Awarapan 2", "Deep Sleep", "East Bengal 100"].map((name, i) => (
+              <div key={i} className="min-w-[140px] bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 lag-free-tap active:bg-primary/5 transition-colors">
                 <div className="aspect-video bg-neutral-900 rounded-xl mb-3 overflow-hidden">
                    <img src={`https://picsum.photos/seed/album-${i}/400/225`} className="w-full h-full object-cover grayscale group-hover:grayscale-0" alt="" />
                 </div>
@@ -317,7 +275,10 @@ export default function Home() {
 
         {/* 8. Main Release Highlight */}
         <section className="px-4 pb-12">
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl group cursor-pointer lag-free-tap">
+          <div 
+            onPointerDown={() => handleVibeClick("Jamaican Bam Bam Hugel")}
+            className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary/20 via-[#1e1e1e] to-black p-8 border border-white/5 shadow-2xl group cursor-pointer lag-free-tap"
+          >
             <div className="absolute top-0 right-0 p-8 text-primary/5 -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Sparkles className="h-48 w-48" />
             </div>
@@ -339,3 +300,4 @@ export default function Home() {
     </div>
   );
 }
+

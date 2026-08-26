@@ -17,7 +17,7 @@ export function NowPlayingBar() {
     currentTrack, isPlaying, isBuffering, togglePlay, nextTrack, prevTrack, 
     setIsPlayerOpen, stopTrack 
   } = useMusic();
-  const { progress, duration, seek } = useMusicProgress();
+  const { progress, duration, seek, isScrubbing, setIsScrubbing } = useMusicProgress();
 
   if (!currentTrack) return null;
 
@@ -46,7 +46,13 @@ export function NowPlayingBar() {
           value={[progress]}
           max={duration || 100}
           step={0.1}
-          onValueChange={(vals) => seek(vals[0])}
+          onValueChange={(vals) => {
+            setIsScrubbing(true);
+            seek(vals[0]);
+          }}
+          onValueCommit={() => {
+            setIsScrubbing(false);
+          }}
           className="w-full cursor-pointer seek-bar"
         />
         <div className="flex justify-between text-[10px] font-black uppercase text-neutral-500 mt-2">

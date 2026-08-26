@@ -19,7 +19,7 @@ export function FullScreenPlayer() {
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
     togglePlay, nextTrack, prevTrack, toggleLike, isLiked, stopTrack
   } = useMusic();
-  const { progress, duration, seek } = useMusicProgress();
+  const { progress, duration, seek, setIsScrubbing } = useMusicProgress();
 
   if (!isPlayerOpen || !currentTrack) return null;
 
@@ -34,7 +34,7 @@ export function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#0a0a0a] flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-      {/* High-fidelity Header - No Search Bar */}
+      {/* High-fidelity Header */}
       <header className="flex items-center justify-between p-6 z-10 shrink-0 relative">
         <Button 
           variant="ghost" 
@@ -96,7 +96,13 @@ export function FullScreenPlayer() {
               value={[progress]} 
               max={duration || 100} 
               step={0.1} 
-              onValueChange={v => seek(v[0])} 
+              onValueChange={v => {
+                setIsScrubbing(true);
+                seek(v[0]);
+              }} 
+              onValueCommit={() => {
+                setIsScrubbing(false);
+              }}
               className="cursor-pointer seek-bar"
             />
             <div className="flex justify-between text-[11px] font-black text-neutral-500 uppercase tracking-widest">

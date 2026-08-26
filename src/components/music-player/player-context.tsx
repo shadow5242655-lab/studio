@@ -47,7 +47,9 @@ interface MusicProgressContextType {
   progress: number;
   duration: number;
   volume: number;
+  isScrubbing: boolean;
   seek: (time: number) => void;
+  setIsScrubbing: (scrubbing: boolean) => void;
   setVolume: (vol: number) => void;
 }
 
@@ -65,12 +67,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [likedSongs, setLikedSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playedHistory, setPlayedHistory] = useState<HistoryItem[]>([]);
+  
   const [volume, setVolumeState] = useState(0.8);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const isScrubbingRef = useRef(false);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    isScrubbingRef.current = isScrubbing;
+  }, [isScrubbing]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
@@ -82,8 +91,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current = audio;
 
       const updateProgress = () => {
-        if (audioRef.current && !audioRef.current.paused) {
+        if (audioRef.current && !audioRef.current.paused && !isScrubbingRef.current) {
           setProgress(audioRef.current.currentTime);
+          animationFrameRef.current = requestAnimationFrame(updateProgress);
+        } else if (audioRef.current && !audioRef.current.paused) {
+          // Keep updating frame but don't set progress state if scrubbing
           animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
       };
@@ -163,7 +175,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     
-    console.log('AYUMUSIC: Toggle triggered. Current paused state:', audio.paused);
     if (audio.paused) {
       audio.play().catch(e => console.error('AYUMUSIC: Toggle play failed:', e));
     } else {
@@ -184,6 +195,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setIsBuffering(false);
     setProgress(0);
     setDuration(0);
+    setIsPlayerOpen(false);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   }, []);
 
@@ -279,10 +291,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, queue, likedSongs, playlists, playedHistory, playTrack, playRandomTrack, stopTrack, togglePlay, nextTrack, prevTrack, toggleLike, createPlaylist, addToPlaylist, deletePlaylist, removeFromHistory, clearHistory]);
 
   const progVal = useMemo(() => ({ 
-    progress, duration, volume,
+    progress, duration, volume, isScrubbing,
+    setIsScrubbing,
     seek: (t: number) => { 
       if (audioRef.current) {
-        console.log('AYUMUSIC: Hardware seek to', t);
         audioRef.current.currentTime = t;
         setProgress(t);
       }
@@ -291,7 +303,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setVolumeState(v); 
       if (audioRef.current) audioRef.current.volume = v; 
     } 
-  }), [progress, duration, volume]);
+  }), [progress, duration, volume, isScrubbing]);
 
   return (
     <MusicStateContext.Provider value={stateVal}>

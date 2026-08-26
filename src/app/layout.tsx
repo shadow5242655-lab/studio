@@ -5,6 +5,8 @@ import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
 import { MusicProvider } from '@/components/music-player/player-context';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { Sidebar, Header } from '@/components/music-player/sidebar';
+import { LyricsDrawer } from '@/components/music-player/lyrics-drawer';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
@@ -18,16 +20,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased bg-[#0a0a0a] text-white h-screen overflow-hidden flex flex-col">
+      <body className="antialiased bg-[#0a0a0a] text-white h-screen overflow-hidden flex flex-col font-sans">
         <FirebaseClientProvider>
           <MusicProvider>
+            {/* Global Mobile Header */}
+            <Header />
+            
             <div className="flex flex-1 overflow-hidden">
-              <main className="flex-1 overflow-y-auto relative">
+              {/* Global Desktop Sidebar */}
+              <Sidebar />
+              
+              <main className="flex-1 overflow-y-auto relative custom-scrollbar">
                 {children}
               </main>
             </div>
+            
+            {/* Global Player Components */}
             <NowPlayingBar />
             <FullScreenPlayer />
+            <LyricsDrawer />
             <Toaster />
           </MusicProvider>
         </FirebaseClientProvider>

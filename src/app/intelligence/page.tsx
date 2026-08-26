@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 export default function IntelligencePage() {
   const { 
     playedHistory = [], removeFromHistory, clearHistory, 
-    createPlaylist, smartMood, setSmartMood, autoMixQueue
+    createPlaylist, smartMood, setSmartMood, autoMixQueue = []
   } = useMusic();
   
   const { toast } = useToast();
@@ -115,7 +115,7 @@ export default function IntelligencePage() {
               <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-4">
                  <h4 className="font-bold text-primary italic uppercase tracking-tight">Active Neural Engine</h4>
                  <p className="text-xs text-neutral-400 leading-relaxed italic">
-                   The system is currently buffering <span className="text-primary font-bold">{autoMixQueue.length} tracks</span> for your next transition. Each time a new song starts, the resonance is analyzed to shift the sound lineage automatically.
+                   The system is currently buffering <span className="text-primary font-bold">{(autoMixQueue || []).length} tracks</span> for your next transition. Each time a new song starts, the resonance is analyzed to shift the sound lineage automatically.
                  </p>
               </div>
             </CardContent>
@@ -189,7 +189,7 @@ export default function IntelligencePage() {
                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Playback History</h2>
                <p className="text-neutral-500">Edit your recent history to keep recommendations pure.</p>
              </div>
-             <Button variant="destructive" className="font-bold gap-2" onClick={() => confirm('Clear all history?') && clearHistory()}>
+             <Button variant="destructive" className="font-bold gap-2" onClick={() => typeof window !== 'undefined' && confirm('Clear all history?') && clearHistory()}>
                <Trash2 className="h-4 w-4" /> Clear All
              </Button>
            </div>

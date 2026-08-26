@@ -7,7 +7,7 @@ import { Heart, Music2, ListMusic } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LibraryPage() {
-  const { likedSongs, playlists } = useMusic();
+  const { likedSongs = [], playlists = [] } = useMusic();
 
   return (
     <div className="p-8 pb-32 space-y-12 max-w-7xl mx-auto">

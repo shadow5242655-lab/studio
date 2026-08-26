@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "gitpeak": {
+      "command": "node",
+      "args": [
+        "/home/user/.codeoss-cloudworkstations/extensions/notifyx.gitpeak-4.0.12-universal/dist/mcp-server.js"
+      ],
+      "description": "GitPeak Suite — git context for AI agents"
+    }
+  }
+}

@@ -140,6 +140,7 @@ export default function Home() {
   const [listTitle, setListTitle] = useState('Daily Picks');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [activeVibe, setActiveVibe] = useState<string | null>(null);
   
   const startPos = useRef<{ x: number, y: number, time: number } | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -201,12 +202,31 @@ export default function Home() {
 
       setListTitle('Daily Picks');
       setIsSearching(false);
+      setActiveVibe(null);
     } catch (e) {
       console.error("Initial load failed", e);
     } finally {
       setLoading(false);
     }
   }
+
+  const handleVibeClick = async (vibeName: string) => {
+    setVibeLoading(true);
+    setIsSearching(false); // Do not go into "search mode" which hides other sections
+    setListTitle(`${vibeName} Resonance`);
+    setSearchQuery(''); // Clear search bar for non-search vibe picking
+    setActiveVibe(vibeName);
+    
+    try {
+      const results = await searchSongs(vibeName);
+      // Only show top 10 songs as requested
+      setDisplaySongs(results.slice(0, 10));
+    } catch (e) {
+      console.error("Vibe fetch failed", e);
+    } finally {
+      setVibeLoading(false);
+    }
+  };
 
   const loadMoreRegional = useCallback(async (type: 'punjabi' | 'haryanvi' | 'bhojpuri' | 'lofi') => {
     if (loadingMore[type]) return;
@@ -258,6 +278,7 @@ export default function Home() {
     setVibeLoading(true);
     setIsSearching(true);
     setListTitle(`Results for "${query}"`);
+    setActiveVibe(null);
     try {
       const results = await searchSongs(query);
       setDisplaySongs(results);
@@ -332,10 +353,10 @@ export default function Home() {
                 variant="secondary" 
                 className={cn(
                   "rounded-2xl bg-[#1e1e1e] border border-white/5 px-6 h-12 text-xs font-black uppercase tracking-widest shrink-0 lag-free-tap hover:bg-primary/20 gap-2",
-                  searchQuery === vibe.name && "ring-1 ring-primary"
+                  activeVibe === vibe.name && "ring-1 ring-primary bg-primary/10"
                 )}
                 onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp(() => setSearchQuery(vibe.name))}
+                onPointerUp={handlePointerUp(() => handleVibeClick(vibe.name))}
               >
                 <vibe.icon className="h-4 w-4 text-neutral-500" />
                 {vibe.name}

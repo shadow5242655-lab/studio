@@ -33,30 +33,54 @@ export function FullScreenPlayer() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0a0a0a] flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-      <header className="flex items-center justify-between p-6 z-10 shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => setIsPlayerOpen(false)} className="text-white hover:bg-white/5"><ChevronDown /></Button>
-        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-neutral-500">Playing Now</span>
+    <div className="fixed inset-0 z-[200] bg-[#0a0a0a] flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
+      {/* High-fidelity Header - No Search Bar */}
+      <header className="flex items-center justify-between p-6 z-10 shrink-0 relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsPlayerOpen(false)} 
+          className="text-white hover:bg-white/5"
+        >
+          <ChevronDown className="h-6 w-6" />
+        </Button>
+        
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-white hover:bg-white/5"><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
+                <MoreHorizontal className="h-6 w-6" />
+              </Button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-[#1a1a1a] text-white border-white/5" align="end">
-              <DropdownMenuItem onClick={() => { const u = getBestDownload(currentTrack); if(u) window.open(u, '_blank'); }}><Download className="mr-3 h-4 w-4" /> Download</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const u = getBestDownload(currentTrack); if(u) window.open(u, '_blank'); }}>
+                <Download className="mr-3 h-4 w-4" /> Download
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" onClick={handleClose} className="text-white hover:text-primary hover:bg-white/5">
+          
+          {/* Explicit Top-Right Close Button */}
+          <button 
+            onClick={handleClose} 
+            className="close-btn !relative !top-0 !right-0 ml-2"
+            aria-label="Close track"
+          >
             <X className="h-6 w-6" />
-          </Button>
+          </button>
         </div>
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 space-y-12">
         <div className="relative aspect-square w-full max-w-[340px] rounded-[2.5rem] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.8)] bg-neutral-900 border border-white/5">
-          {imageSrc ? <img src={imageSrc} className={cn("w-full h-full object-cover", isBuffering && "opacity-50")} alt="" /> : <Music2 className="h-24 w-24 text-neutral-800" />}
+          {imageSrc ? (
+            <img src={imageSrc} className={cn("w-full h-full object-cover", isBuffering && "opacity-50")} alt="" />
+          ) : (
+            <Music2 className="h-24 w-24 text-neutral-800" />
+          )}
           {isBuffering && <Loader2 className="absolute inset-0 m-auto h-16 w-16 text-primary animate-spin" />}
         </div>
 
-        <div className="w-full max-w-[340px] space-y-10">
+        <div className="w-full max-w-[340px] space-y-10 text-center md:text-left">
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1 min-w-0">
               <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate">{trackName}</h2>
@@ -85,11 +109,15 @@ export function FullScreenPlayer() {
 
       <div className="shrink-0 p-12 bg-gradient-to-t from-black to-transparent">
         <div className="flex items-center justify-center gap-12">
-          <Button variant="ghost" size="icon" onClick={prevTrack} className="text-white hover:text-primary h-14 w-14 transition-transform active:scale-90"><SkipBack fill="currentColor" className="h-8 w-8" /></Button>
+          <Button variant="ghost" size="icon" onClick={prevTrack} className="text-white hover:text-primary h-14 w-14 transition-transform active:scale-90">
+            <SkipBack fill="currentColor" className="h-8 w-8" />
+          </Button>
           <Button onClick={togglePlay} className="bg-white text-black rounded-full h-20 w-20 shadow-2xl transition-transform hover:scale-105 active:scale-90 p-0 flex items-center justify-center">
             {isBuffering ? <Loader2 className="h-8 w-8 animate-spin" /> : isPlaying ? <Pause fill="currentColor" className="h-10 w-10" /> : <Play fill="currentColor" className="h-10 w-10 ml-2" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={nextTrack} className="text-white hover:text-primary h-14 w-14 transition-transform active:scale-90"><SkipForward fill="currentColor" className="h-8 w-8" /></Button>
+          <Button variant="ghost" size="icon" onClick={nextTrack} className="text-white hover:text-primary h-14 w-14 transition-transform active:scale-90">
+            <SkipForward fill="currentColor" className="h-8 w-8" />
+          </Button>
         </div>
       </div>
     </div>

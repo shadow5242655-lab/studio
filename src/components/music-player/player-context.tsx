@@ -336,12 +336,23 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
 export const useMusic = () => {
   const c = useContext(MusicStateContext);
-  if (!c) throw new Error('useMusic resonance failed');
+  if (!c) return {
+    currentTrack: null, isPlaying: false, isBuffering: false, isPlayerOpen: false, isLyricsOpen: false, 
+    loadingLyrics: false, lyrics: null, queue: [], likedSongs: [], playlists: [], playedHistory: [],
+    smartMood: true, autoMixQueue: [], setSmartMood: () => {}, setIsPlayerOpen: () => {}, setIsLyricsOpen: () => {},
+    playTrack: () => {}, playNext: () => {}, addToQueue: () => {}, playRandomTrack: async () => {}, 
+    stopTrack: () => {}, togglePlay: () => {}, nextTrack: () => {}, prevTrack: () => {}, 
+    toggleLike: () => {}, isLiked: () => false, createPlaylist: () => {}, addToPlaylist: () => {}, 
+    deletePlaylist: () => {}, removeFromHistory: () => {}, clearHistory: () => {}
+  } as unknown as MusicStateContextType;
   return c;
 };
 
 export const useMusicProgress = () => {
   const c = useContext(MusicProgressContext);
-  if (!c) throw new Error('useMusicProgress resonance failed');
+  if (!c) return {
+    progress: 0, duration: 0, volume: 0.8, isScrubbing: false, seek: () => {}, setIsScrubbing: () => {}, setVolume: () => {}
+  } as unknown as MusicProgressContextType;
   return c;
 };
+

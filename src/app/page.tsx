@@ -127,7 +127,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -149,7 +149,6 @@ export default function Home() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      console.log('AYUMUSIC: Orchestrating high-fidelity initial lineage');
       const [barianResults, dailyResults, trending] = await Promise.all([
         searchSongs("Barian Bilal Saeed", 1),
         searchSongs("Latest Top Hits 2024 Bollywood", 1),
@@ -496,3 +495,4 @@ export default function Home() {
     </div>
   );
 }
+

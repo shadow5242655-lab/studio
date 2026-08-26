@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -17,7 +18,7 @@ import { Label } from '@/components/ui/label';
 export default function IntelligencePage() {
   const { 
     playedHistory = [], removeFromHistory, clearHistory, 
-    createPlaylist, smartMood, setSmartMood, autoMixQueue = []
+    createPlaylist, smartMood = true, setSmartMood, autoMixQueue = []
   } = useMusic();
   
   const { toast } = useToast();
@@ -189,7 +190,15 @@ export default function IntelligencePage() {
                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Playback History</h2>
                <p className="text-neutral-500">Edit your recent history to keep recommendations pure.</p>
              </div>
-             <Button variant="destructive" className="font-bold gap-2" onClick={() => typeof window !== 'undefined' && confirm('Clear all history?') && clearHistory()}>
+             <Button 
+              variant="destructive" 
+              className="font-bold gap-2" 
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.confirm('Clear all history?')) {
+                  clearHistory();
+                }
+              }}
+             >
                <Trash2 className="h-4 w-4" /> Clear All
              </Button>
            </div>
@@ -224,3 +233,4 @@ export default function IntelligencePage() {
     </div>
   );
 }
+

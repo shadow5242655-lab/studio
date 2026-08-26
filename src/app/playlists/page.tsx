@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, Suspense } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 function PlaylistDetailsContent() {
   const searchParams = useSearchParams();
   const playlistId = searchParams.get('id');
-  const { playlists, deletePlaylist, playTrack } = useMusic();
+  const { playlists = [], deletePlaylist, playTrack } = useMusic();
 
   const playlist = useMemo(() => 
     playlists.find(p => p.id === playlistId), 
@@ -63,7 +64,7 @@ function PlaylistDetailsContent() {
               size="icon" 
               className="h-14 w-14 rounded-full text-neutral-400 hover:text-primary hover:bg-primary/10"
               onClick={() => {
-                if (confirm('Are you sure you want to delete this playlist?')) {
+                if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this playlist?')) {
                   deletePlaylist(playlist.id);
                   window.location.href = '/library';
                 }
@@ -103,3 +104,4 @@ export default function PlaylistDetailsPage() {
     </Suspense>
   );
 }
+

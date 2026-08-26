@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities, getTrending, formatDuration } from '@/lib/music-api';
+import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, Zap, Pause, MoreVertical
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, Zap, Pause, MoreVertical, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,7 +170,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
   return (
     <section className="space-y-6 px-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black italic uppercase tracking-tighter">Quick Picks</h2>
+        <h2 className="text-xl font-black italic uppercase tracking-tighter">Daily Picks</h2>
         <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => onPlayTrack(songs[0], songs)}>
           <Play className="h-3 w-3 fill-current" /> Play all
         </Button>
@@ -237,6 +237,19 @@ export default function Home() {
     setSearchQuery(vibe);
   }, []);
 
+  const handleShuffle = () => {
+    if (displaySongs.length > 0) {
+      const shuffled = [...displaySongs].sort(() => Math.random() - 0.5);
+      playTrack(shuffled[0], shuffled);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setIsSearching(false);
+    loadInitialData();
+  };
+
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (!searchQuery.trim()) {
@@ -285,10 +298,18 @@ export default function Home() {
              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
              <Input 
                placeholder="Search for sounds..." 
-               className="pl-12 pr-4 bg-[#1a1a1a] border-none rounded-2xl h-12 focus-visible:ring-primary/40 text-sm placeholder:text-neutral-600"
+               className="pl-12 pr-10 bg-[#1a1a1a] border-none rounded-2xl h-12 focus-visible:ring-primary/40 text-sm placeholder:text-neutral-600"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
              />
+             {searchQuery && (
+               <button 
+                 onClick={clearSearch}
+                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-white"
+               >
+                 <X className="h-4 w-4" />
+               </button>
+             )}
            </div>
            <div className="flex items-center gap-3 text-neutral-400">
              <Smartphone className="h-5 w-5" />
@@ -298,34 +319,35 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 md:p-6 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] md:min-h-[360px] items-center text-center">
+            <div className="mx-6 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#121212] via-black to-black p-5 border border-white/5 shadow-2xl flex flex-col group min-h-[300px] items-center text-center">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Music2 className="h-[200px] w-[200px] md:h-[300px] md:w-[300px]" />
+                <Music2 className="h-[200px] w-[200px]" />
               </div>
               
-              <div className="w-full flex justify-center mb-2 md:mb-4 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[6px] md:text-[7px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
+              <div className="w-full flex justify-center mb-2 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[6px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
                    <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
                 </div>
               </div>
               
               <div className="flex-1 flex flex-col justify-center items-center relative z-10">
-                <h1 className="text-3xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-2 md:mb-3 text-white">AYUMUSIC</h1>
-                <p className="text-[10px] md:text-sm font-bold text-neutral-400 leading-tight max-w-[240px] md:max-w-[280px] mx-auto italic">
+                <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none mb-2 text-white">AYUMUSIC</h1>
+                <p className="text-[10px] md:text-xs font-bold text-neutral-400 leading-tight max-w-[240px] mx-auto italic">
                   High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
                 </p>
               </div>
 
-              <div className="w-full flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-4 md:mt-6 relative z-10">
+              <div className="w-full flex flex-wrap items-center justify-center gap-2 mt-4 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
-                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-10 md:h-11 px-5 md:px-6 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[9px] md:text-sm"
+                  className="rounded-full bg-primary text-white font-black uppercase italic tracking-tighter gap-2 h-10 px-5 shadow-[0_10px_30px_rgba(255,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform text-[9px]"
                 >
                   <Play className="h-3 w-3 fill-current" /> Play Trending
                 </Button>
                 <Button 
                   variant="secondary"
-                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-10 md:h-11 px-5 md:px-6 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[9px] md:text-sm"
+                  onClick={handleShuffle}
+                  className="rounded-full bg-[#1a1a1a] text-white font-black uppercase italic tracking-tighter gap-2 h-10 px-5 border border-white/5 hover:bg-white/10 hover:scale-105 active:scale-95 transition-transform text-[9px]"
                 >
                   <Shuffle className="h-3 w-3" /> Shuffle
                 </Button>
@@ -358,59 +380,69 @@ export default function Home() {
         {isSearching && (
           <section className="space-y-8 pb-20">
             <div className="flex items-center justify-between px-6">
-              <h2 className="text-2xl font-black italic uppercase tracking-tighter">Resonance Found</h2>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Resonance Found</span>
+                <h2 className="text-2xl font-black italic uppercase tracking-tighter truncate max-w-[200px]">"{searchQuery}"</h2>
+              </div>
               <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => playTrack(displaySongs[0], displaySongs)}>
                 <Play className="h-3 w-3 fill-current" /> Play all
               </Button>
             </div>
             
             <div className="space-y-4 px-6">
-              {displaySongs.map((song, idx) => (
-                <div 
-                  key={`${song.id}-${idx}`}
-                  onClick={() => playTrack(song, displaySongs)}
-                  className="flex items-center justify-between p-4 bg-[#121212] rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-pointer hover:border-primary/30 shadow-xl"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
-                      <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
-                      {currentTrack?.id === song.id && (
-                        <div className="absolute inset-0 bg-primary/30 flex items-center justify-center backdrop-blur-[2px]">
-                          {isPlaying ? (
-                            <div className="flex gap-0.5 items-end h-4">
-                              <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
-                              <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
-                              <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
-                            </div>
-                          ) : (
-                            <Pause className="h-4 w-4 text-white fill-current" />
-                          )}
-                        </div>
-                      )}
+              {displaySongs.length > 0 ? (
+                displaySongs.map((song, idx) => (
+                  <div 
+                    key={`${song.id}-${idx}`}
+                    onClick={() => playTrack(song, displaySongs)}
+                    className="flex items-center justify-between p-4 bg-[#121212] rounded-[1.5rem] border border-white/5 transition-all active:scale-98 group cursor-pointer hover:border-primary/30 shadow-xl"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
+                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
+                        {currentTrack?.id === song.id && (
+                          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center backdrop-blur-[2px]">
+                            {isPlaying ? (
+                              <div className="flex gap-0.5 items-end h-4">
+                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
+                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
+                                <div className="w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
+                              </div>
+                            ) : (
+                              <Pause className="h-4 w-4 text-white fill-current" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={cn(
+                          "font-black text-sm leading-tight italic uppercase tracking-tighter truncate", 
+                          currentTrack?.id === song.id ? "text-primary" : "text-white"
+                        )}>
+                          {decodeEntities(song.name)}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.15em]">
+                          {song.artists.primary[0]?.name}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className={cn(
-                        "font-black text-sm leading-tight italic uppercase tracking-tighter truncate", 
-                        currentTrack?.id === song.id ? "text-primary" : "text-white"
-                      )}>
-                        {decodeEntities(song.name)}
-                      </p>
-                      <p className="text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.15em]">
-                        {song.artists.primary[0]?.name}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
+                        className="p-2 text-neutral-700 hover:text-primary transition-all"
+                      >
+                        <Heart className={cn("h-5 w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
+                      </button>
+                      <MoreVertical className="h-5 w-5 text-neutral-800" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
-                      className="p-2 text-neutral-700 hover:text-primary transition-all"
-                    >
-                      <Heart className={cn("h-5 w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
-                    </button>
-                    <MoreVertical className="h-5 w-5 text-neutral-800" />
-                  </div>
+                ))
+              ) : (
+                <div className="py-20 text-center opacity-40">
+                  <Music2 className="h-12 w-12 mx-auto mb-4 text-neutral-700" />
+                  <p className="text-sm font-bold uppercase tracking-widest italic">No frequencies matching your vibration.</p>
                 </div>
-              ))}
+              )}
             </div>
           </section>
         )}

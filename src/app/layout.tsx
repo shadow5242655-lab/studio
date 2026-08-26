@@ -23,14 +23,14 @@ export default function RootLayout({
       <body className="antialiased bg-[#0a0a0a] text-white h-screen overflow-hidden flex flex-col font-sans">
         <FirebaseClientProvider>
           <MusicProvider>
-            {/* Global Mobile Header */}
+            {/* Global Mobile Header - Desktop Sidebar handled inside */}
             <Header />
             
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
               {/* Global Desktop Sidebar */}
               <Sidebar />
               
-              <main className="flex-1 overflow-y-auto relative custom-scrollbar">
+              <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-[#0a0a0a]">
                 {children}
               </main>
             </div>

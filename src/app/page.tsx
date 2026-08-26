@@ -29,30 +29,46 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchSongs = useCallback(async (p: number) => {
+    if (isFetching || (!hasMore && p > 1)) return;
     setIsFetching(true);
-    const data = await searchSongs(query, p);
-    if (data.length === 0) {
-      setHasMore(false);
-    } else {
-      setSongs(prev => p === 1 ? data : [...prev, ...data]);
+    try {
+      const data = await searchSongs(query, p);
+      if (data.length === 0) {
+        setHasMore(false);
+      } else {
+        setSongs(prev => {
+          const combined = p === 1 ? data : [...prev, ...data];
+          // High-fidelity deduplication
+          const uniqueMap = new Map();
+          combined.forEach(s => uniqueMap.set(s.id, s));
+          return Array.from(uniqueMap.values());
+        });
+      }
+    } catch (e) {
+      console.error("AYUMUSIC: Resonance fetch failed", e);
+    } finally {
+      setIsFetching(false);
+      setLoading(false);
     }
-    setIsFetching(false);
-    setLoading(false);
-  }, [query]);
+  }, [query, isFetching, hasMore]);
 
   useEffect(() => {
+    setSongs([]);
     setPage(1);
     setHasMore(true);
     fetchSongs(1);
-  }, [fetchSongs]);
+  }, [query]);
 
   const handleScroll = () => {
     if (!scrollRef.current || isFetching || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    if (scrollLeft + clientWidth >= scrollWidth - 300) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchSongs(nextPage);
+    // Hardware-stabilized threshold for earlier loading
+    if (scrollLeft + clientWidth >= scrollWidth - 600) {
+      setPage(prev => {
+        const next = prev + 1;
+        fetchSongs(next);
+        return next;
+      });
     }
   };
 
@@ -117,12 +133,14 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
 
   useEffect(() => {
     async function fetchQuickPicks() {
+      // Precise sound lineage as requested
       const queries = [
-        "Sheesha Mitta Ror Swara Verma",
-        "Bairan Banjaare",
-        "Fortuner Gulshan Music Jaat Nia",
+        "Patar Bashori",
+        "Dai Dai",
         "Dracula Tame Impala",
         "O Madhu Benny Dayal",
+        "Bhalolaage Tomake",
+        "Keno Je Toke",
         "Under The Influence Chris Brown",
         "Señorita Shawn Mendes",
         "Sohniye Tu Original Zubeen Garg"
@@ -133,7 +151,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
         const flatSongs = results.map(res => res[0]).filter(Boolean);
         setSongs(flatSongs);
       } catch (e) {
-        console.error("QuickPicks failed", e);
+        console.error("AYUMUSIC: QuickPicks failed", e);
       } finally {
         setLoading(false);
       }
@@ -155,7 +173,7 @@ const QuickPicksVertical = ({ onPlayTrack }: { onPlayTrack: (song: Song, list: S
   return (
     <section className="space-y-6 px-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black italic uppercase tracking-tighter">Daily Picks</h2>
+        <h2 className="text-xl font-black italic uppercase tracking-tighter">Quick Picks</h2>
         <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => onPlayTrack(songs[0], songs)}>
           <Play className="h-3 w-3 fill-current" /> Play all
         </Button>
@@ -257,7 +275,7 @@ export default function Home() {
   return (
     <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500">
       
-      {/* Top Header Branding - Perfectly Matched */}
+      {/* Branding Header - Precise Mobile Scaling */}
       <header className="px-6 py-5 flex items-center justify-between sticky top-0 bg-black z-[60]">
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10 flex items-center justify-center rounded-full bg-primary border border-white/5 overflow-hidden shadow-[0_0_15px_rgba(255,0,0,0.5)]">
@@ -295,29 +313,25 @@ export default function Home() {
 
         {!isSearching && (
           <>
-            {/* Hero Card - Pixel Perfect AYUMUSIC Branded Card */}
+            {/* Branded Hero Card - Optimized Centering and Scaling */}
             <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#121212] via-black to-black p-8 border border-white/5 shadow-2xl flex flex-col group min-h-[360px]">
-              {/* Floating Background Note */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                 <Music2 className="h-[300px] w-[300px]" />
               </div>
               
-              {/* Badge */}
               <div className="w-full flex justify-center mb-6 relative z-10">
                 <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-primary uppercase tracking-[0.4em] shadow-inner backdrop-blur-md">
                    <Sparkles className="h-2 w-2" /> NO ADS • NO SIGN-UP <Sparkles className="h-2 w-2" />
                 </div>
               </div>
               
-              {/* Title & Description */}
-              <div className="flex-1 flex flex-col justify-center relative z-10 text-center">
-                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none mb-4 text-white">AYUMUSIC</h1>
+              <div className="flex-1 flex flex-col justify-center items-center relative z-10 text-center">
+                <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-4 text-white">AYUMUSIC</h1>
                 <p className="text-sm font-bold text-neutral-400 leading-tight max-w-[280px] mx-auto italic">
                   High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary">320 kbps</span>.
                 </p>
               </div>
 
-              {/* Action Buttons Side by Side */}
               <div className="w-full flex items-center justify-center gap-4 mt-8 relative z-10">
                 <Button 
                   onClick={() => playTrack(displaySongs[0], displaySongs)}
@@ -347,10 +361,10 @@ export default function Home() {
                </div>
             </section>
 
-            {/* Daily Picks Vertical Section */}
+            {/* Daily Picks Vertical Section - Centered Pinnacles */}
             <QuickPicksVertical onPlayTrack={playTrack} />
 
-            {/* Regional Infinitely Scrollable Sections */}
+            {/* Regional Infinitely Scrollable Lineages */}
             <div className="space-y-12">
               <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />

@@ -29,7 +29,7 @@ export default function RootLayout({
               
               <div className="flex-1 flex flex-col overflow-hidden relative">
                 <Header />
-                <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black">
+                <main className="flex-1 overflow-y-auto relative custom-scrollbar bg-black pb-48">
                   {children}
                 </main>
               </div>

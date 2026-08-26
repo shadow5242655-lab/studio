@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities } from '@/lib/music-api';
+import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
 import { 
   Heart, Play, Music2, Search, Menu, Loader2, Smartphone, Settings2, Sparkles, Shuffle, X
 } from 'lucide-react';
@@ -14,6 +14,7 @@ export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack, playRandomTrack } = useMusic();
   
   const [displaySongs, setDisplaySongs] = useState<Song[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [listTitle, setListTitle] = useState('Daily Picks');
   const [loading, setLoading] = useState(true);
   const [vibeLoading, setVibeLoading] = useState(false);
@@ -61,11 +62,20 @@ export default function Home() {
         "Barsaat Banjaare Roni"
       ];
       
-      const results = await Promise.all(
+      const dailyResults = await Promise.all(
         dailyTerms.map(t => searchSongs(t).then(r => r[0]))
       );
 
-      setDisplaySongs(results.filter(Boolean));
+      const filteredDaily = dailyResults.filter(Boolean);
+      setDisplaySongs(filteredDaily);
+
+      // Fetch distinct trending songs
+      const trending = await getTrending();
+      const dailyIds = new Set(filteredDaily.map(s => s.id));
+      // Ensure trending songs are not duplicates of daily picks
+      const filteredTrending = trending.filter(s => !dailyIds.has(s.id)).slice(0, 10);
+      setTrendingSongs(filteredTrending);
+
       setListTitle('Daily Picks');
       setIsSearching(false);
     } catch (e) {
@@ -142,7 +152,7 @@ export default function Home() {
         <section className="flex items-center gap-4">
           <Music2 className="h-6 w-6 text-primary shrink-0" />
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
             <Input 
               placeholder="Search for sounds..." 
               className="pl-11 pr-10 bg-[#1e1e1e] border-none text-sm h-12 rounded-2xl focus-visible:ring-1 focus-visible:ring-primary/50 placeholder:text-neutral-600"
@@ -299,25 +309,55 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 6. TRENDING NOW (NUMBERED LIST - ADAPTED) */}
+        {/* 6. TRENDING NOW (VERTICAL LIST WITH PHOTOS) */}
         {!isSearching && (
           <section className="space-y-6">
             <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Trending Now</h2>
             <div className="space-y-3">
-              {displaySongs.slice(0, 5).map((song, i) => (
-                <div 
-                  key={`trending-${song.id}`} 
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => playTrack(song, displaySongs))}
-                  className="flex items-center gap-4 p-4 hover:bg-white/5 rounded-2xl transition-colors cursor-pointer group"
-                >
-                  <span className="text-xl font-black italic text-neutral-700 group-hover:text-primary transition-colors">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm uppercase italic truncate">{decodeEntities(song.name)}</p>
-                    <p className="text-[9px] text-neutral-500 uppercase tracking-widest">{song.artists.primary[0].name}</p>
+              {trendingSongs.length > 0 ? (
+                trendingSongs.map((song, i) => (
+                  <div 
+                    key={`trending-${song.id}`} 
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp(() => playTrack(song, trendingSongs))}
+                    className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-[1.5rem] border border-white/5 lag-free-tap transition-transform active:scale-[0.98] group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <span className="text-lg font-black italic text-neutral-700 group-hover:text-primary transition-colors shrink-0 w-6">{i + 1}</span>
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0 shadow-lg relative border border-white/5">
+                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                        {currentTrack?.id === song.id && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(255,0,0,0.8)]" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={cn(
+                          "font-bold text-sm leading-tight italic uppercase tracking-tight truncate", 
+                          currentTrack?.id === song.id ? "text-primary" : "text-white"
+                        )}>
+                          {decodeEntities(song.name)}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 truncate uppercase mt-1 font-black tracking-[0.1em]">
+                          {song.artists.primary.map(a => decodeEntities(a.name)).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onPointerDown={handlePointerDown}
+                      onPointerUp={handlePointerUp(() => toggleLike(song))}
+                      className="p-2 text-neutral-700 hover:text-primary transition-colors"
+                    >
+                      <Heart className={cn("h-5 w-5", isLiked(song.id) && "fill-primary text-primary")} />
+                    </button>
                   </div>
+                ))
+              ) : (
+                <div className="h-20 flex items-center justify-center opacity-20">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ))}
+              )}
             </div>
           </section>
         )}
@@ -346,11 +386,11 @@ export default function Home() {
           <section className="space-y-6">
             <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">Buzzing Albums</h2>
             <div className="grid grid-cols-2 gap-4">
-              {displaySongs.slice(2, 6).map((song) => (
+              {trendingSongs.slice(2, 6).map((song) => (
                 <div 
                   key={`album-${song.id}`}
                   onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUp(() => playTrack(song, displaySongs))}
+                  onPointerUp={handlePointerUp(() => playTrack(song, trendingSongs))}
                   className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer border border-white/5"
                 >
                   <img src={getBestImage(song) || ''} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />

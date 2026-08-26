@@ -78,6 +78,7 @@ const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query
   const onScroll = () => {
     if (!scrollRef.current || isFetchingRef.current || !hasMore) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    // Trigger fetch when user is 400px from the end of horizontal scroll
     if (scrollLeft + clientWidth >= scrollWidth - 400) {
       fetchNextPage();
     }
@@ -384,10 +385,10 @@ export default function Home() {
             <QuickPicksVertical onPlayTrack={playTrack} />
 
             <div className="space-y-12 mt-8">
-              <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
-              <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
-              <HorizontalSection title="Bhojpuri Soul" query="Trending Bhojpuri Hit Music" onPlayTrack={playTrack} />
-              <HorizontalSection title="Lofi Echoes" query="Relaxing Lofi Chill Resonance" onPlayTrack={playTrack} />
+              <HorizontalSection title="Punjabi Songs" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
+              <HorizontalSection title="Haryanvi Songs" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
+              <HorizontalSection title="Bhojpuri Songs" query="Trending Bhojpuri Hit Music" onPlayTrack={playTrack} />
+              <HorizontalSection title="Lofi Songs" query="Relaxing Lofi Chill Resonance" onPlayTrack={playTrack} />
             </div>
           </>
         )}

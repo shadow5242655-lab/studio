@@ -145,20 +145,24 @@ export default function Home() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // Fetch Barian, Top Hits, and Trending
+      console.log('AYUMUSIC: Orchestrating high-fidelity initial lineage');
       const [barianResults, dailyResults, trending] = await Promise.all([
         searchSongs("Barian Bilal Saeed", 1),
-        searchSongs("Latest Top Hits 2024", 1),
+        searchSongs("Latest Top Hits 2024 Bollywood", 1),
         getTrending(1)
       ]);
       
-      // Filter out 'banali' and ensure 'Barian' is at the top
-      const filteredDaily = dailyResults.filter(s => 
-        !s.name.toLowerCase().includes('banali') && 
-        !s.name.toLowerCase().includes('banalli')
-      );
+      // Filter out 'bonalu', 'mangli', and 'banali'
+      const filteredDaily = dailyResults.filter(s => {
+        const name = s.name.toLowerCase();
+        const artist = (s.artists.primary[0]?.name || '').toLowerCase();
+        return !name.includes('bonalu') && 
+               !name.includes('mangli') && 
+               !name.includes('banali') && 
+               !artist.includes('mangli');
+      });
 
-      // Prepend the most likely 'Barian' song
+      // Ensure 'Barian' is the primary resonance
       const barian = barianResults[0];
       const combinedDaily = barian 
         ? [barian, ...filteredDaily.filter(s => s.id !== barian.id)]
@@ -183,7 +187,7 @@ export default function Home() {
       setListTitle('Daily Picks');
       setIsSearching(false);
     } catch (e) {
-      console.error("Initial load failed", e);
+      console.error("AYUMUSIC: Initial load failed", e);
     } finally {
       setLoading(false);
     }
@@ -211,7 +215,7 @@ export default function Home() {
         setPages(prev => ({ ...prev, [type]: nextPage }));
       }
     } catch (e) {
-      console.error(`Load more ${type} failed`, e);
+      console.error(`AYUMUSIC: Load more ${type} failed`, e);
     } finally {
       setLoadingMore(prev => ({ ...prev, [type]: false }));
     }
@@ -225,7 +229,7 @@ export default function Home() {
       const results = await searchSongs(query);
       setDisplaySongs(results);
     } catch (e) {
-      console.error("Search failed", e);
+      console.error("AYUMUSIC: Search failed", e);
     } finally {
       setVibeLoading(false);
     }
@@ -233,7 +237,7 @@ export default function Home() {
 
   const handlePlayAll = () => {
     if (displaySongs.length > 0) {
-      console.log('AYUMUSIC: Play All triggered with', displaySongs.length, 'tracks');
+      console.log('AYUMUSIC: Play All triggered resonance with', displaySongs.length, 'tracks');
       playTrack(displaySongs[0], displaySongs);
     }
   };
@@ -249,7 +253,7 @@ export default function Home() {
   return (
     <div className="bg-[#0a0a0a] min-h-screen pb-48 w-full mx-auto font-sans text-white selection:bg-primary/30 animate-in fade-in duration-500 flex flex-col items-center">
       
-      {/* Unified Resonance Header */}
+      {/* Hardware-Stabilized Sticky Header */}
       <header className="w-full bg-[#0a0a0a]/95 backdrop-blur-xl sticky top-0 z-[100] border-b border-white/5">
         <div className="max-w-[480px] md:max-w-[768px] lg:max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
@@ -280,7 +284,7 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="shrink-0 text-neutral-500 hover:text-white rounded-full h-10 w-10"
+                className="shrink-0 text-neutral-500 hover:text-white rounded-full h-10 w-10 lag-free-tap"
               >
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
@@ -362,7 +366,7 @@ export default function Home() {
             ) : (
               <Button 
                 variant="ghost" 
-                className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"
+                className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10 lag-free-tap"
                 onClick={handlePlayAll}
               >
                 <Play className="h-3 w-3 fill-current" /> Play all
@@ -379,7 +383,10 @@ export default function Home() {
               displaySongs.map((song) => (
                 <div 
                   key={`daily-${song.id}`}
-                  onClick={() => playTrack(song, displaySongs)}
+                  onClick={() => {
+                    console.log('AYUMUSIC: Tap interaction on Daily Pick track', song.id);
+                    playTrack(song, displaySongs);
+                  }}
                   className="flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl md:rounded-[2rem] border border-white/5 lag-free-tap transition-all hover:bg-white/5 group cursor-pointer"
                 >
                   <div className="flex items-center gap-4 md:gap-5 min-w-0">
@@ -428,7 +435,7 @@ export default function Home() {
                 <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white">Trending Now</h2>
                 <Button 
                   variant="ghost" 
-                  className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10"
+                  className="text-[10px] font-black text-white bg-white/5 rounded-full px-6 h-10 uppercase tracking-widest gap-2 hover:bg-white/10 lag-free-tap"
                   onClick={() => trendingSongs.length > 0 && playTrack(trendingSongs[0], trendingSongs)}
                 >
                   <Play className="h-3 w-3 fill-current" /> Play all

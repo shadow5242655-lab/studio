@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: string, query: string, onClick: (q: string) => void }) => (
   <button 
@@ -19,6 +20,51 @@ const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: s
     <span className="text-xs font-bold text-white uppercase tracking-tight italic">{label}</span>
   </button>
 );
+
+const HorizontalSection = ({ title, query, onPlayTrack }: { title: string, query: string, onPlayTrack: (song: Song, list: Song[]) => void }) => {
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    searchSongs(query).then(data => {
+      setSongs(data);
+      setLoading(false);
+    });
+  }, [query]);
+
+  if (loading) return null;
+
+  return (
+    <section className="space-y-4 pt-4">
+      <div className="flex items-center justify-between px-6">
+        <h2 className="text-lg font-black italic uppercase tracking-tighter text-white">{title}</h2>
+        <span className="text-[9px] font-black text-primary uppercase tracking-widest">View All</span>
+      </div>
+      <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-4">
+        {songs.map((song) => (
+          <div 
+            key={song.id} 
+            className="flex-shrink-0 w-36 group cursor-pointer"
+            onClick={() => onPlayTrack(song, songs)}
+          >
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 mb-2">
+              <img 
+                src={getBestImage(song) || ''} 
+                alt="" 
+                className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+              />
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Play className="h-8 w-8 text-white fill-current" />
+              </div>
+            </div>
+            <p className="text-[10px] font-bold text-white truncate uppercase italic tracking-tight">{decodeEntities(song.name)}</p>
+            <p className="text-[8px] text-neutral-500 truncate uppercase font-black tracking-widest">{song.artists.primary[0]?.name}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 export default function Home() {
   const { playTrack, toggleLike, isLiked, currentTrack } = useMusic();
@@ -36,7 +82,7 @@ export default function Home() {
     setLoading(true);
     try {
       const results = await getTrending();
-      setDisplaySongs(results.slice(0, 15));
+      setDisplaySongs(results.slice(0, 10));
     } catch (e) {
       console.error("AYUMUSIC: Load failed", e);
     } finally {
@@ -80,7 +126,7 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500 pb-44">
+    <div className="bg-black min-h-screen text-white font-sans animate-in fade-in duration-500 pb-52">
       
       {/* Top Header Branding */}
       <header className="px-6 py-5 flex items-center justify-between">
@@ -96,10 +142,10 @@ export default function Home() {
       </header>
 
       {/* Discovery Hub */}
-      <div className="px-6 space-y-8">
+      <div className="space-y-8">
         
         {/* Search Node */}
-        <div className="flex items-center gap-3">
+        <div className="px-6 flex items-center gap-3">
            <Music2 className="h-6 w-6 text-primary" />
            <div className="flex-1 relative">
              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-600" />
@@ -117,7 +163,7 @@ export default function Home() {
         </div>
 
         {!isSearching && (
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl space-y-6">
+          <div className="mx-6 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1a1a1a] to-black p-8 border border-white/5 shadow-2xl space-y-6">
             <div className="absolute top-0 right-0 p-8 text-white/5 -rotate-12 pointer-events-none">
               <Music2 className="h-48 w-48" />
             </div>
@@ -127,9 +173,9 @@ export default function Home() {
             </div>
             
             <div className="space-y-3">
-              <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-[0.85]">AYUMUSIC</h1>
+              <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-[0.85]">RESOUND</h1>
               <p className="text-sm font-medium text-neutral-400 leading-relaxed max-w-[240px]">
-                High-fidelity sound resonance straight from the source. Millions of tracks in <span className="text-primary font-bold">320 kbps</span>.
+                High-fidelity sound resonance straight from the source.
               </p>
             </div>
 
@@ -138,7 +184,7 @@ export default function Home() {
                 onClick={() => playTrack(displaySongs[0], displaySongs)}
                 className="rounded-full bg-primary text-white font-black uppercase italic tracking-tight gap-3 h-12 px-8 shadow-2xl shadow-primary/20"
               >
-                <Play className="h-4 w-4 fill-current" /> Play Trending
+                <Play className="h-4 w-4 fill-current" /> Play Now
               </Button>
               <Button 
                 variant="secondary"
@@ -152,8 +198,8 @@ export default function Home() {
 
         {/* Pick A Vibe Section */}
         <section className="space-y-5">
-           <h2 className="text-xl font-black italic uppercase tracking-tighter">Pick A Vibe</h2>
-           <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-6 px-6">
+           <h2 className="text-xl font-black italic uppercase tracking-tighter px-6">Pick A Vibe</h2>
+           <div className="flex gap-3 overflow-x-auto no-scrollbar px-6">
              <VibeButton icon={HeartIcon} label="Romance" query="Romantic Hits" onClick={handleVibeClick} />
              <VibeButton icon={Sparkles} label="Party" query="Party Dance Hits" onClick={handleVibeClick} />
              <VibeButton icon={Coffee} label="Lo-fi" query="Lo-fi Hip Hop Relax" onClick={handleVibeClick} />
@@ -161,16 +207,26 @@ export default function Home() {
            </div>
         </section>
 
-        {/* Daily Picks / Trending Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter">{isSearching ? 'Search Results' : 'Daily Picks'}</h2>
+        {/* Neural Categories - Horizontally Scrollable */}
+        {!isSearching && (
+          <div className="space-y-2">
+            <HorizontalSection title="Punjabi Resonance" query="Latest Punjabi Hits 2024" onPlayTrack={playTrack} />
+            <HorizontalSection title="Haryanvi Lineage" query="Latest Haryanvi Songs" onPlayTrack={playTrack} />
+            <HorizontalSection title="Bhojpuri Soul" query="New Bhojpuri Hit Songs" onPlayTrack={playTrack} />
+            <HorizontalSection title="Lofi Echoes" query="Lofi Chill Beats 2024" onPlayTrack={playTrack} />
+          </div>
+        )}
+
+        {/* Daily Picks / Search Results */}
+        <section className="space-y-6 pb-12">
+          <div className="flex items-center justify-between px-6">
+            <h2 className="text-xl font-black italic uppercase tracking-tighter">{isSearching ? 'Search Results' : 'Trending Hits'}</h2>
             <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => playTrack(displaySongs[0], displaySongs)}>
               <Play className="h-3 w-3 fill-current" /> Play all
             </Button>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 px-6">
             {displaySongs.map((song) => (
               <div 
                 key={song.id}

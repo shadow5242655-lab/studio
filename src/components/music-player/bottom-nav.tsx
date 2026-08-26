@@ -6,6 +6,10 @@ import { usePathname } from 'next/navigation';
 import { Home, Search, History, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview High-fidelity mobile navigation bar pinned at the bottom.
+ */
+
 export function BottomNav() {
   const pathname = usePathname();
 
@@ -17,7 +21,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="h-16 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-2 px-4">
+    <nav className="h-16 bg-black border-t border-white/5 flex items-center shrink-0 w-full relative z-[100] pb-2 px-4 select-none">
       <div className="flex w-full items-center justify-between gap-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

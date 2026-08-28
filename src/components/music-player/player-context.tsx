@@ -221,6 +221,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrackInternal, startAutoRecommendation, smartMood]);
 
+  // Continue Play: whenever a song in the plays list ends, shuffle a random
+  // different song from the list (never the one just played).
+  const continuePlay = useCallback(() => {
+    const currentQueue = queueRef.current;
+    const currentSong = currentTrackRef.current;
+
+    const candidates = currentQueue.filter(s => s.id !== currentSong?.id);
+    if (candidates.length > 0) {
+      const nextSong = candidates[Math.floor(Math.random() * candidates.length)];
+      console.log('🔀 AYUMUSIC: Continue Play (shuffle):', nextSong.name);
+      playTrackInternal(nextSong);
+      return;
+    }
+
+    // No playable candidates -> fall back to existing neural autoplay behavior.
+    nextTrackInternal();
+  }, [playTrackInternal, nextTrackInternal]);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
       const audio = new Audio();
@@ -254,7 +272,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.onended = () => {
-        nextTrackInternal();
+        continuePlay();
       };
       
       // Expose globally for user-requested debugging visibility
@@ -268,7 +286,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [nextTrackInternal]);
+  }, [continuePlay]);
 
   useEffect(() => {
     if (currentTrack) {

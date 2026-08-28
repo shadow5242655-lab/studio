@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/music-player/player-context';
 import { cn } from '@/lib/utils';
 import Recommendations from '@/components/Recommendations';
+import { RecommendedForYou, MoreFromArtist, YourWeeklyMix } from '@/components/home-recommendations';
 
 const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: string, query: string, onClick: (q: string) => void }) => (
   <button 
@@ -424,7 +425,13 @@ export default function Home() {
                </div>
             </section>
 
+            {/* Recommended For You - based on listening history, above Daily Picks */}
+            <RecommendedForYou onPlayTrack={playTrack} />
+
             <QuickPicksVertical onPlayTrack={playTrack} />
+
+            {/* Because You Listened to [Artist] - based on the currently playing song */}
+            <MoreFromArtist onPlayTrack={playTrack} />
 
             {/* Recommended for You section */}
             {recommendUserId && (
@@ -437,6 +444,7 @@ export default function Home() {
             <div className="space-y-10 md:space-y-12 mt-6 md:mt-8">
               <HorizontalSection title="Punjabi Songs" query="Latest Punjabi Viral Hits 2024" onPlayTrack={playTrack} />
               <HorizontalSection title="Haryanvi Songs" query="Latest Haryanvi Top Songs 2024" onPlayTrack={playTrack} />
+              <YourWeeklyMix onPlayTrack={playTrack} />
               <HorizontalSection title="Bhojpuri Songs" query="Trending Bhojpuri Hit Music" onPlayTrack={playTrack} />
               <HorizontalSection title="Lofi Songs" query="Relaxing Lofi Chill Resonance" onPlayTrack={playTrack} />
             </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood } from '@/lib/music-api';
+import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood, searchSongs } from '@/lib/music-api';
+import { recordPlay, getTopArtists, getRecentlyPlayedIds } from '@/lib/listening-history';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -130,6 +131,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
+    recordPlay(track);
+    
     audio.play().catch((err) => {
       console.warn('⚠️ AYUMUSIC: Playback interrupted', err);
       setIsBuffering(false);
@@ -221,23 +224,64 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playTrackInternal, startAutoRecommendation, smartMood]);
 
-  // Continue Play: whenever a song in the plays list ends, shuffle a random
-  // different song from the list (never the one just played).
-  const continuePlay = useCallback(() => {
-    const currentQueue = queueRef.current;
+  // Infinity Auto-Play: when a song ends, fetch a fresh recommended song based
+  // on listening history (top favorite artist), avoiding recently played songs.
+  const fetchRecommendedSongs = useCallback(async (): Promise<Song[]> => {
+    const topArtists = getTopArtists(2);
     const currentSong = currentTrackRef.current;
 
-    const candidates = currentQueue.filter(s => s.id !== currentSong?.id);
-    if (candidates.length > 0) {
-      const nextSong = candidates[Math.floor(Math.random() * candidates.length)];
-      console.log('🔀 AYUMUSIC: Continue Play (shuffle):', nextSong.name);
-      playTrackInternal(nextSong);
+    // 1. Top favorite artist(s) from listening history
+    for (const { artist } of topArtists) {
+      try {
+        const results = await searchSongs(`${artist} songs`, 1);
+        if (results.length > 0) return results;
+      } catch (e) {
+        console.warn('AYUMUSIC: recommendation fetch failed for', artist, e);
+      }
+    }
+
+    // 2. Fallback: current song's artist
+    const currentArtist = currentSong?.artists?.primary?.[0]?.name;
+    if (currentArtist) {
+      try {
+        const results = await searchSongs(`${currentArtist} songs`, 1);
+        if (results.length > 0) return results;
+      } catch (e) {
+        console.warn('AYUMUSIC: current-artist recommendation failed', e);
+      }
+    }
+
+    // 3. Final fallback: generic top hits
+    try {
+      const trending = await getTrending();
+      if (trending.length > 0) return trending;
+    } catch (e) {
+      console.warn('AYUMUSIC: trending fallback failed', e);
+    }
+
+    return [];
+  }, []);
+
+  const infinityAutoPlay = useCallback(async () => {
+    const currentSong = currentTrackRef.current;
+    const recentIds = getRecentlyPlayedIds();
+    const candidates = await fetchRecommendedSongs();
+
+    // Filter out the current song and the last 5 recently played songs.
+    const fresh = candidates.filter(s => s.id !== currentSong?.id && !recentIds.includes(s.id));
+    const pool = fresh.length > 0 ? fresh : candidates.filter(s => s.id !== currentSong?.id);
+
+    if (pool.length === 0) {
+      console.log('⏹️ AYUMUSIC: No more recommendations available.');
+      toast({ variant: "destructive", title: "No more recommendations available." });
+      setIsPlaying(false);
       return;
     }
 
-    // No playable candidates -> fall back to existing neural autoplay behavior.
-    nextTrackInternal();
-  }, [playTrackInternal, nextTrackInternal]);
+    const nextSong = pool[Math.floor(Math.random() * pool.length)];
+    console.log('🔀 AYUMUSIC: Infinity Auto-Play ->', nextSong.name);
+    playTrackInternal(nextSong);
+  }, [fetchRecommendedSongs, playTrackInternal]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
@@ -272,7 +316,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       });
 
       audio.onended = () => {
-        continuePlay();
+        infinityAutoPlay();
       };
       
       // Expose globally for user-requested debugging visibility
@@ -286,7 +330,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [continuePlay]);
+  }, [infinityAutoPlay]);
 
   useEffect(() => {
     if (currentTrack) {

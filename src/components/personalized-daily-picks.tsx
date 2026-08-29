@@ -1,35 +1,29 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, getBestDownload, getSongUrl, decodeEntities, formatDuration, getTrending } from '@/lib/music-api';
-import { getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
+import { Song, searchSongs, getBestImage, decodeEntities, formatDuration, getTrending } from '@/lib/music-api';
+import { getTopArtists, filterUniqueSongs } from '@/lib/listening-history';
 import { Play, Clock } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 
 /**
  * PERSONALIZED DAILY PICKS — Vertical List
  *
- * Flow:
- * 1. Read listening history from localStorage.
- * 2. Identify the user's top 3-5 most-played artists.
- * 3. Use JioSaavn search API to fetch songs per artist.
- * 4. For each song, resolve its auth_url using getSongUrl().
- * 5. Deduplicate by normalized auth_url (PRIMARY key) and song ID (SECONDARY key).
- * 6. Remove recently played songs (last 20 IDs + all recently played URLs).
- * 7. Select 10-12 unique songs, shuffle, display as a vertical list.
- * 8. Refresh once per day (store date in localStorage).
- * 9. If no history, show trending/popular songs.
- * 10. Fallback: "No new songs available. Try again later."
+ * Uses the hybrid key dedup system (title+artist+duration+audio_filename)
+ * to filter out duplicates and recently played songs before display.
  *
- * CRITICAL: auth_url is the ONLY reliable dedup key.
- * Two songs with different metadata but the same audio URL are the same song.
+ * Flow:
+ * 1. Get top artists from listening history.
+ * 2. Fetch songs per artist from JioSaavn API.
+ * 3. Use filterUniqueSongs() to remove duplicates by hybrid key.
+ * 4. Display as a vertical list.
+ * 5. Refresh once per day.
  */
 
 const DAILY_PICKS_KEY = 'ayumusic_daily_picks_date';
 const DAILY_PICKS_DATA_KEY = 'ayumusic_daily_picks_data';
 const TOP_ARTISTS_COUNT = 5;
 const FINAL_PICK_COUNT = 12;
-const RECENT_EXCLUDE_COUNT = 20;
 
 function shuffleArray<T>(arr: T[]): T[] {
   const copy = [...arr];
@@ -38,59 +32,6 @@ function shuffleArray<T>(arr: T[]): T[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
-}
-
-/**
- * Deduplicate songs by resolving each song's auth_url and comparing normalized URLs.
- * auth_url is the PRIMARY dedup key — song ID is SECONDARY.
- */
-async function deduplicateByResolvedUrl(songs: Song[]): Promise<Song[]> {
-  const seenUrls = new Set<string>();
-  const seenIds = new Set<string>();
-  const result: Song[] = [];
-
-  // Resolve all URLs in parallel (batch of 10 to avoid overwhelming)
-  const BATCH_SIZE = 10;
-  for (let i = 0; i < songs.length; i += BATCH_SIZE) {
-    const batch = songs.slice(i, i + BATCH_SIZE);
-    const urls = await Promise.all(batch.map(s => getSongUrl(s)));
-    batch.forEach((song, j) => {
-      if (!song?.id) return;
-      // Check song ID
-      if (seenIds.has(song.id)) return;
-      // Check normalized audio URL (PRIMARY)
-      const url = urls[j];
-      const norm = url ? normalizeAudioUrl(url) : '';
-      if (norm && seenUrls.has(norm)) return;
-      seenIds.add(song.id);
-      if (norm) seenUrls.add(norm);
-      result.push(song);
-    });
-  }
-  return result;
-}
-
-/**
- * Filter out recently played songs by both ID and resolved audio URL.
- */
-async function filterRecentlyPlayed(songs: Song[]): Promise<Song[]> {
-  const recentIds = getRecentlyPlayedIds().slice(0, RECENT_EXCLUDE_COUNT);
-  const recentUrls = getRecentlyPlayedUrls();
-
-  const BATCH_SIZE = 10;
-  const result: Song[] = [];
-  for (let i = 0; i < songs.length; i += BATCH_SIZE) {
-    const batch = songs.slice(i, i + BATCH_SIZE);
-    const urls = await Promise.all(batch.map(s => getSongUrl(s)));
-    batch.forEach((song, j) => {
-      if (recentIds.includes(song.id)) return;
-      const url = urls[j];
-      const norm = url ? normalizeAudioUrl(url) : '';
-      if (norm && recentUrls.includes(norm)) return;
-      result.push(song);
-    });
-  }
-  return result;
 }
 
 function getTodayString(): string {
@@ -168,15 +109,11 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
         candidateSongs = await getTrending();
       }
 
-      // Step 4: Deduplicate by resolved auth_url
-      const uniqueSongs = await deduplicateByResolvedUrl(candidateSongs);
+      // Step 4: Deduplicate using hybrid keys
+      const uniqueSongs = filterUniqueSongs(candidateSongs);
 
-      // Step 5: Filter out recently played
-      const freshSongs = await filterRecentlyPlayed(uniqueSongs);
-
-      // Step 6: Shuffle and pick
-      const pool = freshSongs.length > 0 ? freshSongs : uniqueSongs;
-      const shuffled = shuffleArray(pool);
+      // Step 5: Shuffle and pick
+      const shuffled = shuffleArray(uniqueSongs);
       const finalPicks = shuffled.slice(0, FINAL_PICK_COUNT);
 
       if (finalPicks.length > 0) {
@@ -185,34 +122,30 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
       } else {
         // Fallback: try trending
         const trending = await getTrending();
-        const uniqueTrending = await deduplicateByResolvedUrl(trending);
-        const freshTrending = await filterRecentlyPlayed(uniqueTrending);
-        const trendingPool = freshTrending.length > 0 ? freshTrending : uniqueTrending;
-        const finalTrending = shuffleArray(trendingPool).slice(0, FINAL_PICK_COUNT);
+        const uniqueTrending = filterUniqueSongs(trending);
+        const finalTrending = shuffleArray(uniqueTrending).slice(0, FINAL_PICK_COUNT);
 
         if (finalTrending.length > 0) {
           setSongs(finalTrending);
           setIsFromHistory(false);
           saveCachedPicks(finalTrending);
         } else {
-          // Absolute fallback: show message
-          setNoSongsMessage('No new songs available. Try again later.');
+          setNoSongsMessage('No new songs available. Please try again later.');
         }
       }
     } catch (error) {
       console.error('AYUMUSIC: Daily Picks fetch failed:', error);
-      // Try one last fallback
       try {
         const trending = await getTrending();
-        const unique = await deduplicateByResolvedUrl(trending);
+        const unique = filterUniqueSongs(trending);
         if (unique.length > 0) {
           setSongs(unique.slice(0, FINAL_PICK_COUNT));
           setIsFromHistory(false);
         } else {
-          setNoSongsMessage('No new songs available. Try again later.');
+          setNoSongsMessage('No new songs available. Please try again later.');
         }
       } catch {
-        setNoSongsMessage('No new songs available. Try again later.');
+        setNoSongsMessage('No new songs available. Please try again later.');
       }
     }
 
@@ -241,7 +174,6 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
     );
   }
 
-  // Show fallback message if no songs available
   if (noSongsMessage) {
     return (
       <section className="space-y-4 px-6">

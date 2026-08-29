@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood, searchSongs, getSongUrl } from '@/lib/music-api';
-import { recordPlay, getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
+import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood, searchSongs } from '@/lib/music-api';
+import { recordPlay, getTopArtists, getRecentlyPlayedIds, generateHybridKey, isDuplicate, filterUniqueSongs } from '@/lib/listening-history';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -104,37 +104,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [isScrubbing]);
 
   // ==========================================================================
-  // CORE PLAYBACK FUNCTION — auth_url is resolved FIRST
+  // CORE PLAYBACK FUNCTION — HYBRID KEY dedup
   // ==========================================================================
   // This is the single entry point for all song playback. It:
-  // 1. Resolves the auth_url using getSongUrl() (explicit API fetch if needed)
-  // 2. Normalizes the URL (strips http/https)
-  // 3. Checks against recentlyPlayedUrls (PRIMARY) and recentlyPlayedIds (SECONDARY)
-  // 4. If duplicate → skips and tries next song from queue
-  // 5. If unique → plays it and records the URL
+  // 1. Generates a hybrid key from the song's metadata (title+artist+duration+audio)
+  // 2. Checks the hybrid key against recentlyPlayedHybrid and blockedSongs
+  // 3. If duplicate → skips and tries next song from queue
+  // 4. If unique → plays it and records the hybrid key
   // ==========================================================================
   const playTrackInternal = useCallback(async (track: Song, fromQueue?: Song[]) => {
     if (!track) return;
     const audio = audioRef.current;
     if (!audio) return;
 
-    // STEP 1: Resolve the auth_url — this is the REAL audio URL
-    const authUrl = await getSongUrl(track);
-    const normalizedUrl = authUrl ? normalizeAudioUrl(authUrl) : '';
+    // STEP 1: Generate hybrid key from song metadata
+    const hybridKey = generateHybridKey(track);
 
-    // STEP 2: Load dedup lists from localStorage
-    const recentlyPlayedIds = getRecentlyPlayedIds();
-    const recentlyPlayedUrls = getRecentlyPlayedUrls();
-
-    // STEP 3: Check for duplicates
-    // PRIMARY: Is this normalized audio URL already played?
-    const isDuplicateByUrl = normalizedUrl && recentlyPlayedUrls.includes(normalizedUrl);
-    // SECONDARY: Is this song ID already played?
-    const isDuplicateById = recentlyPlayedIds.includes(track.id);
-
-    if (isDuplicateByUrl || isDuplicateById) {
-      const reason = isDuplicateByUrl ? 'audio URL' : 'song ID';
-      console.log(`🔄 AYUMUSIC: BLOCKED duplicate (${reason}):`, track.name, '| URL:', normalizedUrl || 'N/A', '| ID:', track.id);
+    // STEP 2: Check for duplicates using hybrid key
+    if (isDuplicate(hybridKey)) {
+      console.log(`🔄 AYUMUSIC: BLOCKED duplicate (hybrid key):`, track.name, '|', hybridKey);
 
       // Try to find a non-duplicate from the queue
       const searchQueue = fromQueue && fromQueue.length > 1 ? fromQueue : queueRef.current;
@@ -143,14 +131,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         for (let i = 1; i < searchQueue.length; i++) {
           const nextIdx = (currentIdx + i) % searchQueue.length;
           const candidate = searchQueue[nextIdx];
-          // Resolve THIS candidate's URL too
-          const candidateUrl = await getSongUrl(candidate);
-          const candidateNorm = candidateUrl ? normalizeAudioUrl(candidateUrl) : '';
-          const candidateIsDup =
-            (candidateNorm && recentlyPlayedUrls.includes(candidateNorm)) ||
-            recentlyPlayedIds.includes(candidate.id);
-          if (!candidateIsDup) {
-            console.log('▶️ AYUMUSIC: Switching to non-duplicate:', candidate.name, '| URL:', candidateNorm);
+          const candidateKey = generateHybridKey(candidate);
+          if (!isDuplicate(candidateKey)) {
+            console.log('▶️ AYUMUSIC: Switching to non-duplicate:', candidate.name);
             playTrackInternal(candidate, fromQueue || searchQueue);
             return;
           }
@@ -161,18 +144,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // STEP 4: Resolve audio URL for playback
+    // STEP 3: Resolve audio URL for playback
+    const authUrl = getBestDownload(track);
     if (!authUrl) {
       toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
       return;
     }
 
-    // STEP 5: Play the song
+    // STEP 4: Play the song
     audio.pause();
     audio.src = authUrl;
     audio.load();
 
-    console.log('🎵 AYUMUSIC: Playing:', track.name, '| URL:', normalizedUrl, '| ID:', track.id);
+    console.log('🎵 AYUMUSIC: Playing:', track.name, '| Hybrid key:', hybridKey);
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -185,8 +169,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    // STEP 6: Record play — saves both song ID AND audio URL to localStorage
-    recordPlay(track, authUrl);
+    // STEP 5: Record play — saves hybrid key to localStorage
+    recordPlay(track);
     
     audio.play().catch((err) => {
       console.warn('⚠️ AYUMUSIC: Playback interrupted', err);
@@ -205,7 +189,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [smartMood]);
 
   // ==========================================================================
-  // AUTO-RECOMMENDATION — resolves URLs before picking next song
+  // AUTO-RECOMMENDATION — uses hybrid key dedup
   // ==========================================================================
   const startAutoRecommendation = useCallback(async () => {
     const lastSong = currentTrackRef.current;
@@ -213,20 +197,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     console.log('🔄 AYUMUSIC: Queue finished. Starting infinite autoplay for mood:', mood);
 
-    const recentlyPlayedIds = getRecentlyPlayedIds();
-    const recentlyPlayedUrls = getRecentlyPlayedUrls();
-
-    // Resolve a song's URL and check if it's a duplicate
-    const resolveAndCheck = async (s: Song): Promise<boolean> => {
-      const url = await getSongUrl(s);
-      const norm = url ? normalizeAudioUrl(url) : '';
-      return (norm && recentlyPlayedUrls.includes(norm)) || recentlyPlayedIds.includes(s.id);
-    };
-
-    // Pick the first non-duplicate from a list (resolves URLs)
-    const pickFresh = async (list: Song[]): Promise<Song | null> => {
+    // Helper: pick the first non-duplicate from a list
+    const pickFresh = (list: Song[]): Song | null => {
       for (const s of list) {
-        if (!(await resolveAndCheck(s))) return s;
+        const key = generateHybridKey(s);
+        if (!isDuplicate(key)) return s;
       }
       return list.length > 0 ? list[0] : null;
     };
@@ -234,7 +209,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     // 1. Use Neural Buffer
     if (autoMixQueueRef.current.length > 0) {
       const nextBatch = [...autoMixQueueRef.current];
-      const freshSong = await pickFresh(nextBatch);
+      const freshSong = pickFresh(nextBatch);
       if (freshSong) {
         const remaining = nextBatch.filter(s => s.id !== freshSong.id);
         console.log('✅ AYUMUSIC: Auto-Mix Queue:', freshSong.name);
@@ -251,11 +226,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('📡 AYUMUSIC: Buffer empty. Fetching fresh resonance...');
       const resonance = await fetchAudiusMoodTracks(mood);
-      // Filter out duplicates by resolving URLs
-      const freshResonance: Song[] = [];
-      for (const s of resonance) {
-        if (!(await resolveAndCheck(s))) freshResonance.push(s);
-      }
+      const freshResonance = filterUniqueSongs(resonance);
       const pool = freshResonance.length > 0 ? freshResonance : resonance;
       if (pool.length > 0) {
         const nextSong = pool[0];
@@ -268,10 +239,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         // 3. Fallback to Trending
         console.log('⚠️ AYUMUSIC: Mood exhausted. Falling back to trending.');
         const trending = await getTrending();
-        const freshTrending: Song[] = [];
-        for (const s of trending) {
-          if (!(await resolveAndCheck(s))) freshTrending.push(s);
-        }
+        const freshTrending = filterUniqueSongs(trending);
         const trendingPool = freshTrending.length > 0 ? freshTrending : trending;
         if (trendingPool.length > 0) {
           const nextSong = trendingPool[0];
@@ -312,37 +280,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [playTrackInternal, startAutoRecommendation, smartMood]);
 
   // ==========================================================================
-  // INFINITY AUTO-PLAY — resolves URLs before selecting next song
+  // INFINITY AUTO-PLAY — uses hybrid key dedup
   // ==========================================================================
   const fetchRecommendedSongs = useCallback(async (): Promise<Song[]> => {
     const topArtists = getTopArtists(2);
     const currentSong = currentTrackRef.current;
-    const recentIds = getRecentlyPlayedIds();
-    const recentUrls = getRecentlyPlayedUrls();
 
-    // Deduplicate by resolving each song's URL and checking against played URLs
-    const dedupeAndFilter = async (songs: Song[]): Promise<Song[]> => {
-      const seenIds = new Set<string>();
-      const seenUrls = new Set<string>();
-      const result: Song[] = [];
-      for (const s of songs) {
-        if (!s?.id) continue;
-        if (seenIds.has(s.id) || recentIds.includes(s.id)) continue;
-        const url = await getSongUrl(s);
-        const norm = url ? normalizeAudioUrl(url) : '';
-        if (norm && (seenUrls.has(norm) || recentUrls.includes(norm))) continue;
-        seenIds.add(s.id);
-        if (norm) seenUrls.add(norm);
-        result.push(s);
-      }
-      return result;
+    // Deduplicate using hybrid keys
+    const dedupeAndFilter = (songs: Song[]): Song[] => {
+      return filterUniqueSongs(songs);
     };
 
     // 1. Top favorite artist(s)
     for (const { artist } of topArtists) {
       try {
         const results = await searchSongs(`${artist} songs`, 1);
-        const filtered = await dedupeAndFilter(results);
+        const filtered = dedupeAndFilter(results);
         if (filtered.length > 0) return filtered;
       } catch (e) {
         console.warn('AYUMUSIC: recommendation fetch failed for', artist, e);
@@ -354,7 +307,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (currentArtist) {
       try {
         const results = await searchSongs(`${currentArtist} songs`, 1);
-        const filtered = await dedupeAndFilter(results);
+        const filtered = dedupeAndFilter(results);
         if (filtered.length > 0) return filtered;
       } catch (e) {
         console.warn('AYUMUSIC: current-artist recommendation failed', e);
@@ -364,7 +317,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     // 3. Final fallback: generic top hits
     try {
       const trending = await getTrending();
-      const filtered = await dedupeAndFilter(trending);
+      const filtered = dedupeAndFilter(trending);
       if (filtered.length > 0) return filtered;
     } catch (e) {
       console.warn('AYUMUSIC: trending fallback failed', e);
@@ -375,25 +328,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const infinityAutoPlay = useCallback(async () => {
     const currentSong = currentTrackRef.current;
-    const recentIds = getRecentlyPlayedIds();
-    const recentUrls = getRecentlyPlayedUrls();
     const candidates = await fetchRecommendedSongs();
 
-    // Filter by resolved URLs
-    const fresh: Song[] = [];
-    for (const s of candidates) {
-      if (s.id === currentSong?.id) continue;
-      if (recentIds.includes(s.id)) continue;
-      const url = await getSongUrl(s);
-      const norm = url ? normalizeAudioUrl(url) : '';
-      if (norm && recentUrls.includes(norm)) continue;
-      fresh.push(s);
-    }
+    // Filter using hybrid keys
+    const fresh = candidates.filter(s => {
+      if (s.id === currentSong?.id) return false;
+      const key = generateHybridKey(s);
+      return !isDuplicate(key);
+    });
     const pool = fresh.length > 0 ? fresh : candidates.filter(s => s.id !== currentSong?.id);
 
     if (pool.length === 0) {
       console.log('⏹️ AYUMUSIC: No more recommendations available.');
-      toast({ variant: "destructive", title: "No more recommendations available." });
+      toast({ variant: "destructive", title: "No new songs available. Please try again later." });
       setIsPlaying(false);
       return;
     }

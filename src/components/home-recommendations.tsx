@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, getBestDownload, getSongUrl, decodeEntities, getTrending } from '@/lib/music-api';
-import { getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
+import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
+import { getTopArtists, filterUniqueSongs } from '@/lib/listening-history';
 import { useMusic } from '@/components/music-player/player-context';
 import { Play } from 'lucide-react';
 
@@ -14,8 +14,8 @@ import { Play } from 'lucide-react';
  *  3. "Your Weekly Mix"      - combined query of the top 3 artists (grid)
  * Falls back to trending when there is no history.
  *
- * CRITICAL: All sections deduplicate by resolved auth_url (PRIMARY key)
- * and song ID (SECONDARY key) before displaying.
+ * All sections use hybrid-key dedup (title+artist+duration+audio_filename)
+ * via filterUniqueSongs() before displaying.
  */
 
 function shuffle<T>(arr: T[]): T[] {
@@ -25,57 +25,6 @@ function shuffle<T>(arr: T[]): T[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
-}
-
-/**
- * Deduplicate songs by resolving each song's auth_url and comparing normalized URLs.
- * auth_url is the PRIMARY dedup key — song ID is SECONDARY.
- * Resolves URLs in batches of 10 to avoid overwhelming the API.
- */
-async function deduplicateByResolvedUrl(songs: Song[]): Promise<Song[]> {
-  const seenUrls = new Set<string>();
-  const seenIds = new Set<string>();
-  const result: Song[] = [];
-
-  const BATCH_SIZE = 10;
-  for (let i = 0; i < songs.length; i += BATCH_SIZE) {
-    const batch = songs.slice(i, i + BATCH_SIZE);
-    const urls = await Promise.all(batch.map(s => getSongUrl(s)));
-    batch.forEach((song, j) => {
-      if (!song?.id) return;
-      if (seenIds.has(song.id)) return;
-      const url = urls[j];
-      const norm = url ? normalizeAudioUrl(url) : '';
-      if (norm && seenUrls.has(norm)) return;
-      seenIds.add(song.id);
-      if (norm) seenUrls.add(norm);
-      result.push(song);
-    });
-  }
-  return result;
-}
-
-/**
- * Filter out recently played songs by both ID and resolved audio URL.
- */
-async function filterRecentlyPlayed(songs: Song[]): Promise<Song[]> {
-  const recentIds = getRecentlyPlayedIds();
-  const recentUrls = getRecentlyPlayedUrls();
-
-  const BATCH_SIZE = 10;
-  const result: Song[] = [];
-  for (let i = 0; i < songs.length; i += BATCH_SIZE) {
-    const batch = songs.slice(i, i + BATCH_SIZE);
-    const urls = await Promise.all(batch.map(s => getSongUrl(s)));
-    batch.forEach((song, j) => {
-      if (recentIds.includes(song.id)) return;
-      const url = urls[j];
-      const norm = url ? normalizeAudioUrl(url) : '';
-      if (norm && recentUrls.includes(norm)) return;
-      result.push(song);
-    });
-  }
-  return result;
 }
 
 // Horizontal scrollable card used by "Recommended For You" and "More from [Artist]".
@@ -142,8 +91,7 @@ export function RecommendedForYou({ onPlayTrack }: { onPlayTrack: (song: Song, l
       if (results.length === 0) {
         results = await getTrending();
       }
-      const fresh = await filterRecentlyPlayed(results);
-      const deduped = await deduplicateByResolvedUrl(fresh.length ? fresh : results);
+      const deduped = filterUniqueSongs(results);
       setSongs(deduped.slice(0, 8));
     } catch (e) {
       console.error('AYUMUSIC: Recommended For You failed', e);
@@ -184,9 +132,8 @@ export function MoreFromArtist({ onPlayTrack }: { onPlayTrack: (song: Song, list
     try {
       const results = await searchSongs(`${artistName} songs`, 1);
       const others = results.filter(s => s.id !== currentTrack?.id);
-      const fresh = await filterRecentlyPlayed(others);
-      const pool = await deduplicateByResolvedUrl(fresh.length ? fresh : others);
-      setSongs(shuffle(pool).slice(0, 6));
+      const deduped = filterUniqueSongs(others);
+      setSongs(shuffle(deduped).slice(0, 6));
     } catch (e) {
       console.error('AYUMUSIC: More from artist failed', e);
       setSongs([]);
@@ -225,8 +172,7 @@ export function YourWeeklyMix({ onPlayTrack }: { onPlayTrack: (song: Song, list:
       if (results.length === 0) {
         results = await searchSongs('popular hits 2026', 1);
       }
-      const fresh = await filterRecentlyPlayed(results);
-      const deduped = await deduplicateByResolvedUrl(fresh.length ? fresh : results);
+      const deduped = filterUniqueSongs(results);
       setSongs(deduped.slice(0, 12));
     } catch (e) {
       console.error('AYUMUSIC: Your Weekly Mix failed', e);

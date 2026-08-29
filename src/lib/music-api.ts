@@ -191,6 +191,54 @@ export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
   }
 }
 
+/**
+ * Fetch curated playlists for the home page.
+ * Returns playlist metadata (id, name, image, songCount).
+ */
+export async function getCuratedPlaylists(queries: string[]): Promise<any[]> {
+  const allPlaylists: any[] = [];
+  const seenIds = new Set<string>();
+
+  for (const q of queries) {
+    try {
+      const res = await fetch(`${API_BASE}/search/playlists?query=${encodeURIComponent(q)}&page=1&limit=10`);
+      const data = await res.json();
+      const results = data.data?.results || data.data || [];
+      for (const pl of results) {
+        if (!seenIds.has(pl.id)) {
+          seenIds.add(pl.id);
+          allPlaylists.push(pl);
+        }
+      }
+    } catch (e) {
+      console.warn('AYUMUSIC: Curated playlist fetch failed for', q, e);
+    }
+  }
+  return allPlaylists;
+}
+
+/**
+ * Fetch songs inside a playlist by its ID.
+ */
+export async function getPlaylistSongs(playlistId: string): Promise<Song[]> {
+  try {
+    const res = await fetch(`${API_BASE}/playlists?id=${playlistId}`);
+    const data = await res.json();
+    const songs = data.data?.songs || [];
+    return songs.map((s: any) => attachMood({
+      id: s.id,
+      name: s.name,
+      artists: s.artists || { primary: [{ name: s.album?.name || 'Unknown' }] },
+      image: s.image || [],
+      downloadUrl: s.downloadUrl || [],
+      duration: s.duration || 0,
+    }, 'playlist'));
+  } catch (e) {
+    console.warn('AYUMUSIC: Playlist songs fetch failed for', playlistId, e);
+    return [];
+  }
+}
+
 const LRCLIB_API = 'https://lrclib.net/api';
 
 /**

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import Recommendations from '@/components/Recommendations';
 import { RecommendedForYou, MoreFromArtist, YourWeeklyMix } from '@/components/home-recommendations';
 import PersonalizedDailyPicks from '@/components/personalized-daily-picks';
+import FreshPlaylists from '@/components/fresh-playlists';
 
 const VibeButton = ({ icon: Icon, label, query, onClick }: { icon: any, label: string, query: string, onClick: (q: string) => void }) => (
   <button 
@@ -436,6 +437,9 @@ export default function Home() {
             <RecommendedForYou onPlayTrack={playTrack} />
 
             <PersonalizedDailyPicks onPlayTrack={playTrack} />
+
+            {/* Fresh Playlists - horizontal scroll with playlist cards */}
+            <FreshPlaylists />
 
             {/* Because You Listened to [Artist] - based on the currently playing song */}
             <MoreFromArtist onPlayTrack={playTrack} />

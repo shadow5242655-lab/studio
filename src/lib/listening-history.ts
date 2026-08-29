@@ -59,12 +59,33 @@ function extractAudioFilename(url: string): string {
   }
 }
 
+/**
+ * Extract the BASE audio filename WITHOUT quality suffix.
+ * JioSaavn serves the same song with different bitrates:
+ *   be4d53a67d85481c1a571684e4c473fd_160.mp4  (160kbps)
+ *   be4d53a67d85481c1a571684e4c473fd_320.mp4  (320kbps)
+ *   be4d53a67d85481c1a571684e4c473fd_500.mp4  (500kbps)
+ * These are the SAME song at different bitrates.
+ * Stripping the quality suffix gives the BASE filename:
+ *   be4d53a67d85481c1a571684e4c473fd.mp4
+ * This ensures all quality variants are treated as the SAME song.
+ */
+function extractAudioBaseFilename(url: string): string {
+  const filename = extractAudioFilename(url);
+  if (!filename) return '';
+  // Strip quality suffix: _160, _320, _500 before the extension
+  // Pattern: anything_ followed by digits, followed by extension
+  return filename.replace(/_\d+\.(mp3|mp4|m4a|ogg|wav)$/i, '.$1');
+}
+
 export function generateHybridKey(song: Song): string {
   const title = (song.name || '').toLowerCase().trim();
   const artist = (song.artists?.primary?.[0]?.name || '').toLowerCase().trim();
   const duration = Math.round(song.duration || 0);
   const downloadUrl = getBestDownload(song);
-  const audioFilename = extractAudioFilename(downloadUrl);
+  // Use BASE filename (without quality suffix) for the hybrid key
+  // This ensures _160 and _320 variants produce the SAME key
+  const audioFilename = extractAudioBaseFilename(downloadUrl);
 
   if (audioFilename) {
     return `${title}|${artist}|${duration}|${audioFilename}`;
@@ -72,10 +93,10 @@ export function generateHybridKey(song: Song): string {
   return `${title}|${artist}|${duration}`;
 }
 
-// Get just the audio filename for direct filename-based dedup
+// Get the BASE audio filename (without quality suffix) for dedup
 export function getAudioFilename(song: Song): string {
   const downloadUrl = getBestDownload(song);
-  return extractAudioFilename(downloadUrl);
+  return extractAudioBaseFilename(downloadUrl);
 }
 
 // ============================================================================
@@ -102,6 +123,27 @@ function addPlayedAudioFile(filename: string): void {
   const list = getPlayedAudioFiles().filter(f => f !== filename);
   list.unshift(filename);
   safeSet(PLAYED_FILES_KEY, JSON.stringify(list.slice(0, 50)));
+}
+
+// Also store the FULL filename (with quality suffix) for exact matching
+const PLAYED_FULL_FILES_KEY = 'ayumusic_played_full_files';
+
+function getPlayedFullFiles(): string[] {
+  const raw = safeGet(PLAYED_FULL_FILES_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addPlayedFullFile(filename: string): void {
+  if (!filename) return;
+  const list = getPlayedFullFiles().filter(f => f !== filename);
+  list.unshift(filename);
+  safeSet(PLAYED_FULL_FILES_KEY, JSON.stringify(list.slice(0, 50)));
 }
 
 // ============================================================================
@@ -217,13 +259,25 @@ export function isDuplicate(hybridKey: string): boolean {
  * Catches duplicates where the hybrid key differs but the audio is identical.
  */
 export function isAudioFilePlayed(song: Song): boolean {
-  const filename = getAudioFilename(song);
-  if (!filename) return false;
-  const played = getPlayedAudioFiles();
-  if (played.includes(filename)) {
-    console.log('🚫 AYUMUSIC: Audio file already played:', filename);
+  const baseFilename = getAudioFilename(song); // base (no quality suffix)
+  const fullFilename = extractAudioFilename(getBestDownload(song)); // full (with suffix)
+  if (!baseFilename && !fullFilename) return false;
+
+  // Check 1: Is the BASE filename (without quality) already played?
+  // This catches _160 vs _320 variants of the same song
+  const playedBase = getPlayedAudioFiles();
+  if (baseFilename && playedBase.includes(baseFilename)) {
+    console.log('🚫 AYUMUSIC: Audio file (base) already played:', baseFilename);
     return true;
   }
+
+  // Check 2: Is the EXACT full filename already played?
+  const playedFull = getPlayedFullFiles();
+  if (fullFilename && playedFull.includes(fullFilename)) {
+    console.log('🚫 AYUMUSIC: Audio file (full) already played:', fullFilename);
+    return true;
+  }
+
   return false;
 }
 
@@ -261,10 +315,12 @@ export function recordPlay(song: Song): void {
   addRecentlyPlayedHybrid(hybridKey);
 
   // Update played audio files (STRONGEST dedup)
-  const filename = getAudioFilename(song);
-  addPlayedAudioFile(filename);
+  const baseFilename = getAudioFilename(song); // base (no quality suffix)
+  const fullFilename = extractAudioFilename(getBestDownload(song)); // full (with suffix)
+  addPlayedAudioFile(baseFilename);
+  addPlayedFullFile(fullFilename);
 
-  console.log('✅ AYUMUSIC: Recorded:', song.name, '| Key:', hybridKey, '| File:', filename);
+  console.log('✅ AYUMUSIC: Recorded:', song.name, '| Key:', hybridKey, '| Base:', baseFilename, '| Full:', fullFilename);
 }
 
 // ============================================================================
@@ -294,7 +350,11 @@ export function filterUniqueSongs(songs: Song[]): Song[] {
     if (blocked.includes(key)) return false;
 
     // Skip if audio file was already played (STRONGEST check)
+    // Also check full filename for exact match
+    const fullFilename = extractAudioFilename(getBestDownload(song));
+    const playedFull = getPlayedFullFiles();
     if (filename && playedFiles.includes(filename)) return false;
+    if (fullFilename && playedFull.includes(fullFilename)) return false;
 
     seen.add(key);
     if (filename) seenFiles.add(filename);

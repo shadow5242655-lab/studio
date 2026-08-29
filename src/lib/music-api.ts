@@ -67,37 +67,43 @@ export async function enhancedSearchSongs(query: string): Promise<Song[]> {
   const seenIds = new Set<string>();
   const allSongs: Song[] = [];
 
-  // Strategy 1: Search with the original query (highest limit)
+  // Helper: add song if not duplicate
+  const addSong = (s: Song) => {
+    if (!seenIds.has(s.id)) {
+      seenIds.add(s.id);
+      allSongs.push(attachMood(s, query));
+    }
+  };
+
+  // Strategy 1: Search JioSaavn with the original query (highest limit)
   try {
     const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=1&limit=50`);
     const data = await res.json();
     const results = (data.data?.results || data.data || []) as Song[];
-    for (const s of results) {
-      if (!seenIds.has(s.id)) {
-        seenIds.add(s.id);
-        allSongs.push(attachMood(s, query));
-      }
-    }
+    results.forEach(addSong);
   } catch (e) { /* ignore */ }
 
-  // Strategy 2: If query has multiple words, try splitting into parts
+  // Strategy 2: Search Spotify as supplementary source
+  // Spotify often has songs that JioSaavn search misses
+  try {
+    const { searchSpotifySongs } = await import('./spotify-api');
+    const spotifyResults = await searchSpotifySongs(query, 30);
+    spotifyResults.forEach(addSong);
+  } catch (e) { /* ignore - Spotify is optional */ }
+
+  // Strategy 3: If query has multiple words, try splitting into parts
   // e.g. "Atif Aslam Tera Hone Laga Hoon" → try "Atif Aslam" and "Tera Hone Laga Hoon" separately
   const words = query.trim().split(/\s+/);
   if (words.length >= 3) {
-    // Try the full query with page 2 for more results
+    // Try page 2 for more JioSaavn results
     try {
       const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=2&limit=50`);
       const data = await res.json();
       const results = (data.data?.results || data.data || []) as Song[];
-      for (const s of results) {
-        if (!seenIds.has(s.id)) {
-          seenIds.add(s.id);
-          allSongs.push(attachMood(s, query));
-        }
-      }
+      results.forEach(addSong);
     } catch (e) { /* ignore */ }
 
-    // Try searching with different word splits to find more songs
+    // Try searching with different word splits
     const halfIdx = Math.floor(words.length / 2);
     const splitQueries = [
       words.slice(0, halfIdx).join(' '),
@@ -110,12 +116,7 @@ export async function enhancedSearchSongs(query: string): Promise<Song[]> {
         const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(sq)}&page=1&limit=30`);
         const data = await res.json();
         const results = (data.data?.results || data.data || []) as Song[];
-        for (const s of results) {
-          if (!seenIds.has(s.id)) {
-            seenIds.add(s.id);
-            allSongs.push(attachMood(s, query));
-          }
-        }
+        results.forEach(addSong);
       } catch (e) { /* ignore */ }
     }
   }

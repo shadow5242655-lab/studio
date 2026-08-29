@@ -39,7 +39,7 @@ export function TextileGallery() {
                     <Button size="icon" variant="secondary" className="rounded-full shadow-lg">
                       <Heart className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="primary" className="rounded-full shadow-lg">
+                    <Button size="icon" variant="default" className="rounded-full shadow-lg">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>

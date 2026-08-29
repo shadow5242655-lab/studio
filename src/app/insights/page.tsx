@@ -7,7 +7,9 @@ import { Activity, Clock, Music, Heart, History, TrendingUp, BarChart3, Zap, Cal
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function InsightsPage() {
-  const { totalMinutes = 0, playedHistory = [], likedSongs = [], activeDays = [] } = useMusic();
+  const { playedHistory = [], likedSongs = [] } = useMusic();
+  const totalMinutes = 0;
+  const activeDays: string[] = [];
 
   return (
     <div className="p-8 pb-48 max-w-6xl mx-auto space-y-12 animate-in fade-in duration-700">

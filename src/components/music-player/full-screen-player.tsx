@@ -141,9 +141,23 @@ export function FullScreenPlayer() {
           <Button 
             variant="ghost" 
             className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white lag-free-tap" 
-            onClick={() => {
+            onClick={async () => {
               const url = getBestDownload(currentTrack);
-              if (url) window.open(url, '_blank');
+              if (!url) return;
+              try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = `${currentTrack.artists.primary[0]?.name || 'Unknown'} - ${currentTrack.name}.mp3`.replace(/[^a-zA-Z0-9._-]/g, '_');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+              } catch {
+                window.open(url, '_blank');
+              }
             }}
           >
             <Download className="h-4 w-4" /> Download

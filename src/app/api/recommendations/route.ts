@@ -146,7 +146,7 @@ export async function POST(req: Request) {
           if (!id) return;
           if (seenSongIds.has(id)) return; // exclude seen songs
           if (!candidatesById.has(id)) {
-            candidatesById.set(id, { id, ...data });
+            candidatesById.set(id, { id, ...(data as Record<string, unknown>) });
           }
         });
       } catch (e) {

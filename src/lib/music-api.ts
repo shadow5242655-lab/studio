@@ -49,7 +49,7 @@ export function attachMood(song: Song, context?: string): Song {
 
 export async function searchSongs(query: string, page: number = 1): Promise<Song[]> {
   try {
-    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=20`);
+    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=50`);
     const data = await res.json();
     const results = data.data?.results || data.data || [];
     return results.map((s: Song) => attachMood(s, query));
@@ -57,6 +57,70 @@ export async function searchSongs(query: string, page: number = 1): Promise<Song
     console.error('AYUMUSIC API: Search failed:', error);
     return [];
   }
+}
+
+/**
+ * Enhanced multi-query search that tries multiple search strategies
+ * to maximize song coverage. Merges and deduplicates results.
+ */
+export async function enhancedSearchSongs(query: string): Promise<Song[]> {
+  const seenIds = new Set<string>();
+  const allSongs: Song[] = [];
+
+  // Strategy 1: Search with the original query (highest limit)
+  try {
+    const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=1&limit=50`);
+    const data = await res.json();
+    const results = (data.data?.results || data.data || []) as Song[];
+    for (const s of results) {
+      if (!seenIds.has(s.id)) {
+        seenIds.add(s.id);
+        allSongs.push(attachMood(s, query));
+      }
+    }
+  } catch (e) { /* ignore */ }
+
+  // Strategy 2: If query has multiple words, try splitting into parts
+  // e.g. "Atif Aslam Tera Hone Laga Hoon" → try "Atif Aslam" and "Tera Hone Laga Hoon" separately
+  const words = query.trim().split(/\s+/);
+  if (words.length >= 3) {
+    // Try the full query with page 2 for more results
+    try {
+      const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(query)}&page=2&limit=50`);
+      const data = await res.json();
+      const results = (data.data?.results || data.data || []) as Song[];
+      for (const s of results) {
+        if (!seenIds.has(s.id)) {
+          seenIds.add(s.id);
+          allSongs.push(attachMood(s, query));
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    // Try searching with different word splits to find more songs
+    const halfIdx = Math.floor(words.length / 2);
+    const splitQueries = [
+      words.slice(0, halfIdx).join(' '),
+      words.slice(halfIdx).join(' '),
+    ];
+
+    for (const sq of splitQueries) {
+      if (sq === query) continue;
+      try {
+        const res = await fetch(`${API_BASE}/search/songs?query=${encodeURIComponent(sq)}&page=1&limit=30`);
+        const data = await res.json();
+        const results = (data.data?.results || data.data || []) as Song[];
+        for (const s of results) {
+          if (!seenIds.has(s.id)) {
+            seenIds.add(s.id);
+            allSongs.push(attachMood(s, query));
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  return allSongs;
 }
 
 export async function searchAlbums(query: string, page: number = 1): Promise<any[]> {

@@ -5,6 +5,7 @@ import { Search, Music, Loader2, Disc, User, ListMusic, ArrowLeft, Play, Clock }
 import { Input } from '@/components/ui/input';
 import {
   Song, searchSongs, searchAlbums, searchArtists, searchPlaylists,
+  enhancedSearchSongs,
   getBestImage, decodeEntities, formatDuration, getTrending
 } from '@/lib/music-api';
 import { SongCard } from '@/components/music-player/song-card';
@@ -83,9 +84,9 @@ function SearchContent() {
     setLoading(true);
     try {
       if (selectedTab === 'all') {
-        // Fetch ALL categories in parallel
+        // Fetch ALL categories in parallel (songs uses enhanced search)
         const [songsRes, albumsRes, playlistsRes, artistsRes] = await Promise.all([
-          searchSongs(searchQuery).catch(() => []),
+          enhancedSearchSongs(searchQuery).catch(() => []),
           searchAlbums(searchQuery).catch(() => []),
           searchPlaylists(searchQuery).catch(() => []),
           searchArtists(searchQuery).catch(() => []),
@@ -95,7 +96,7 @@ function SearchContent() {
         setPlaylists(playlistsRes);
         setArtists(artistsRes);
       } else if (selectedTab === 'songs') {
-        const res = await searchSongs(searchQuery);
+        const res = await enhancedSearchSongs(searchQuery);
         setSongs(res);
       } else if (selectedTab === 'albums') {
         const res = await searchAlbums(searchQuery);

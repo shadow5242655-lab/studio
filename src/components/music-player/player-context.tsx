@@ -455,7 +455,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentTrack) {
       setLoadingLyrics(true);
-      getLyrics(currentTrack.id).then(res => {
+      getLyrics(currentTrack).then(res => {
         setLyrics(res);
         setLoadingLyrics(false);
       });

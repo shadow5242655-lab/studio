@@ -100,7 +100,8 @@ export function LyricsDrawer() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
               <Music2 className="h-16 w-16 text-neutral-800" />
-              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not available for this sound</p>
+              <p className="text-neutral-500 text-lg font-black italic uppercase tracking-tighter">Lyrics not available</p>
+              <p className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Try another song</p>
             </div>
           )}
         </div>

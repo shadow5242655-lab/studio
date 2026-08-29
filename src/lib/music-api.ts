@@ -126,36 +126,112 @@ export async function fetchAudiusMoodTracks(mood: string): Promise<Song[]> {
   }
 }
 
-export async function getLyrics(songId: string): Promise<{ plain: string; synced: { time: number; text: string }[] } | null> {
-  try {
-    const res = await fetch(`${API_BASE}/songs/${songId}/lyrics`);
-    const data = await res.json();
-    if (!data.data) return null;
+const LRCLIB_API = 'https://lrclib.net/api';
 
-    const lyricsText = data.data.lyrics || data.data;
-    if (typeof lyricsText !== 'string') return null;
-    
-    const synced: { time: number; text: string }[] = [];
-    const lines = lyricsText.split('\n');
-    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+/**
+ * Parse LRC timestamp format [MM:SS.xx] into seconds.
+ * Example: [01:23.45] → 83.45
+ */
+function parseLrcTime(timestamp: string): number {
+  const match = timestamp.match(/\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/);
+  if (!match) return 0;
+  const minutes = parseInt(match[1], 10);
+  const seconds = parseInt(match[2], 10);
+  const ms = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+  return minutes * 60 + seconds + ms / 1000;
+}
 
-    lines.forEach((line: string) => {
-      const match = line.match(timeRegex);
-      if (match) {
-        const minutes = parseInt(match[1]);
-        const seconds = parseInt(match[2]);
-        const milliseconds = parseInt(match[3]);
-        const time = minutes * 60 + seconds + milliseconds / (match[3].length === 3 ? 1000 : 100);
-        synced.push({ time, text: match[4].trim() });
+/**
+ * Parse LRC synced lyrics string into an array of { time, text } objects.
+ * LRC format: [01:23.45] Line of lyrics text
+ */
+function parseSyncedLyrics(lrc: string): { time: number; text: string }[] {
+  if (!lrc) return [];
+  const lines = lrc.split('\n');
+  const result: { time: number; text: string }[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Match [MM:SS.xx] or [MM:SS] followed by text
+    const match = trimmed.match(/\[([\d:.]+)\](.*)/);
+    if (match) {
+      const time = parseLrcTime(`[${match[1]}]`);
+      const text = match[2].trim();
+      if (text) {
+        result.push({ time, text });
       }
-    });
+    }
+  }
+
+  return result.sort((a, b) => a.time - b.time);
+}
+
+/**
+ * Fetch lyrics from LRCLIB API (no API key required).
+ *
+ * API: GET https://lrclib.net/api/search?q={artist} {title}
+ * Returns: array of matched lyrics objects with syncedLyrics (LRC) and plainLyrics.
+ *
+ * Flow:
+ * 1. Build query: "{artist} {title}" from the Song object.
+ * 2. Call LRCLIB search API.
+ * 3. Pick the first result that has syncedLyrics (for line-by-line display).
+ * 4. If no synced lyrics, pick the first result with plainLyrics.
+ * 5. Parse LRC format into { time, text }[] for synced, or return plain text.
+ * 6. If no lyrics found, return null.
+ */
+export async function getLyrics(song: Song): Promise<{ plain: string; synced: { time: number; text: string }[] } | null> {
+  try {
+    const artist = song.artists?.primary?.[0]?.name || '';
+    const title = song.name || '';
+    if (!artist && !title) return null;
+
+    // Build search query: "artist title"
+    const query = `${artist} ${title}`.trim();
+    console.log('AYUMUSIC LRCLIB: Searching lyrics for:', query);
+
+    const res = await fetch(`${LRCLIB_API}/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      console.warn('AYUMUSIC LRCLIB: API returned', res.status);
+      return null;
+    }
+
+    const results = await res.json();
+    if (!Array.isArray(results) || results.length === 0) {
+      console.log('AYUMUSIC LRCLIB: No results found for:', query);
+      return null;
+    }
+
+    // Pick the best match: prefer syncedLyrics, then plainLyrics
+    let bestMatch: any = null;
+    for (const result of results) {
+      if (result.syncedLyrics) {
+        bestMatch = result;
+        break;
+      }
+      if (!bestMatch && result.plainLyrics) {
+        bestMatch = result;
+      }
+    }
+
+    if (!bestMatch) {
+      console.log('AYUMUSIC LRCLIB: No lyrics content found for:', query);
+      return null;
+    }
+
+    console.log('AYUMUSIC LRCLIB: Found lyrics by', bestMatch.artistName, '-', bestMatch.trackName);
+
+    // Parse synced lyrics (LRC format → { time, text }[])
+    const synced = parseSyncedLyrics(bestMatch.syncedLyrics || '');
 
     return {
-      plain: synced.length === 0 ? lyricsText : '',
-      synced: synced.sort((a, b) => a.time - b.time)
+      plain: synced.length === 0 ? (bestMatch.plainLyrics || '') : '',
+      synced,
     };
   } catch (error) {
-    console.warn('AYUMUSIC API: Lyrics resolution failed for ID:', songId);
+    console.warn('AYUMUSIC LRCLIB: Lyrics fetch failed for', song.name, error);
     return null;
   }
 }

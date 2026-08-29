@@ -108,6 +108,47 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // --- Duplicate Song Playback Prevention ---
+    // Before playing any song, check if its unique ID is in recentlyPlayedIds.
+    // If it is, skip this song and try the next one from the provided queue.
+    const recentlyPlayedIds = getRecentlyPlayedIds();
+    if (recentlyPlayedIds.includes(track.id)) {
+      console.log('🔄 AYUMUSIC: Skipping duplicate track:', track.name, '(' + track.id + ')');
+      if (fromQueue && fromQueue.length > 1) {
+        const currentIdx = fromQueue.findIndex(s => s.id === track.id);
+        // Try the next song in the queue that is NOT recently played
+        for (let i = 1; i < fromQueue.length; i++) {
+          const nextIdx = (currentIdx + i) % fromQueue.length;
+          const candidate = fromQueue[nextIdx];
+          if (!recentlyPlayedIds.includes(candidate.id)) {
+            console.log('▶️ AYUMUSIC: Switching to non-duplicate:', candidate.name);
+            playTrackInternal(candidate, fromQueue);
+            return;
+          }
+        }
+        // If all songs in queue are duplicates, still play the requested one (fallback)
+        console.log('⚠️ AYUMUSIC: All queue songs are duplicates. Playing anyway.');
+      } else {
+        // No queue to pick from — try fetching from the current queue ref
+        const currentQueue = queueRef.current;
+        if (currentQueue.length > 1) {
+          const currentIdx = currentQueue.findIndex(s => s.id === track.id);
+          for (let i = 1; i < currentQueue.length; i++) {
+            const nextIdx = (currentIdx + i) % currentQueue.length;
+            const candidate = currentQueue[nextIdx];
+            if (!recentlyPlayedIds.includes(candidate.id)) {
+              console.log('▶️ AYUMUSIC: Switching to non-duplicate from queue:', candidate.name);
+              playTrackInternal(candidate, currentQueue);
+              return;
+            }
+          }
+        }
+        // Absolute fallback — play it anyway but log warning
+        console.log('⚠️ AYUMUSIC: No alternative found. Playing:', track.name);
+      }
+    }
+    // --- End Duplicate Prevention ---
+
     const url = getBestDownload(track);
     if (!url) {
       toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
@@ -155,20 +196,31 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     console.log('🔄 AYUMUSIC NEURAL: Queue finished. Starting infinite autoplay for mood:', mood);
 
+    // --- Duplicate Prevention for auto-play ---
+    const recentlyPlayedIds = getRecentlyPlayedIds();
+
+    // Helper: pick the first non-duplicate from a list
+    const pickFresh = (list: Song[]): Song | null => {
+      for (const s of list) {
+        if (!recentlyPlayedIds.includes(s.id)) return s;
+      }
+      return list.length > 0 ? list[0] : null; // fallback to first if all are duplicates
+    };
+    // --- End helper ---
+
     // 1. Use Neural Buffer
     if (autoMixQueueRef.current.length > 0) {
       const nextBatch = [...autoMixQueueRef.current];
-      const nextSong = nextBatch.shift()!;
-      
-      console.log('✅ AYUMUSIC NEURAL: Transitioning to Auto-Mix Queue:', nextSong.name);
-      
-      // Hardware-Stabilized Handover: The new AI batch becomes the current queue
-      queueRef.current = [nextSong, ...nextBatch];
-      setQueue([nextSong, ...nextBatch]);
-      autoMixQueueRef.current = nextBatch;
-      setAutoMixQueue(nextBatch);
-      
-      playTrackInternal(nextSong);
+      const freshSong = pickFresh(nextBatch);
+      if (freshSong) {
+        const remaining = nextBatch.filter(s => s.id !== freshSong.id);
+        console.log('✅ AYUMUSIC NEURAL: Transitioning to Auto-Mix Queue:', freshSong.name);
+        queueRef.current = [freshSong, ...remaining];
+        setQueue([freshSong, ...remaining]);
+        autoMixQueueRef.current = remaining;
+        setAutoMixQueue(remaining);
+        playTrackInternal(freshSong);
+      }
       return;
     }
 
@@ -176,20 +228,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('📡 AYUMUSIC NEURAL: Buffer empty. Fetching fresh resonance...');
       const resonance = await fetchAudiusMoodTracks(mood);
-      if (resonance.length > 0) {
-        const nextSong = resonance.shift()!;
-        queueRef.current = [nextSong, ...resonance];
-        setQueue([nextSong, ...resonance]);
+      const freshResonance = resonance.filter(s => !recentlyPlayedIds.includes(s.id));
+      const pool = freshResonance.length > 0 ? freshResonance : resonance;
+      if (pool.length > 0) {
+        const nextSong = pool[0];
+        const remaining = pool.slice(1);
+        queueRef.current = [nextSong, ...remaining];
+        setQueue([nextSong, ...remaining]);
         console.log('✅ AYUMUSIC NEURAL: Playing fresh resonance:', nextSong.name);
         playTrackInternal(nextSong);
       } else {
         // 3. Fallback to Trending
         console.log('⚠️ AYUMUSIC NEURAL: Mood resonance exhausted. Falling back to trending.');
         const trending = await getTrending();
-        if (trending.length > 0) {
-          const nextSong = trending.shift()!;
-          queueRef.current = [nextSong, ...trending];
-          setQueue([nextSong, ...trending]);
+        const freshTrending = trending.filter(s => !recentlyPlayedIds.includes(s.id));
+        const trendingPool = freshTrending.length > 0 ? freshTrending : trending;
+        if (trendingPool.length > 0) {
+          const nextSong = trendingPool[0];
+          queueRef.current = [nextSong, ...trendingPool.slice(1)];
+          setQueue([nextSong, ...trendingPool.slice(1)]);
           playTrackInternal(nextSong);
         }
       }
@@ -229,12 +286,24 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const fetchRecommendedSongs = useCallback(async (): Promise<Song[]> => {
     const topArtists = getTopArtists(2);
     const currentSong = currentTrackRef.current;
+    const recentIds = getRecentlyPlayedIds();
+
+    // Helper: deduplicate by song ID and exclude recently played
+    const dedupeAndFilter = (songs: Song[]): Song[] => {
+      const seen = new Set<string>();
+      return songs.filter(s => {
+        if (!s?.id || seen.has(s.id) || recentIds.includes(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+    };
 
     // 1. Top favorite artist(s) from listening history
     for (const { artist } of topArtists) {
       try {
         const results = await searchSongs(`${artist} songs`, 1);
-        if (results.length > 0) return results;
+        const filtered = dedupeAndFilter(results);
+        if (filtered.length > 0) return filtered;
       } catch (e) {
         console.warn('AYUMUSIC: recommendation fetch failed for', artist, e);
       }
@@ -245,7 +314,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (currentArtist) {
       try {
         const results = await searchSongs(`${currentArtist} songs`, 1);
-        if (results.length > 0) return results;
+        const filtered = dedupeAndFilter(results);
+        if (filtered.length > 0) return filtered;
       } catch (e) {
         console.warn('AYUMUSIC: current-artist recommendation failed', e);
       }
@@ -254,7 +324,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     // 3. Final fallback: generic top hits
     try {
       const trending = await getTrending();
-      if (trending.length > 0) return trending;
+      const filtered = dedupeAndFilter(trending);
+      if (filtered.length > 0) return filtered;
     } catch (e) {
       console.warn('AYUMUSIC: trending fallback failed', e);
     }

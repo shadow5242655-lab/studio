@@ -10,7 +10,7 @@ export interface HistoryEntry {
 const HISTORY_KEY = 'ayumusic_listening_history';
 const RECENT_KEY = 'ayumusic_recently_played';
 const HISTORY_LIMIT = 50;
-const RECENT_LIMIT = 5;
+const RECENT_LIMIT = 25;
 
 function safeGet(key: string): string | null {
   if (typeof window === 'undefined') return null;
@@ -52,7 +52,7 @@ export function getRecentlyPlayedIds(): string[] {
   }
 }
 
-// Save a played song into listening history (max 50) and recently played (max 5).
+// Save a played song into listening history (max 50) and recently played (max 25).
 export function recordPlay(song: Song): void {
   if (!song?.id) return;
   const artist = song.artists?.primary?.[0]?.name || 'Unknown';

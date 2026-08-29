@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 export function FullScreenPlayer() {
   const { 
     currentTrack, isPlaying, isBuffering, isPlayerOpen, setIsPlayerOpen, 
-    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, setIsLyricsOpen
+    togglePlay, nextTrack, prevTrack, toggleLike, isLiked, setIsLyricsOpen, setIsQueueOpen
   } = useMusic();
   const { progress, duration, seek, setIsScrubbing } = useMusicProgress();
 
@@ -138,7 +138,11 @@ export function FullScreenPlayer() {
           >
             <Music2 className="h-4 w-4" /> Lyrics
           </Button>
-          <Button variant="ghost" className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white lag-free-tap">
+          <Button 
+            variant="ghost" 
+            className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white lag-free-tap" 
+            onClick={() => setIsQueueOpen(true)}
+          >
             <ListMusic className="h-4 w-4" /> Queue
           </Button>
         </div>

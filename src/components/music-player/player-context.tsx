@@ -29,6 +29,7 @@ interface MusicStateContextType {
   isBuffering: boolean;
   isPlayerOpen: boolean;
   isLyricsOpen: boolean;
+  isQueueOpen: boolean;
   loadingLyrics: boolean;
   lyrics: LyricsData | null;
   queue: Song[];
@@ -40,9 +41,11 @@ interface MusicStateContextType {
   setSmartMood: (enabled: boolean) => void;
   setIsPlayerOpen: (open: boolean) => void;
   setIsLyricsOpen: (open: boolean) => void;
+  setIsQueueOpen: (open: boolean) => void;
   playTrack: (track: Song, fromQueue?: Song[]) => void;
   playNext: (track: Song) => void;
   addToQueue: (track: Song) => void;
+  removeSongFromQueue: (trackId: string) => void;
   playRandomTrack: () => Promise<void>;
   stopTrack: () => void;
   togglePlay: () => void;
@@ -77,6 +80,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [isBuffering, setIsBuffering] = useState(false);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
   const [lyrics, setLyrics] = useState<LyricsData | null>(null);
   
@@ -409,9 +413,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack]);
 
   const stateVal = useMemo(() => ({
-    currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, loadingLyrics, lyrics,
+    currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, isQueueOpen, loadingLyrics, lyrics,
     queue, likedSongs, playlists, playedHistory, smartMood, autoMixQueue, 
-    setSmartMood, setIsPlayerOpen, setIsLyricsOpen,
+    setSmartMood, setIsPlayerOpen, setIsLyricsOpen, setIsQueueOpen,
     playTrack: playTrackInternal, 
     playNext: (t: Song) => {
       setQueue(prev => {
@@ -425,6 +429,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     addToQueue: (t: Song) => {
       setQueue(prev => {
         const next = prev.find(s => s.id === t.id) ? prev : [...prev, t];
+        queueRef.current = next;
+        return next;
+      });
+    }, 
+    removeSongFromQueue: (trackId: string) => {
+      setQueue(prev => {
+        const next = prev.filter(s => s.id !== trackId);
         queueRef.current = next;
         return next;
       });
@@ -470,7 +481,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     deletePlaylist: (id: string) => setPlaylists(prev => prev.filter(p => p.id !== id)),
     removeFromHistory: (id: string) => setPlayedHistory(prev => prev.filter(i => i.id !== id)),
     clearHistory: () => setPlayedHistory([])
-  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, loadingLyrics, lyrics, queue, likedSongs, playlists, playedHistory, smartMood, autoMixQueue, playTrackInternal, nextTrackInternal]);
+  }), [currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, isQueueOpen, loadingLyrics, lyrics, queue, likedSongs, playlists, playedHistory, smartMood, autoMixQueue, playTrackInternal, nextTrackInternal]);
 
   const progVal = useMemo(() => ({ 
     progress, duration, volume, isScrubbing, setIsScrubbing,
@@ -494,10 +505,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 export const useMusic = () => {
   const c = useContext(MusicStateContext);
   if (!c) return {
-    currentTrack: null, isPlaying: false, isBuffering: false, isPlayerOpen: false, isLyricsOpen: false, 
+    currentTrack: null, isPlaying: false, isBuffering: false, isPlayerOpen: false, isLyricsOpen: false, isQueueOpen: false,
     loadingLyrics: false, lyrics: null, queue: [], likedSongs: [], playlists: [], playedHistory: [],
-    smartMood: true, autoMixQueue: [], setSmartMood: () => {}, setIsPlayerOpen: () => {}, setIsLyricsOpen: () => {},
-    playTrack: () => {}, playNext: () => {}, addToQueue: () => {}, playRandomTrack: async () => {}, 
+    smartMood: true, autoMixQueue: [], setSmartMood: () => {}, setIsPlayerOpen: () => {}, setIsLyricsOpen: () => {}, setIsQueueOpen: () => {},
+    playTrack: () => {}, playNext: () => {}, addToQueue: () => {}, removeSongFromQueue: () => {}, playRandomTrack: async () => {}, 
     stopTrack: () => {}, togglePlay: () => {}, nextTrack: () => {}, prevTrack: () => {}, 
     toggleLike: () => {}, isLiked: () => false, createPlaylist: () => {}, addToPlaylist: () => {}, 
     deletePlaylist: () => {}, removeFromHistory: () => {}, clearHistory: () => {}

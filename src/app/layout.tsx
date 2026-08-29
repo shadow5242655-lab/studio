@@ -8,6 +8,7 @@ import { Sidebar, Header } from '@/components/music-player/sidebar';
 import { BottomNav } from '@/components/music-player/bottom-nav';
 import { FullScreenPlayer } from '@/components/music-player/full-screen-player';
 import { LyricsDrawer } from '@/components/music-player/lyrics-drawer';
+import { QueueDrawer } from '@/components/music-player/queue-drawer';
 
 export const metadata: Metadata = {
   title: 'AYUMUSIC - Premium Sound',
@@ -43,6 +44,7 @@ export default function RootLayout({
             
             <FullScreenPlayer />
             <LyricsDrawer />
+            <QueueDrawer />
             
             <Toaster />
           </MusicProvider>

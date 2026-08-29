@@ -180,3 +180,66 @@ export function getBestDownload(song: Song): string {
   const best = song.downloadUrl[song.downloadUrl.length - 1];
   return best?.link || best?.url || '';
 }
+
+/**
+ * Explicitly resolve the auth_url (audio URL) for a song.
+ * This is the PRIMARY way to get the audio URL for deduplication.
+ *
+ * Flow:
+ * 1. If the Song object already has downloadUrl data, use getBestDownload().
+ * 2. If not, fetch the song details from the API to get the downloadUrl.
+ * 3. Return the resolved URL (or empty string if unavailable).
+ *
+ * This ensures we always have the real auth_url before comparing.
+ */
+export async function getSongUrl(song: Song): Promise<string> {
+  // Fast path: URL already available in the song object
+  const existing = getBestDownload(song);
+  if (existing) return existing;
+
+  // Slow path: fetch song details from API to get downloadUrl
+  try {
+    const res = await fetch(`${API_BASE}/songs/${song.id}`);
+    const data = await res.json();
+    const songData = data.data;
+    if (songData?.downloadUrl?.length) {
+      const best = songData.downloadUrl[songData.downloadUrl.length - 1];
+      return best?.link || best?.url || '';
+    }
+  } catch (e) {
+    console.warn('AYUMUSIC: getSongUrl fetch failed for', song.id, e);
+  }
+  return '';
+}
+
+/**
+ * Resolve auth_urls for multiple songs in parallel.
+ * Returns a Map of song.id → resolved audio URL.
+ * Used for upfront deduplication before display.
+ */
+export async function resolveSongUrls(songs: Song[]): Promise<Map<string, string>> {
+  const urlMap = new Map<string, string>();
+  const needsFetch = songs.filter(s => s?.id && !getBestDownload(s));
+  const alreadyHave = songs.filter(s => s?.id && getBestDownload(s));
+
+  // Fast path: populate URLs we already have
+  alreadyHave.forEach(s => urlMap.set(s.id, getBestDownload(s)));
+
+  // Slow path: fetch missing URLs in parallel
+  if (needsFetch.length > 0) {
+    const results = await Promise.allSettled(
+      needsFetch.map(s => getSongUrl(s))
+    );
+    needsFetch.forEach((s, i) => {
+      const result = results[i];
+      if (result.status === 'fulfilled' && result.value) {
+        urlMap.set(s.id, result.value);
+      } else {
+        // Fallback: try getBestDownload again
+        urlMap.set(s.id, getBestDownload(s));
+      }
+    });
+  }
+
+  return urlMap;
+}

@@ -276,8 +276,11 @@ export default function Home() {
     setLoading(true);
     try {
       const results = await getTrending();
-      setTrendingSongs(results.slice(0, 15));
-      setDisplaySongs(results.slice(0, 15));
+      // Deduplicate by song ID before display
+      const seen = new Set<string>();
+      const deduped = results.filter(s => { if (!s?.id || seen.has(s.id)) return false; seen.add(s.id); return true; });
+      setTrendingSongs(deduped.slice(0, 15));
+      setDisplaySongs(deduped.slice(0, 15));
     } catch (e) {
       console.error("AYUMUSIC: Load failed", e);
     } finally {
@@ -317,7 +320,10 @@ export default function Home() {
       setLoading(true);
       setIsSearching(true);
       const results = await searchSongs(searchQuery);
-      setDisplaySongs(results);
+      // Deduplicate by song ID before display (audio URL dedup happens at playback time)
+      const seen = new Set<string>();
+      const deduped = results.filter(s => { if (!s?.id || seen.has(s.id)) return false; seen.add(s.id); return true; });
+      setDisplaySongs(deduped);
       setLoading(false);
     }, 500);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };

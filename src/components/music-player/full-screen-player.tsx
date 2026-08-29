@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Heart, Music2, X, ChevronDown, ListMusic } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Heart, Music2, X, ChevronDown, ListMusic, Download } from 'lucide-react';
 import { useMusic, useMusicProgress } from './player-context';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { getBestImage, formatDuration, decodeEntities } from '@/lib/music-api';
+import { getBestImage, getBestDownload, formatDuration, decodeEntities } from '@/lib/music-api';
 import { cn } from '@/lib/utils';
 
 /**
@@ -130,13 +130,23 @@ export function FullScreenPlayer() {
         </div>
 
         {/* Immersive Utilities */}
-        <div className="w-full max-w-[400px] flex items-center justify-between pt-2 shrink-0 border-t border-white/5">
+        <div className="w-full max-w-[400px] flex items-center justify-around pt-2 shrink-0 border-t border-white/5">
           <Button 
             variant="ghost" 
             className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-primary transition-colors lag-free-tap" 
             onClick={() => setIsLyricsOpen(true)}
           >
             <Music2 className="h-4 w-4" /> Lyrics
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-white lag-free-tap" 
+            onClick={() => {
+              const url = getBestDownload(currentTrack);
+              if (url) window.open(url, '_blank');
+            }}
+          >
+            <Download className="h-4 w-4" /> Download
           </Button>
           <Button 
             variant="ghost" 

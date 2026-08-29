@@ -103,9 +103,51 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // ==========================================================================
+  // RESUME PLAYBACK — localStorage persistence
+  // ==========================================================================
+  const PLAYER_STATE_KEY = 'ayumusic_player_state';
+
   useEffect(() => {
     isScrubbingRef.current = isScrubbing;
   }, [isScrubbing]);
+
+  /** Save current playback state to localStorage */
+  const savePlayerState = useCallback((track: Song | null, q: Song[], pos: number, vol: number, playing: boolean) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const state = {
+        track,
+        queue: q.slice(0, 50),
+        position: pos,
+        volume: vol,
+        isPlaying: playing,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(PLAYER_STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // localStorage might be full
+      console.warn('AYUMUSIC: Failed to save player state', e);
+    }
+  }, []);
+
+  /** Load saved playback state from localStorage */
+  const loadPlayerState = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(PLAYER_STATE_KEY);
+      if (!raw) return null;
+      const state = JSON.parse(raw);
+      // Only restore if less than 7 days old
+      if (Date.now() - (state.timestamp || 0) > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(PLAYER_STATE_KEY);
+        return null;
+      }
+      return state;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // ==========================================================================
   // CORE PLAYBACK FUNCTION — HYBRID KEY dedup
@@ -351,6 +393,25 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     playTrackInternal(nextSong);
   }, [fetchRecommendedSongs, playTrackInternal]);
 
+  /** Update MediaSession metadata and controls for background playback */
+  const updateMediaSession = useCallback((track: Song | null) => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (!track) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    const artwork = track.image?.find(i => i.quality === '500x500') || track.image?.[0];
+    const artworkSrc = artwork?.url || artwork?.link || '';
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.name,
+      artist: track.artists?.primary?.map(a => a.name).join(', ') || 'Unknown',
+      album: 'AYUMUSIC',
+      artwork: artworkSrc ? [
+        { src: artworkSrc, sizes: '500x500', type: 'image/jpeg' },
+      ] : [],
+    });
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
       const audio = new Audio();
@@ -374,6 +435,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
       audio.addEventListener('pause', () => {
         setIsPlaying(false);
+        // Save state on pause so position is preserved
+        savePlayerState(currentTrackRef.current, queueRef.current, audio.currentTime, audio.volume, false);
       });
 
       audio.addEventListener('waiting', () => setIsBuffering(true));
@@ -383,22 +446,102 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setDuration(audio.duration);
       });
 
+      // Periodically save playback position (every 5 seconds)
+      const saveInterval = setInterval(() => {
+        if (audioRef.current && !audioRef.current.paused) {
+          savePlayerState(currentTrackRef.current, queueRef.current, audioRef.current.currentTime, audioRef.current.volume, true);
+        }
+      }, 5000);
+
       audio.onended = () => {
         infinityAutoPlay();
       };
-      
+
+      // ==========================================================================
+      // MEDIA SESSION API — background playback controls (lock screen, notifications)
+      // ==========================================================================
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', () => {
+          audio.play().catch(() => {});
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          audio.pause();
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          const q = queueRef.current;
+          const idx = q.findIndex(s => s.id === currentTrackRef.current?.id);
+          if (idx > 0) playTrackInternal(q[idx - 1]);
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          nextTrackInternal();
+        });
+        // Seek support for media notification
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+          const offset = details.seekOffset || 10;
+          audio.currentTime = Math.max(0, audio.currentTime - offset);
+        });
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+          const offset = details.seekOffset || 10;
+          audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + offset);
+        });
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.fastSeek && 'fastSeek' in audio) {
+            audio.fastSeek(details.seekTime || 0);
+          } else {
+            audio.currentTime = details.seekTime || 0;
+          }
+        });
+      }
+
+      // ==========================================================================
+      // RESUME PLAYBACK ON MOUNT — restore last session from localStorage
+      // ==========================================================================
+      const savedState = loadPlayerState();
+      if (savedState && savedState.track) {
+        console.log('🔄 AYUMUSIC: Restoring playback from last session:', savedState.track.name);
+        const authUrl = getBestDownload(savedState.track);
+        if (authUrl) {
+          audio.volume = savedState.volume || 0.8;
+          setVolumeState(savedState.volume || 0.8);
+          audio.src = authUrl;
+          audio.load();
+          setCurrentTrack(savedState.track);
+          currentTrackRef.current = savedState.track;
+          queueRef.current = savedState.queue || [];
+          setQueue(savedState.queue || []);
+          updateMediaSession(savedState.track);
+
+          // Seek to saved position once metadata loads
+          const onCanPlay = () => {
+            const seekTo = Math.min(savedState.position || 0, (audio.duration || 0) - 1);
+            if (seekTo > 0) {
+              audio.currentTime = seekTo;
+              setProgress(seekTo);
+            }
+            if (savedState.isPlaying) {
+              audio.play().catch(() => {
+                console.log('AYUMUSIC: Auto-play blocked by browser. Click play to resume.');
+              });
+            }
+            audio.removeEventListener('canplay', onCanPlay);
+          };
+          audio.addEventListener('canplay', onCanPlay);
+        }
+      }
+
       // Expose globally for debugging
       (window as any).ayumusic = {
         getQueue: () => queueRef.current,
         getCurrent: () => currentTrackRef.current,
         skip: nextTrackInternal
       };
-    }
 
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [infinityAutoPlay]);
+      return () => {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        clearInterval(saveInterval);
+      };
+    }
+  }, [infinityAutoPlay, playTrackInternal, nextTrackInternal, savePlayerState, loadPlayerState, updateMediaSession]);
 
   useEffect(() => {
     if (currentTrack) {
@@ -407,10 +550,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setLyrics(res);
         setLoadingLyrics(false);
       });
+      // Update MediaSession with new track info for background/lock screen
+      updateMediaSession(currentTrack);
+      // Save state immediately when track changes
+      savePlayerState(currentTrack, queueRef.current, 0, volume, true);
     } else {
       setLyrics(null);
+      updateMediaSession(null);
     }
-  }, [currentTrack]);
+  }, [currentTrack, updateMediaSession, savePlayerState, volume]);
 
   const stateVal = useMemo(() => ({
     currentTrack, isPlaying, isBuffering, isPlayerOpen, isLyricsOpen, isQueueOpen, loadingLyrics, lyrics,

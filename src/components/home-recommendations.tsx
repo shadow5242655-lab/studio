@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
-import { getTopArtists, getRecentlyPlayedIds } from '@/lib/listening-history';
+import { Song, searchSongs, getBestImage, getBestDownload, decodeEntities, getTrending } from '@/lib/music-api';
+import { getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
 import { useMusic } from '@/components/music-player/player-context';
 import { Play } from 'lucide-react';
 
@@ -24,10 +24,34 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-function uniqueById(list: Song[]): Song[] {
-  const map = new Map<string, Song>();
-  list.forEach(s => { if (s?.id) map.set(s.id, s); });
-  return Array.from(map.values());
+/**
+ * Deduplicate songs by audio URL (PRIMARY key) and song ID (SECONDARY key).
+ * Ensures songs with different metadata but same audio URL are treated as one.
+ */
+function deduplicateByAudioUrl(list: Song[]): Song[] {
+  const seenUrls = new Set<string>();
+  const seenIds = new Set<string>();
+  return list.filter(s => {
+    if (!s?.id) return false;
+    if (seenIds.has(s.id)) return false;
+    const url = normalizeAudioUrl(getBestDownload(s) || '');
+    if (url && seenUrls.has(url)) return false;
+    seenIds.add(s.id);
+    if (url) seenUrls.add(url);
+    return true;
+  });
+}
+
+// Filter out recently played songs by both ID and audio URL.
+function filterRecentlyPlayed(songs: Song[]): Song[] {
+  const recentIds = getRecentlyPlayedIds();
+  const recentUrls = getRecentlyPlayedUrls();
+  return songs.filter(s => {
+    if (recentIds.includes(s.id)) return false;
+    const url = normalizeAudioUrl(getBestDownload(s) || '');
+    if (url && recentUrls.includes(url)) return false;
+    return true;
+  });
 }
 
 // Horizontal scrollable card used by "Recommended For You" and "More from [Artist]".
@@ -96,9 +120,8 @@ export function RecommendedForYou({ onPlayTrack }: { onPlayTrack: (song: Song, l
         // Fallback: trending when no history or empty results.
         results = await getTrending();
       }
-      const recentIds = getRecentlyPlayedIds();
-      const fresh = results.filter(s => !recentIds.includes(s.id));
-      setSongs(uniqueById((fresh.length ? fresh : results)).slice(0, 8));
+      const fresh = filterRecentlyPlayed(results);
+      setSongs(deduplicateByAudioUrl(fresh.length ? fresh : results).slice(0, 8));
     } catch (e) {
       console.error('AYUMUSIC: Recommended For You failed', e);
       setSongs([]);
@@ -139,9 +162,8 @@ export function MoreFromArtist({ onPlayTrack }: { onPlayTrack: (song: Song, list
       const results = await searchSongs(`${artistName} songs`, 1);
       // Exclude the currently playing song; show 4-6 random ones by the artist.
       const others = results.filter(s => s.id !== currentTrack?.id);
-      const recentIds = getRecentlyPlayedIds();
-      const fresh = others.filter(s => !recentIds.includes(s.id));
-      const pool = uniqueById(fresh.length ? fresh : others);
+      const fresh = filterRecentlyPlayed(others);
+      const pool = deduplicateByAudioUrl(fresh.length ? fresh : others);
       setSongs(shuffle(pool).slice(0, 6));
     } catch (e) {
       console.error('AYUMUSIC: More from artist failed', e);
@@ -181,9 +203,8 @@ export function YourWeeklyMix({ onPlayTrack }: { onPlayTrack: (song: Song, list:
       if (results.length === 0) {
         results = await searchSongs('popular hits 2026', 1);
       }
-      const recentIds = getRecentlyPlayedIds();
-      const fresh = results.filter(s => !recentIds.includes(s.id));
-      setSongs(uniqueById((fresh.length ? fresh : results)).slice(0, 12));
+      const fresh = filterRecentlyPlayed(results);
+      setSongs(deduplicateByAudioUrl(fresh.length ? fresh : results).slice(0, 12));
     } catch (e) {
       console.error('AYUMUSIC: Your Weekly Mix failed', e);
       setSongs([]);

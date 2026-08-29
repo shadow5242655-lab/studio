@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities, formatDuration, getTrending } from '@/lib/music-api';
-import { getTopArtists, getRecentlyPlayedIds } from '@/lib/listening-history';
+import { Song, searchSongs, getBestImage, getBestDownload, decodeEntities, formatDuration, getTrending } from '@/lib/music-api';
+import { getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
 import { Play, Clock } from 'lucide-react';
 import { useMusic } from '@/components/music-player/player-context';
 
@@ -13,15 +13,20 @@ import { useMusic } from '@/components/music-player/player-context';
  * 1. Read listening history from localStorage.
  * 2. Identify the user's top 3-5 most-played artists.
  * 3. Use JioSaavn search API to fetch 5-6 songs per artist.
- * 4. Combine results, remove duplicates (song ID), remove recently played (last 20).
- * 5. Select 10-12 unique songs, shuffle, display as a vertical list.
- * 6. Refresh once per day (store date in localStorage).
- * 7. If no history, show trending/popular songs or a message.
+ * 4. Combine results, remove duplicates by auth_url (PRIMARY) and song ID (SECONDARY).
+ * 5. Remove recently played songs (last 20 IDs + all recently played URLs).
+ * 6. Select 10-12 unique songs, shuffle, display as a vertical list.
+ * 7. Refresh once per day (store date in localStorage).
+ * 8. If no history, show trending/popular songs.
+ *
+ * Duplicate Detection:
+ * - auth_url (audio URL) is the PRIMARY dedup key.
+ * - Two songs with different metadata but the same audio URL are treated as the same song.
+ * - URLs are normalized (protocol stripped) before comparison.
  */
 
 const DAILY_PICKS_KEY = 'ayumusic_daily_picks_date';
 const DAILY_PICKS_DATA_KEY = 'ayumusic_daily_picks_data';
-const PICKS_PER_ARTIST = 6;
 const TOP_ARTISTS_COUNT = 5;
 const FINAL_PICK_COUNT = 12;
 const RECENT_EXCLUDE_COUNT = 20;
@@ -35,12 +40,25 @@ function shuffleArray<T>(arr: T[]): T[] {
   return copy;
 }
 
-function uniqueById(list: Song[]): Song[] {
-  const map = new Map<string, Song>();
-  list.forEach(s => {
-    if (s?.id) map.set(s.id, s);
+/**
+ * Deduplicate songs by audio URL (PRIMARY key) and song ID (SECONDARY key).
+ * This ensures songs that appear with different metadata but the same audio
+ * are treated as one song.
+ */
+function deduplicateByAudioUrl(songs: Song[]): Song[] {
+  const seenUrls = new Set<string>();
+  const seenIds = new Set<string>();
+  return songs.filter(s => {
+    if (!s?.id) return false;
+    // Check song ID
+    if (seenIds.has(s.id)) return false;
+    // Check normalized audio URL (protocol stripped)
+    const url = normalizeAudioUrl(getBestDownload(s) || '');
+    if (url && seenUrls.has(url)) return false;
+    seenIds.add(s.id);
+    if (url) seenUrls.add(url);
+    return true;
   });
-  return Array.from(map.values());
 }
 
 function getTodayString(): string {
@@ -100,11 +118,25 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
     const topArtists = getTopArtists(TOP_ARTISTS_COUNT);
     const artistNames = topArtists.map(t => t.artist).filter(Boolean);
 
+    // Get recently played data for filtering
+    const recentIds = getRecentlyPlayedIds().slice(0, RECENT_EXCLUDE_COUNT);
+    const recentUrls = getRecentlyPlayedUrls();
+
+    // Helper: filter out recently played songs by ID and audio URL
+    const filterRecentlyPlayed = (songList: Song[]): Song[] => {
+      return songList.filter(s => {
+        if (recentIds.includes(s.id)) return false;
+        const url = normalizeAudioUrl(getBestDownload(s) || '');
+        if (url && recentUrls.includes(url)) return false;
+        return true;
+      });
+    };
+
     if (artistNames.length > 0) {
       setIsFromHistory(true);
 
       try {
-        // Step 3: Fetch 5-6 songs per artist from JioSaavn API
+        // Step 3: Fetch songs per artist from JioSaavn API
         const artistQueries = artistNames.map(name => `${name} songs`);
         const results = await Promise.all(
           artistQueries.map(query => searchSongs(query, 1))
@@ -113,14 +145,13 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
         // Step 4: Combine all results
         const allSongs = results.flat();
 
-        // Step 5: Remove duplicates by song ID
-        const uniqueSongs = uniqueById(allSongs);
+        // Step 5: Deduplicate by audio URL (PRIMARY) and song ID (SECONDARY)
+        const uniqueSongs = deduplicateByAudioUrl(allSongs);
 
-        // Step 6: Remove recently played songs (last 20)
-        const recentIds = getRecentlyPlayedIds().slice(0, RECENT_EXCLUDE_COUNT);
-        const freshSongs = uniqueSongs.filter(s => !recentIds.includes(s.id));
+        // Step 6: Remove recently played songs (by ID and audio URL)
+        const freshSongs = filterRecentlyPlayed(uniqueSongs);
 
-        // Step 7: Shuffle and pick 10-12 unique songs
+        // Step 7: Shuffle and pick final count
         const shuffled = shuffleArray(freshSongs.length > 0 ? freshSongs : uniqueSongs);
         const finalPicks = shuffled.slice(0, FINAL_PICK_COUNT);
 
@@ -128,20 +159,20 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
           setSongs(finalPicks);
           saveCachedPicks(finalPicks);
         } else {
-          // Fallback to trending if no picks available
+          // Fallback to trending
           const trending = await getTrending();
-          const trendingFresh = trending.filter(s => !recentIds.includes(s.id));
-          const finalTrending = shuffleArray(trendingFresh.length > 0 ? trendingFresh : trending).slice(0, FINAL_PICK_COUNT);
+          const uniqueTrending = deduplicateByAudioUrl(trending);
+          const freshTrending = filterRecentlyPlayed(uniqueTrending);
+          const finalTrending = shuffleArray(freshTrending.length > 0 ? freshTrending : uniqueTrending).slice(0, FINAL_PICK_COUNT);
           setSongs(finalTrending);
           setIsFromHistory(false);
           saveCachedPicks(finalTrending);
         }
       } catch (error) {
         console.error('AYUMUSIC: Daily Picks fetch failed:', error);
-        // Fallback to trending on error
         try {
           const trending = await getTrending();
-          setSongs(trending.slice(0, FINAL_PICK_COUNT));
+          setSongs(deduplicateByAudioUrl(trending).slice(0, FINAL_PICK_COUNT));
           setIsFromHistory(false);
         } catch {
           setSongs([]);
@@ -152,8 +183,9 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
       setIsFromHistory(false);
       try {
         const trending = await getTrending();
-        setSongs(trending.slice(0, FINAL_PICK_COUNT));
-        saveCachedPicks(trending.slice(0, FINAL_PICK_COUNT));
+        const uniqueTrending = deduplicateByAudioUrl(trending);
+        setSongs(uniqueTrending.slice(0, FINAL_PICK_COUNT));
+        saveCachedPicks(uniqueTrending.slice(0, FINAL_PICK_COUNT));
       } catch (error) {
         console.error('AYUMUSIC: Trending fallback failed:', error);
         setSongs([]);
@@ -174,6 +206,7 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
           <div className="flex items-center gap-2">
             <span className="text-xl font-black italic uppercase tracking-tighter">📅 Your Daily Picks</span>
           </div>
+          <div className="h-8 w-24 bg-neutral-900 animate-pulse rounded-full" />
         </div>
         <div className="space-y-3">
           {Array(4).fill(0).map((_, i) => (
@@ -197,6 +230,13 @@ export default function PersonalizedDailyPicks({ onPlayTrack }: PersonalizedDail
             </span>
           )}
         </div>
+        <button
+          onClick={() => songs.length > 0 && onPlayTrack(songs[0], songs)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full text-primary hover:bg-primary/20 transition-colors"
+        >
+          <Play className="h-3 w-3 fill-current" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Play All</span>
+        </button>
       </div>
 
       <div className="space-y-3">

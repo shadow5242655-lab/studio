@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Song, getBestDownload, getTrending, decodeEntities, fetchAudiusMoodTracks, getLyrics, attachMood, searchSongs } from '@/lib/music-api';
-import { recordPlay, getTopArtists, getRecentlyPlayedIds } from '@/lib/listening-history';
+import { recordPlay, getTopArtists, getRecentlyPlayedIds, getRecentlyPlayedUrls, normalizeAudioUrl } from '@/lib/listening-history';
 import { toast } from '@/hooks/use-toast';
 
 export interface Playlist {
@@ -108,58 +108,68 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // --- Duplicate Song Playback Prevention ---
-    // Before playing any song, check if its unique ID is in recentlyPlayedIds.
-    // If it is, skip this song and try the next one from the provided queue.
+    // ========================================================================
+    // DUPLICATE SONG PLAYBACK PREVENTION — auth_url is the PRIMARY dedup key
+    // ========================================================================
+    // Same song can appear with different metadata (title, artist, image) but
+    // the SAME audio URL. We use the normalized audio URL (without protocol)
+    // as the primary key. Song ID is a secondary fallback.
+    //
+    // Flow:
+    // 1. Resolve the auth_url for this track using getBestDownload().
+    // 2. Normalize it (strip http/https) via normalizeAudioUrl().
+    // 3. Check if this normalized URL exists in recentlyPlayedUrls.
+    // 4. Also check song ID in recentlyPlayedIds as secondary guard.
+    // 5. If either matches → skip this song, try next from queue.
+    // ========================================================================
+
+    const authUrl = getBestDownload(track);
+    const normalizedUrl = authUrl ? normalizeAudioUrl(authUrl) : '';
     const recentlyPlayedIds = getRecentlyPlayedIds();
-    if (recentlyPlayedIds.includes(track.id)) {
-      console.log('🔄 AYUMUSIC: Skipping duplicate track:', track.name, '(' + track.id + ')');
-      if (fromQueue && fromQueue.length > 1) {
-        const currentIdx = fromQueue.findIndex(s => s.id === track.id);
-        // Try the next song in the queue that is NOT recently played
-        for (let i = 1; i < fromQueue.length; i++) {
-          const nextIdx = (currentIdx + i) % fromQueue.length;
-          const candidate = fromQueue[nextIdx];
-          if (!recentlyPlayedIds.includes(candidate.id)) {
+    const recentlyPlayedUrls = getRecentlyPlayedUrls();
+
+    // Check: is this audio URL already played? (PRIMARY check)
+    const isDuplicateByUrl = normalizedUrl && recentlyPlayedUrls.includes(normalizedUrl);
+    // Check: is this song ID already played? (SECONDARY check)
+    const isDuplicateById = recentlyPlayedIds.includes(track.id);
+
+    if (isDuplicateByUrl || isDuplicateById) {
+      const reason = isDuplicateByUrl ? 'audio URL' : 'song ID';
+      console.log(`🔄 AYUMUSIC: Skipping duplicate (${reason}):`, track.name, '|', normalizedUrl || track.id);
+
+      // Try to find a non-duplicate from the provided queue or current queue
+      const searchQueue = fromQueue && fromQueue.length > 1 ? fromQueue : queueRef.current;
+      if (searchQueue.length > 1) {
+        const currentIdx = searchQueue.findIndex(s => s.id === track.id);
+        for (let i = 1; i < searchQueue.length; i++) {
+          const nextIdx = (currentIdx + i) % searchQueue.length;
+          const candidate = searchQueue[nextIdx];
+          const candidateUrl = normalizeAudioUrl(getBestDownload(candidate) || '');
+          const candidateIsDup = (candidateUrl && recentlyPlayedUrls.includes(candidateUrl)) || recentlyPlayedIds.includes(candidate.id);
+          if (!candidateIsDup) {
             console.log('▶️ AYUMUSIC: Switching to non-duplicate:', candidate.name);
-            playTrackInternal(candidate, fromQueue);
+            playTrackInternal(candidate, fromQueue || searchQueue);
             return;
           }
         }
-        // If all songs in queue are duplicates, still play the requested one (fallback)
         console.log('⚠️ AYUMUSIC: All queue songs are duplicates. Playing anyway.');
       } else {
-        // No queue to pick from — try fetching from the current queue ref
-        const currentQueue = queueRef.current;
-        if (currentQueue.length > 1) {
-          const currentIdx = currentQueue.findIndex(s => s.id === track.id);
-          for (let i = 1; i < currentQueue.length; i++) {
-            const nextIdx = (currentIdx + i) % currentQueue.length;
-            const candidate = currentQueue[nextIdx];
-            if (!recentlyPlayedIds.includes(candidate.id)) {
-              console.log('▶️ AYUMUSIC: Switching to non-duplicate from queue:', candidate.name);
-              playTrackInternal(candidate, currentQueue);
-              return;
-            }
-          }
-        }
-        // Absolute fallback — play it anyway but log warning
         console.log('⚠️ AYUMUSIC: No alternative found. Playing:', track.name);
       }
     }
     // --- End Duplicate Prevention ---
 
-    const url = getBestDownload(track);
-    if (!url) {
+    // Resolve the audio URL
+    if (!authUrl) {
       toast({ variant: "destructive", title: "Resonance Blocked", description: "Frequency unavailable." });
       return;
     }
 
     audio.pause();
-    audio.src = url;
+    audio.src = authUrl;
     audio.load();
 
-    console.log('🎵 AYUMUSIC NEURAL: Initiating Playback:', track.name, '| Mood:', track.mood);
+    console.log('🎵 AYUMUSIC NEURAL: Initiating Playback:', track.name, '| Mood:', track.mood, '| URL:', normalizedUrl);
     setCurrentTrack(track);
     currentTrackRef.current = track;
     setIsBuffering(true);
@@ -172,7 +182,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     setPlayedHistory(prev => [{ id: track.id, name: track.name, songData: track }, ...prev.filter(i => i.id !== track.id)].slice(0, 50));
     
-    recordPlay(track);
+    // Record play with the audio URL for URL-based dedup tracking
+    recordPlay(track, authUrl);
     
     audio.play().catch((err) => {
       console.warn('⚠️ AYUMUSIC: Playback interrupted', err);
@@ -196,13 +207,20 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     
     console.log('🔄 AYUMUSIC NEURAL: Queue finished. Starting infinite autoplay for mood:', mood);
 
-    // --- Duplicate Prevention for auto-play ---
+    // --- Duplicate Prevention for auto-play (auth_url PRIMARY + song ID SECONDARY) ---
     const recentlyPlayedIds = getRecentlyPlayedIds();
+    const recentlyPlayedUrls = getRecentlyPlayedUrls();
+
+    // Helper: check if a song is a duplicate (by audio URL or song ID)
+    const isDuplicate = (s: Song): boolean => {
+      const url = normalizeAudioUrl(getBestDownload(s) || '');
+      return (url && recentlyPlayedUrls.includes(url)) || recentlyPlayedIds.includes(s.id);
+    };
 
     // Helper: pick the first non-duplicate from a list
     const pickFresh = (list: Song[]): Song | null => {
       for (const s of list) {
-        if (!recentlyPlayedIds.includes(s.id)) return s;
+        if (!isDuplicate(s)) return s;
       }
       return list.length > 0 ? list[0] : null; // fallback to first if all are duplicates
     };
@@ -228,7 +246,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('📡 AYUMUSIC NEURAL: Buffer empty. Fetching fresh resonance...');
       const resonance = await fetchAudiusMoodTracks(mood);
-      const freshResonance = resonance.filter(s => !recentlyPlayedIds.includes(s.id));
+      const freshResonance = resonance.filter(s => !isDuplicate(s));
       const pool = freshResonance.length > 0 ? freshResonance : resonance;
       if (pool.length > 0) {
         const nextSong = pool[0];
@@ -241,7 +259,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         // 3. Fallback to Trending
         console.log('⚠️ AYUMUSIC NEURAL: Mood resonance exhausted. Falling back to trending.');
         const trending = await getTrending();
-        const freshTrending = trending.filter(s => !recentlyPlayedIds.includes(s.id));
+        const freshTrending = trending.filter(s => !isDuplicate(s));
         const trendingPool = freshTrending.length > 0 ? freshTrending : trending;
         if (trendingPool.length > 0) {
           const nextSong = trendingPool[0];
@@ -287,13 +305,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const topArtists = getTopArtists(2);
     const currentSong = currentTrackRef.current;
     const recentIds = getRecentlyPlayedIds();
+    const recentUrls = getRecentlyPlayedUrls();
 
-    // Helper: deduplicate by song ID and exclude recently played
+    // Helper: deduplicate by audio URL (PRIMARY) and song ID (SECONDARY)
     const dedupeAndFilter = (songs: Song[]): Song[] => {
-      const seen = new Set<string>();
+      const seenIds = new Set<string>();
+      const seenUrls = new Set<string>();
       return songs.filter(s => {
-        if (!s?.id || seen.has(s.id) || recentIds.includes(s.id)) return false;
-        seen.add(s.id);
+        if (!s?.id) return false;
+        // Check song ID
+        if (seenIds.has(s.id) || recentIds.includes(s.id)) return false;
+        // Check audio URL (normalized, without protocol)
+        const url = normalizeAudioUrl(getBestDownload(s) || '');
+        if (url && (seenUrls.has(url) || recentUrls.includes(url))) return false;
+        seenIds.add(s.id);
+        if (url) seenUrls.add(url);
         return true;
       });
     };
@@ -336,10 +362,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const infinityAutoPlay = useCallback(async () => {
     const currentSong = currentTrackRef.current;
     const recentIds = getRecentlyPlayedIds();
+    const recentUrls = getRecentlyPlayedUrls();
     const candidates = await fetchRecommendedSongs();
 
-    // Filter out the current song and the last 5 recently played songs.
-    const fresh = candidates.filter(s => s.id !== currentSong?.id && !recentIds.includes(s.id));
+    // Filter out: current song, recently played IDs, and recently played audio URLs
+    const fresh = candidates.filter(s => {
+      if (s.id === currentSong?.id) return false;
+      if (recentIds.includes(s.id)) return false;
+      const url = normalizeAudioUrl(getBestDownload(s) || '');
+      if (url && recentUrls.includes(url)) return false;
+      return true;
+    });
     const pool = fresh.length > 0 ? fresh : candidates.filter(s => s.id !== currentSong?.id);
 
     if (pool.length === 0) {

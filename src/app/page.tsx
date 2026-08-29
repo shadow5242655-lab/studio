@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Song, searchSongs, getBestImage, decodeEntities, getTrending } from '@/lib/music-api';
+import { Song, searchSongs, searchAlbums, searchPlaylists, searchArtists, getBestImage, decodeEntities, formatDuration, getTrending } from '@/lib/music-api';
 import { 
-  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, Zap, Pause, MoreVertical, X
+  Heart, Play, Music2, Search, Loader2, Sparkles, Shuffle, Menu, Smartphone, ListFilter, Coffee, Zap, Pause, MoreVertical, X, Disc, User, ListMusic, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -238,6 +238,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchTab, setSearchTab] = useState('songs');
+  const [searchAlbumsResult, setSearchAlbumsResult] = useState<any[]>([]);
+  const [searchPlaylistsResult, setSearchPlaylistsResult] = useState<any[]>([]);
+  const [searchArtistsResult, setSearchArtistsResult] = useState<any[]>([]);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recommended section user id (tries env var or firebase auth on client)
@@ -320,11 +324,20 @@ export default function Home() {
     searchTimeoutRef.current = setTimeout(async () => {
       setLoading(true);
       setIsSearching(true);
-      const results = await searchSongs(searchQuery);
-      // Deduplicate by song ID before display (audio URL dedup happens at playback time)
+      // Fetch songs + other categories in parallel
+      const [songsRes, albumsRes, playlistsRes, artistsRes] = await Promise.all([
+        searchSongs(searchQuery).catch(() => []),
+        searchAlbums(searchQuery).catch(() => []),
+        searchPlaylists(searchQuery).catch(() => []),
+        searchArtists(searchQuery).catch(() => []),
+      ]);
+      // Deduplicate songs by ID
       const seen = new Set<string>();
-      const deduped = results.filter(s => { if (!s?.id || seen.has(s.id)) return false; seen.add(s.id); return true; });
+      const deduped = songsRes.filter(s => { if (!s?.id || seen.has(s.id)) return false; seen.add(s.id); return true; });
       setDisplaySongs(deduped);
+      setSearchAlbumsResult(albumsRes);
+      setSearchPlaylistsResult(playlistsRes);
+      setSearchArtistsResult(artistsRes);
       setLoading(false);
     }, 500);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
@@ -370,12 +383,37 @@ export default function Home() {
                  <X className="h-4 w-4" />
                </button>
              )}
-           </div>
-           <div className="flex items-center gap-2 text-neutral-400">
+           </div>           <div className="flex items-center gap-2 text-neutral-400">
              <Smartphone className="h-5 w-5" />
              <ListFilter className="h-5 w-5" />
            </div>
         </div>
+
+        {/* Search Category Tabs — shown when searching */}
+        {isSearching && (
+          <div className="px-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {([
+              { id: 'songs', label: 'Songs', icon: Music2 },
+              { id: 'albums', label: 'Albums', icon: Disc },
+              { id: 'playlists', label: 'Playlists', icon: ListMusic },
+              { id: 'artists', label: 'Artists', icon: User },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSearchTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0",
+                  searchTab === tab.id
+                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                    : "bg-white/5 text-neutral-500 hover:text-white hover:bg-white/10"
+                )}
+              >
+                <tab.icon className="h-3 w-3" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {!isSearching && (
           <>
@@ -463,72 +501,200 @@ export default function Home() {
         )}
 
         {isSearching && (
-          <section className="space-y-8 pb-20">
+          <section className="space-y-6 pb-20">
             <div className="flex items-center justify-between px-6">
               <div className="flex flex-col">
                 <span className="text-[9px] md:text-[10px] font-black text-primary uppercase tracking-widest">Resonance Found</span>
                 <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter truncate max-w-[200px]">"{searchQuery}"</h2>
               </div>
-              <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => displaySongs.length > 0 && playTrack(displaySongs[0], displaySongs)}>
-                <Play className="h-3 w-3 fill-current" /> Play all
-              </Button>
-            </div>
-            
-            <div className="space-y-3 md:space-y-4 px-6">
-              {displaySongs.length > 0 ? (
-                displaySongs.map((song, idx) => (
-                  <div 
-                    key={`${song.id}-${idx}`}
-                    onClick={() => playTrack(song, displaySongs)}
-                    className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-95 group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                      <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
-                        <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
-                        {currentTrack?.id === song.id && (
-                          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center backdrop-blur-[2px]">
-                            {isPlaying ? (
-                              <div className="flex gap-0.5 items-end h-3.5 md:h-4">
-                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
-                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
-                                <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
-                              </div>
-                            ) : (
-                              <Pause className="h-4 w-4 text-white fill-current" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className={cn(
-                          "font-black text-xs md:text-sm leading-tight italic uppercase tracking-tighter truncate", 
-                          currentTrack?.id === song.id ? "text-primary" : "text-white"
-                        )}>
-                          {decodeEntities(song.name)}
-                        </p>
-                        <p className="text-[9px] md:text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.1em] md:tracking-[0.15em]">
-                          {song.artists.primary[0]?.name}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
-                        className="p-1.5 md:p-2 text-neutral-700 hover:text-primary transition-all"
-                      >
-                        <Heart className={cn("h-4 w-4 md:h-5 md:w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
-                      </button>
-                      <MoreVertical className="h-4 w-4 md:h-5 md:w-5 text-neutral-800" />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="py-20 text-center opacity-40">
-                  <Music2 className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
-                  <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No frequencies matching your vibration.</p>
-                </div>
+              {searchTab === 'songs' && displaySongs.length > 0 && (
+                <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2 bg-white/5 rounded-full px-4 h-8" onClick={() => playTrack(displaySongs[0], displaySongs)}>
+                  <Play className="h-3 w-3 fill-current" /> Play all
+                </Button>
               )}
             </div>
+
+            {loading ? (
+              <div className="space-y-3 px-6">
+                {Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="h-16 bg-neutral-900 animate-pulse rounded-2xl" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* SONGS TAB */}
+                {searchTab === 'songs' && (
+                  <div className="space-y-3 px-6">
+                    {displaySongs.length > 0 ? (
+                      displaySongs.map((song, idx) => (
+                        <div 
+                          key={`${song.id}-${idx}`}
+                          onClick={() => playTrack(song, displaySongs)}
+                          className="flex items-center justify-between p-3 md:p-4 bg-[#121212] rounded-[1.2rem] md:rounded-[1.5rem] border border-white/5 transition-all active:scale-95 group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                            <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0 relative border border-white/5 shadow-inner">
+                              <img src={getBestImage(song) || ''} className="h-full w-full object-cover" alt="" />
+                              {currentTrack?.id === song.id && (
+                                <div className="absolute inset-0 bg-primary/30 flex items-center justify-center backdrop-blur-[2px]">
+                                  {isPlaying ? (
+                                    <div className="flex gap-0.5 items-end h-3.5 md:h-4">
+                                      <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0s]" style={{ height: '60%' }} />
+                                      <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '100%' }} />
+                                      <div className="w-0.5 md:w-1 bg-white animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '40%' }} />
+                                    </div>
+                                  ) : (
+                                    <Pause className="h-4 w-4 text-white fill-current" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={cn(
+                                "font-black text-xs md:text-sm leading-tight italic uppercase tracking-tighter truncate", 
+                                currentTrack?.id === song.id ? "text-primary" : "text-white"
+                              )}>
+                                {decodeEntities(song.name)}
+                              </p>
+                              <p className="text-[9px] md:text-[10px] text-neutral-500 truncate uppercase mt-0.5 font-black tracking-[0.1em] md:tracking-[0.15em]">
+                                {song.artists.primary[0]?.name}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 md:gap-2">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleLike(song); }}
+                              className="p-1.5 md:p-2 text-neutral-700 hover:text-primary transition-all"
+                            >
+                              <Heart className={cn("h-4 w-4 md:h-5 md:w-5 transition-all", isLiked(song.id) && "fill-primary text-primary scale-110")} />
+                            </button>
+                            <MoreVertical className="h-4 w-4 md:h-5 md:w-5 text-neutral-800" />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-20 text-center opacity-40">
+                        <Music2 className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
+                        <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No songs found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ALBUMS TAB */}
+                {searchTab === 'albums' && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-6">
+                    {searchAlbumsResult.length > 0 ? (
+                      searchAlbumsResult.map((album: any) => (
+                        <div
+                          key={album.id}
+                          onClick={() => {
+                            // Search songs by album name and play
+                            searchSongs(album.name).then(songs => {
+                              if (songs.length > 0) playTrack(songs[0], songs);
+                            });
+                          }}
+                          className="group cursor-pointer"
+                        >
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 mb-2 shadow-lg">
+                            {getBestImage(album) ? (
+                              <img src={getBestImage(album) || ''} alt={album.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center"><Disc className="h-10 w-10 text-neutral-700" /></div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                                <Play className="h-4 w-4 text-white fill-current ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-[10px] font-bold text-white truncate uppercase italic tracking-tight">{decodeEntities(album.name)}</p>
+                          <p className="text-[8px] text-neutral-500 truncate uppercase font-black tracking-widest">{album.artists?.[0]?.name || 'Album'}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-20 text-center opacity-40">
+                        <Disc className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
+                        <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No albums found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PLAYLISTS TAB */}
+                {searchTab === 'playlists' && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-6">
+                    {searchPlaylistsResult.length > 0 ? (
+                      searchPlaylistsResult.map((pl: any) => (
+                        <div
+                          key={pl.id}
+                          onClick={() => {
+                            searchSongs(pl.name).then(songs => {
+                              if (songs.length > 0) playTrack(songs[0], songs);
+                            });
+                          }}
+                          className="group cursor-pointer"
+                        >
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/5 mb-2 shadow-lg">
+                            {getBestImage(pl) ? (
+                              <img src={getBestImage(pl) || ''} alt={pl.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center"><ListMusic className="h-10 w-10 text-neutral-700" /></div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                                <Play className="h-4 w-4 text-white fill-current ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-[10px] font-bold text-white truncate uppercase italic tracking-tight">{decodeEntities(pl.name)}</p>
+                          <p className="text-[8px] text-neutral-500 truncate uppercase font-black tracking-widest">{pl.songCount ? `${pl.songCount} songs` : 'Playlist'}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-20 text-center opacity-40">
+                        <ListMusic className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
+                        <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No playlists found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ARTISTS TAB */}
+                {searchTab === 'artists' && (
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-6 px-6">
+                    {searchArtistsResult.length > 0 ? (
+                      searchArtistsResult.map((artist: any) => (
+                        <div
+                          key={artist.id}
+                          onClick={() => {
+                            searchSongs(artist.name + ' songs').then(songs => {
+                              if (songs.length > 0) playTrack(songs[0], songs);
+                            });
+                          }}
+                          className="group flex flex-col items-center text-center cursor-pointer"
+                        >
+                          <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden bg-neutral-900 mb-2 border-2 border-transparent group-hover:border-primary transition-colors">
+                            {getBestImage(artist) ? (
+                              <img src={getBestImage(artist) || ''} alt={artist.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center"><User className="h-8 w-8 text-neutral-700" /></div>
+                            )}
+                          </div>
+                          <p className="text-[10px] font-bold text-white truncate uppercase italic tracking-tight max-w-[100px]">{decodeEntities(artist.name)}</p>
+                          <p className="text-[7px] text-neutral-500 uppercase font-black tracking-widest">Artist</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-20 text-center opacity-40">
+                        <User className="h-10 w-10 mx-auto mb-3 text-neutral-700" />
+                        <p className="text-[10px] md:text-sm font-bold uppercase tracking-widest italic">No artists found.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </section>
         )}
       </div>
